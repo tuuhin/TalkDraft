@@ -31,3 +31,4 @@ include(":androidApp")
 // modules
 include(":core:common")
 include(":core:analytics")
+include(":core:crashlytics")

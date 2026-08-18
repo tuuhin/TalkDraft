@@ -40,5 +40,18 @@ buildkonfig {
 			value = System.getenv("POST_HOG_API_KEY")
 				?: commonProperties.getProperty("POST_HOG_API_KEY")
 		)
+		buildConfigField(
+			type = FieldSpec.Type.STRING,
+			name = "MEASURE_ANDROID_API_KEY",
+			value = System.getenv("MEASURE_ANDROID_KEY")
+				?: commonProperties.getProperty("MEASURE_ANDROID_KEY")
+		)
+
+		buildConfigField(
+			type = FieldSpec.Type.STRING,
+			name = "MEASURE_IOS_KEY",
+			value = System.getenv("MEASURE_IOS_KEY")
+				?: commonProperties.getProperty("MEASURE_IOS_KEY")
+		)
 	}
 }

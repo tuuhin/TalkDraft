@@ -2,6 +2,7 @@ package com.sam.talkdraft
 
 import android.app.Application
 import com.sam.talkdraft.analytics.posthog.IPostHogInitManager
+import com.sam.talkdraft.crashlytics.MeasureSetupManager
 import com.sam.talkdraft.di.KoinTalkDraftApp
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
@@ -15,9 +16,11 @@ import org.koin.plugin.module.dsl.koinConfiguration
 class TalkDraftApplication : Application(), KoinStartup {
 
 	private val posthogInit by inject<IPostHogInitManager>()
+	private val measure by inject<MeasureSetupManager>()
 
 	override fun onCreate() {
 		posthogInit.setup()
+		measure.setup()
 		super.onCreate()
 	}
 

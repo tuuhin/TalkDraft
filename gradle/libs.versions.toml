@@ -18,6 +18,7 @@ buildkonfig = "0.22.0"
 posthog-kmp = "0.4.0"
 koin-plugin = "1.1.0"
 koin = "4.2.2"
+measure = "0.19.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -53,6 +54,8 @@ koin-compose-nav3 = { module = "io.insert-koin:koin-compose-navigation3", versio
 # kermit
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 kermit-koin = { module = "co.touchlab:kermit-koin", version.ref = "kermit" }
+#measure
+measure-android = { module = "sh.measure:measure-android", version.ref = "measure" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

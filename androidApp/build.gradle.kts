@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
 	alias(libs.plugins.androidApplication)
@@ -16,6 +17,15 @@ android {
 		targetSdk = libs.versions.android.targetSdk.get().toInt()
 		versionCode = 1
 		versionName = "1.0"
+
+		val properties = Properties().apply {
+			val commons = rootProject.file("secrets.properties")
+			commons.inputStream().use(::load)
+		}
+
+		manifestPlaceholders["MEASURE_API_KEY"] = properties.getProperty("MEASURE_ANDROID_KEY")
+		manifestPlaceholders["MEASURE_API_URL"] = properties.getProperty("MEASURE_API_URL")
+
 	}
 	packaging {
 		resources {
@@ -62,6 +72,7 @@ dependencies {
 	// local modules
 	implementation(project(":core:common"))
 	implementation(project(":core:analytics"))
+	implementation(project(":core:crashlytics"))
 
 	debugImplementation(libs.compose.uiTooling)
 }
