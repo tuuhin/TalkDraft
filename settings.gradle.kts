@@ -28,5 +28,6 @@ dependencyResolutionManagement {
 }
 
 include(":androidApp")
-include(":sharedLogic")
-include(":sharedUI")
+// modules
+include(":core:common")
+include(":core:analytics")
