@@ -1,0 +1,24 @@
+{
+  "originHash" : "7f5212c15916a0bc7d23958eaf10825b34c205f6e3340e7eb7f74641864adae9",
+  "pins" : [
+    {
+      "identity" : "kscrash",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kstenerud/KSCrash.git",
+      "state" : {
+        "revision" : "3f77f379c2db001e0c261c2a51b7e2b115d31f91",
+        "version" : "2.6.0"
+      }
+    },
+    {
+      "identity" : "measure",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/measure-sh/measure.git",
+      "state" : {
+        "branch" : "ios-v0.12.1",
+        "revision" : "dddde1aea50f18fc0719544422697546f9dca23c"
+      }
+    }
+  ],
+  "version" : 3
+}

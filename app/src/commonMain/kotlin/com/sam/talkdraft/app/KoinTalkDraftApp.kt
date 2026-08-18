@@ -1,4 +1,4 @@
-package com.sam.talkdraft.di
+package com.sam.talkdraft.app
 
 import com.sam.talkdraft.analytics.di.AnalyticsModule
 import com.sam.talkdraft.crashlytics.di.CrashlyticsModule
@@ -10,4 +10,4 @@ import org.koin.core.annotation.KoinApplication
 		CrashlyticsModule::class,
 	]
 )
-internal class KoinTalkDraftApp
+class KoinTalkDraftApp

@@ -48,6 +48,7 @@ android {
 	}
 	buildFeatures {
 		compose = true
+		buildConfig = true
 	}
 }
 
@@ -70,9 +71,7 @@ dependencies {
 	implementation(libs.bundles.koin.common)
 
 	// local modules
-	implementation(project(":core:common"))
-	implementation(project(":core:analytics"))
-	implementation(project(":core:crashlytics"))
+	implementation(project(":app"))
 
 	debugImplementation(libs.compose.uiTooling)
 }
