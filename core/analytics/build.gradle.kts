@@ -6,6 +6,8 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain(25)
+
 	android {
 		namespace = "com.sam.talkdraft.analytics"
 		compileSdk = libs.versions.android.compileSdk.get().toInt()

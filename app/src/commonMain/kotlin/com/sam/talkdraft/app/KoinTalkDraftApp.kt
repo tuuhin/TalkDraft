@@ -4,6 +4,7 @@ import com.sam.talkdraft.analytics.di.AnalyticsModule
 import com.sam.talkdraft.auth.di.AuthModule
 import com.sam.talkdraft.common.di.CommonModule
 import com.sam.talkdraft.crashlytics.di.CrashlyticsModule
+import com.sam.talkdraft.database.di.DBModule
 import com.sam.talkdraft.supabase.di.SupabaseModule
 import org.koin.core.annotation.KoinApplication
 
@@ -14,7 +15,7 @@ import org.koin.core.annotation.KoinApplication
 		AnalyticsModule::class,
 		CrashlyticsModule::class,
 		SupabaseModule::class,
-//		DBModule::class,
-	]
+		DBModule::class,
+	],
 )
 class KoinTalkDraftApp

@@ -6,9 +6,13 @@ plugins {
 	alias(libs.plugins.androidMultiplatformLibrary)
 	alias(libs.plugins.androidLint)
 	alias(libs.plugins.build.konfig)
+    alias(libs.plugins.koin.compiler)
 }
 
 kotlin {
+
+    jvmToolchain(25)
+
 	android {
 		namespace = "com.sam.talkdraft.commons"
 		compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -17,11 +21,24 @@ kotlin {
 
 	listOf(iosArm64(), iosSimulatorArm64())
 
+    applyDefaultHierarchyTemplate()
+
 	sourceSets {
 		commonMain.dependencies {
 			api(libs.kermit)
+            // io
+            implementation(libs.okio)
+            // koin
+            implementation(libs.koin.core)
+            api(libs.koin.annotations)
+            // coroutines
+            implementation(libs.kotlinx.coroutines.core)
 		}
 	}
+
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
 }
 
 buildkonfig {
@@ -35,23 +52,46 @@ buildkonfig {
 
 	defaultConfigs {
 		buildConfigField(
-			type = FieldSpec.Type.STRING,
-			name = "POST_HOG_API_KEY",
-			value = System.getenv("POST_HOG_API_KEY")
-				?: commonProperties.getProperty("POST_HOG_API_KEY")
-		)
-		buildConfigField(
-			type = FieldSpec.Type.STRING,
-			name = "MEASURE_ANDROID_API_KEY",
-			value = System.getenv("MEASURE_ANDROID_KEY")
-				?: commonProperties.getProperty("MEASURE_ANDROID_KEY")
-		)
+            type = FieldSpec.Type.STRING,
+            name = "POST_HOG_API_KEY",
+            value = System.getenv("POST_HOG_API_KEY")
+                ?: commonProperties.getProperty("POST_HOG_API_KEY"),
+        )
 
-		buildConfigField(
-			type = FieldSpec.Type.STRING,
-			name = "MEASURE_IOS_KEY",
-			value = System.getenv("MEASURE_IOS_KEY")
-				?: commonProperties.getProperty("MEASURE_IOS_KEY")
-		)
+        buildConfigField(
+            type = FieldSpec.Type.STRING,
+            name = "GOOGLE_SIGN_IN_WEB_CLIENT_ID",
+            value = System.getenv("GOOGLE_SIGN_IN_WEB_CLIENT_ID")
+                ?: commonProperties.getProperty("GOOGLE_SIGN_IN_WEB_CLIENT_ID"),
+        )
+    }
+
+    targetConfigs {
+
+        create("android") {
+            buildConfigField(
+                type = FieldSpec.Type.STRING,
+                name = "MEASURE_ANDROID_API_KEY",
+                value = System.getenv("MEASURE_ANDROID_KEY")
+                    ?: commonProperties.getProperty("MEASURE_ANDROID_KEY"),
+            )
+        }
+
+        create("ios") {
+
+            buildConfigField(
+                type = FieldSpec.Type.STRING,
+                name = "MEASURE_IOS_KEY",
+                value = System.getenv("MEASURE_IOS_KEY")
+                    ?: commonProperties.getProperty("MEASURE_IOS_KEY"),
+            )
+
+            buildConfigField(
+                type = FieldSpec.Type.STRING,
+                name = "GOOGLE_IOS_SIGN_IN_CLIENT_ID",
+                value = System.getenv("GOOGLE_IOS_SIGN_IN_CLIENT_ID")
+                    ?: commonProperties.getProperty("GOOGLE_IOS_SIGN_IN_CLIENT_ID"),
+            )
+        }
 	}
 }

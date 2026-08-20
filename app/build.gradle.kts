@@ -49,7 +49,7 @@ kotlin {
 			api(project(":core:common"))
 			api(project(":core:analytics"))
 			api(project(":core:crashlytics"))
-//			implementation(project(":core:database"))
+            api(project(":core:database"))
 			api(project(":core:supabase"))
 			api(project(":core:auth"))
 		}
@@ -66,6 +66,10 @@ kotlin {
 			}
 		}
 	}
+
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
 }
 
 configure<ComposeCompilerGradlePluginExtension> {

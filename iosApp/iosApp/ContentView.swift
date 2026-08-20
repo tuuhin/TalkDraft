@@ -1,6 +1,5 @@
 import SwiftUI
 import TalkDraftApp
-import Measure
 
 struct ContentView: View {
 

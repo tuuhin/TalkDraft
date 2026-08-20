@@ -37,6 +37,7 @@ atomic-fu = "0.33.0"
 kotlinxImmutable = "0.5.1"
 kotlinxDatetime = "0.8.0"
 kotlinxSerialization = "1.11.0"
+kotlinx-coroutines = "1.11.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -109,6 +110,9 @@ kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collec
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
+#coroutines
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -125,6 +129,7 @@ atomic-fu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "atomic-fu" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
 [bundles]
+testing-android = ["androidx-testExt-junit", "androidx-espresso-core"]
 koin-common = ["koin-core", "koin-annotations"]
 koin-compose = ["koin-viewmodel", "koin-compose", "koin-compose-viewmodel"]
 kotlinx-common = ["kotlinx-datetime", "kotlinx-collections-immutable", "kotlinx-serialization-core", "kotlinx-serialization-json"]
