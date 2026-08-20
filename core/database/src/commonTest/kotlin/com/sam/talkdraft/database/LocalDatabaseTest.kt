@@ -1,10 +1,4 @@
 package com.sam.talkdraft.database
-
-import assertk.assertThat
-import assertk.assertions.isEqualTo
-import assertk.assertions.isNotNull
-import assertk.assertions.isNull
-import assertk.assertions.isTrue
 import com.sam.talkdraft.database.dao.GeneratedNotesDao
 import com.sam.talkdraft.database.dao.LocalTranscriptModelsDao
 import com.sam.talkdraft.database.dao.ProcessingJobDao
@@ -14,17 +8,21 @@ import com.sam.talkdraft.database.dao.TranscriptsDao
 import com.sam.talkdraft.database.entities.RecordingEntity
 import com.sam.talkdraft.database.utils.AppDBBuilder
 import com.sam.talkdraft.testing.annotations.RunWithPlatform
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.koin.test.KoinTest
 import org.koin.test.inject
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.time.Clock
-import kotlin.time.Duration.Companion.seconds
-import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWithPlatform
@@ -77,8 +75,8 @@ class LocalDatabaseTest : KoinTest {
         val result = recordingDao.getById(recording.id)
         advanceUntilIdle()
 
-        assertThat(result).isNotNull()
-            .isEqualTo(recording)
+        assertNotNull(result)
+        assertEquals(recording, result)
 
 
         recordingDao.setFavourite(
@@ -89,10 +87,10 @@ class LocalDatabaseTest : KoinTest {
 
         val updated = recordingDao.getById(recording.id)
 
-        assertThat(updated?.isFavourite).isNotNull()
-            .isTrue()
+        assertNotNull(updated)
+        assertTrue(updated.isFavourite)
 
         recordingDao.deleteById(recording.id)
-        assertThat(recordingDao.getById(recording.id)).isNull()
+        assertNull(recordingDao.getById(recording.id))
     }
 }

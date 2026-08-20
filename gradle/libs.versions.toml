@@ -127,6 +127,7 @@ androidx-room3 = { id = "androidx.room3", version.ref = "room3" }
 skie = { id = "co.touchlab.skie", version.ref = "skie" }
 atomic-fu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "atomic-fu" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+android-library = { id = "com.android.library", version.ref = "agp" }
 
 [bundles]
 testing-android = ["androidx-testExt-junit", "androidx-espresso-core"]

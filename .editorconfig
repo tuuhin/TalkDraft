@@ -9,14 +9,46 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 max_line_length = 120
 
-# Kotlin specific settings
+# C / C++ Source & Header Files
+[*.{c,cpp,cc,cxx,h,hpp,hxx}]
+indent_size = 4
+indent_style = space
+max_line_length = 120
+
+# C/C++ ClangFormat settings embedded directly in EditorConfig
+clang-format_based_on_style = LLVM
+clang-format_language = Cpp
+clang-format_standard = c++17
+clang-format_indent_width = 4
+clang-format_tab_width = 4
+clang-format_use_tab = Never
+clang-format_column_limit = 120
+clang-format_pointer_alignment = Left
+clang-format_access_modifier_offset = -4
+clang-format_align_consecutive_assignments = Consecutive
+clang-format_align_trailing_comments = true
+clang-format_break_before_braces = Attach
+clang-format_allow_short_if_statements_on_a_single_line = WithoutElse
+clang-format_allow_short_loops_on_a_single_line = false
+clang-format_allow_short_functions_on_a_single_line = All
+clang-format_max_empty_lines_to_keep = 1
+clang-format_fix_namespace_comments = true
+
+# Kotlin & Kotlin Script Specific Settings
 [*.{kt,kts}]
-# Use the Kotlin Official style guide
 ij_kotlin_code_style_defaults = KOTLIN_OFFICIAL
-# Common KMP formatting
-ij_kotlin_allow_trailing_comma = false
+
+# Trailing Commas
+ij_kotlin_allow_trailing_comma = true
 ij_kotlin_allow_trailing_comma_on_call_site = true
-ij_kotlin_imports_layout = *, java.**, javax.**, kotlin.**, ^
-# Prevents wildcard imports which are often discouraged in KMP
-ij_kotlin_name_count_to_use_star_import = 99
-ij_kotlin_name_count_to_use_star_import_for_members = 99
+
+# Import Layout (Alphabetical, aliases at bottom)
+ij_kotlin_imports_layout = *, ^
+
+# Wildcard Import Prevention
+ij_kotlin_name_count_to_use_star_import = 999
+ij_kotlin_name_count_to_use_star_import_for_members = 999
+
+# Build Script formatting
+[*.kts]
+indent_size = 4

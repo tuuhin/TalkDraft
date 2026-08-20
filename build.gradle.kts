@@ -11,4 +11,5 @@ plugins {
     alias(libs.plugins.androidx.room3) apply false
     alias(libs.plugins.atomic.fu) apply false
     alias(libs.plugins.kotlinx.serialization) apply false
+    alias(libs.plugins.android.library) apply false
 }

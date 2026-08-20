@@ -46,7 +46,6 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.koin.test)
             implementation(project(":core:testing"))
-            api("com.willowtreeapps.assertk:assertk:0.28.1")
         }
     }
 

@@ -33,6 +33,7 @@ dependencyResolutionManagement {
 	}
 }
 
+// entry point
 include(":androidApp")
 // modules
 include(":core:common")
@@ -42,5 +43,8 @@ include(":core:auth")
 include(":core:database")
 include(":core:supabase")
 include(":core:testing")
-
+// feature modules
+include(":feature:transcription-core")
+include(":feature:transcription-android")
+include(":feature:transcription-ios")
 include(":app")

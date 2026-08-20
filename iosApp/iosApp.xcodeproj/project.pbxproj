@@ -7,42 +7,35 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A53B212B76B9D627CC18876A = {
-			isa = PBXBuildFile;
-			productRef = 32A3294B58E5FFBB91582DD6;
-		};
+		A53B212B76B9D627CC18876A /* KotlinMultiplatformLinkedPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 32A3294B58E5FFBB91582DD6 /* KotlinMultiplatformLinkedPackage */; };
+		FC06AB1030379686003E398F /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = FC06AB0F30379686003E398F /* SwiftWhisper */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0C0CDE056B8435B9A0B6834C = {
-			isa = PBXFileReference;
-			explicitFileType = wrapper.application;
-			includeInIndex = 0;
-			path = TalkDraft.app;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
+		0C0CDE056B8435B9A0B6834C /* TalkDraft.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TalkDraft.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FC510CF430364A3500EBB074 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		637CDC832232661DB1E03488 = {
+		637CDC832232661DB1E03488 /* Exceptions for "iosApp" folder in "iosApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 19FFA265EDA2C953EADCFEF5;
+			target = 19FFA265EDA2C953EADCFEF5 /* iosApp */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A69E320766AB743F4642CEA5 = {
+		A69E320766AB743F4642CEA5 /* iosApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				637CDC832232661DB1E03488,
+				637CDC832232661DB1E03488 /* Exceptions for "iosApp" folder in "iosApp" target */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
 		};
-		CCF66A9B0774BEB8F619B2D9 = {
+		CCF66A9B0774BEB8F619B2D9 /* Configuration */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Configuration;
 			sourceTree = "<group>";
@@ -50,11 +43,12 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		3D08FBDE50746607A8768108 = {
+		3D08FBDE50746607A8768108 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A53B212B76B9D627CC18876A,
+				A53B212B76B9D627CC18876A /* KotlinMultiplatformLinkedPackage in Frameworks */,
+				FC06AB1030379686003E398F /* SwiftWhisper in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -64,16 +58,17 @@
 		0E89C6BFD1CFF2E9BE0B576B = {
 			isa = PBXGroup;
 			children = (
-				CCF66A9B0774BEB8F619B2D9,
-				A69E320766AB743F4642CEA5,
-				1D8554CA3D1E8A307AEF0CCB,
+				FC510CF430364A3500EBB074 /* Secrets.xcconfig */,
+				CCF66A9B0774BEB8F619B2D9 /* Configuration */,
+				A69E320766AB743F4642CEA5 /* iosApp */,
+				1D8554CA3D1E8A307AEF0CCB /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		1D8554CA3D1E8A307AEF0CCB = {
+		1D8554CA3D1E8A307AEF0CCB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				0C0CDE056B8435B9A0B6834C,
+				0C0CDE056B8435B9A0B6834C /* TalkDraft.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -81,46 +76,47 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		19FFA265EDA2C953EADCFEF5 = {
+		19FFA265EDA2C953EADCFEF5 /* iosApp */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 270A445CD09D72B6FB9F4E18;
+			buildConfigurationList = 270A445CD09D72B6FB9F4E18 /* Build configuration list for PBXNativeTarget "iosApp" */;
 			buildPhases = (
-				494B92213DC160D8AD32A332,
-				03D71EFEC6783A0E8879B606,
-				3D08FBDE50746607A8768108,
-				517886D8D0131C7A39474CD0,
+				494B92213DC160D8AD32A332 /* Compile Kotlin Framework */,
+				03D71EFEC6783A0E8879B606 /* Sources */,
+				3D08FBDE50746607A8768108 /* Frameworks */,
+				517886D8D0131C7A39474CD0 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				A69E320766AB743F4642CEA5,
+				A69E320766AB743F4642CEA5 /* iosApp */,
 			);
 			name = iosApp;
 			packageProductDependencies = (
-				32A3294B58E5FFBB91582DD6,
+				32A3294B58E5FFBB91582DD6 /* KotlinMultiplatformLinkedPackage */,
+				FC06AB0F30379686003E398F /* SwiftWhisper */,
 			);
 			productName = iosApp;
-			productReference = 0C0CDE056B8435B9A0B6834C;
+			productReference = 0C0CDE056B8435B9A0B6834C /* TalkDraft.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		0BC84EE07A9082E8ED42CF39 = {
+		0BC84EE07A9082E8ED42CF39 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 1620;
+				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					19FFA265EDA2C953EADCFEF5 = {
 						CreatedOnToolsVersion = 16.2;
 					};
 				};
 			};
-			buildConfigurationList = 45C7473A1BDC5EC3E2FF0F13;
+			buildConfigurationList = 45C7473A1BDC5EC3E2FF0F13 /* Build configuration list for PBXProject "iosApp" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -130,20 +126,21 @@
 			mainGroup = 0E89C6BFD1CFF2E9BE0B576B;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				4A7EED6C9B05A27AEFB68F24,
+				4A7EED6C9B05A27AEFB68F24 /* XCLocalSwiftPackageReference "KotlinMultiplatformLinkedPackage" */,
+				FC06AB0E30379686003E398F /* XCRemoteSwiftPackageReference "SwiftWhisper" */,
 			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 1D8554CA3D1E8A307AEF0CCB;
+			productRefGroup = 1D8554CA3D1E8A307AEF0CCB /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				19FFA265EDA2C953EADCFEF5,
+				19FFA265EDA2C953EADCFEF5 /* iosApp */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		517886D8D0131C7A39474CD0 = {
+		517886D8D0131C7A39474CD0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -153,7 +150,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		494B92213DC160D8AD32A332 = {
+		494B92213DC160D8AD32A332 /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -175,7 +172,7 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		03D71EFEC6783A0E8879B606 = {
+		03D71EFEC6783A0E8879B606 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -185,19 +182,20 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		3945BC6AE180E04E099F52DF = {
+		3945BC6AE180E04E099F52DF /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FC510CF430364A3500EBB074 /* Secrets.xcconfig */;
 			buildSettings = {
-				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
-				DEVELOPMENT_TEAM = "${TEAM_ID}";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TalkDraft;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -207,25 +205,27 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sam.talkdraft;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
-		64D9D90799D94A8F8750C93C = {
+		64D9D90799D94A8F8750C93C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FC510CF430364A3500EBB074 /* Secrets.xcconfig */;
 			buildSettings = {
-				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
-				DEVELOPMENT_TEAM = "${TEAM_ID}";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TalkDraft;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -235,15 +235,16 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sam.talkdraft;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		B92D67EF3FC1A7B36097553C = {
+		B92D67EF3FC1A7B36097553C /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReferenceAnchor = CCF66A9B0774BEB8F619B2D9;
+			baseConfigurationReferenceAnchor = CCF66A9B0774BEB8F619B2D9 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Config.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -278,6 +279,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 8RKPNPS4WG;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -301,14 +303,15 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		BE80D2D217B7E8F2CD55FB37 = {
+		BE80D2D217B7E8F2CD55FB37 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReferenceAnchor = CCF66A9B0774BEB8F619B2D9;
+			baseConfigurationReferenceAnchor = CCF66A9B0774BEB8F619B2D9 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Config.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -343,6 +346,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 8RKPNPS4WG;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -359,6 +363,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -367,20 +372,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		270A445CD09D72B6FB9F4E18 = {
+		270A445CD09D72B6FB9F4E18 /* Build configuration list for PBXNativeTarget "iosApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				64D9D90799D94A8F8750C93C,
-				3945BC6AE180E04E099F52DF,
+				64D9D90799D94A8F8750C93C /* Debug */,
+				3945BC6AE180E04E099F52DF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		45C7473A1BDC5EC3E2FF0F13 = {
+		45C7473A1BDC5EC3E2FF0F13 /* Build configuration list for PBXProject "iosApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				B92D67EF3FC1A7B36097553C,
-				BE80D2D217B7E8F2CD55FB37,
+				B92D67EF3FC1A7B36097553C /* Debug */,
+				BE80D2D217B7E8F2CD55FB37 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -388,18 +393,34 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		4A7EED6C9B05A27AEFB68F24 = {
+		4A7EED6C9B05A27AEFB68F24 /* XCLocalSwiftPackageReference "KotlinMultiplatformLinkedPackage" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = KotlinMultiplatformLinkedPackage;
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		FC06AB0E30379686003E398F /* XCRemoteSwiftPackageReference "SwiftWhisper" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/exPHAT/SwiftWhisper.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
-		32A3294B58E5FFBB91582DD6 = {
+		32A3294B58E5FFBB91582DD6 /* KotlinMultiplatformLinkedPackage */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = KotlinMultiplatformLinkedPackage;
 		};
+		FC06AB0F30379686003E398F /* SwiftWhisper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FC06AB0E30379686003E398F /* XCRemoteSwiftPackageReference "SwiftWhisper" */;
+			productName = SwiftWhisper;
+		};
 /* End XCSwiftPackageProductDependency section */
 	};
-	rootObject = 0BC84EE07A9082E8ED42CF39;
+	rootObject = 0BC84EE07A9082E8ED42CF39 /* Project object */;
 }
