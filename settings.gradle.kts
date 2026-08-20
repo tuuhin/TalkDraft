@@ -39,4 +39,7 @@ include(":core:common")
 include(":core:analytics")
 include(":core:crashlytics")
 include(":core:auth")
+//include(":core:database")
+include(":core:supabase")
+
 include(":app")

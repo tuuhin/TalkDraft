@@ -58,13 +58,9 @@ kotlin {
 	}
 }
 
-koinCompiler {
-	userLogs = true
-}
-
 dependencies {
 	implementation(libs.androidx.activity.compose)
-	implementation(libs.compose.uiToolingPreview)
+	implementation(libs.androidx.splash)
 
 	// koin
 	implementation(libs.bundles.koin.android)
@@ -72,6 +68,4 @@ dependencies {
 
 	// local modules
 	implementation(project(":app"))
-
-	debugImplementation(libs.compose.uiTooling)
 }
