@@ -1,8 +1,8 @@
 package com.sam.talkdraft.database
 import com.sam.talkdraft.database.dao.GeneratedNotesDao
-import com.sam.talkdraft.database.dao.LocalTranscriptModelsDao
 import com.sam.talkdraft.database.dao.ProcessingJobDao
 import com.sam.talkdraft.database.dao.RecordingDao
+import com.sam.talkdraft.database.dao.TranscriptModelDownloadEntityDao
 import com.sam.talkdraft.database.dao.TranscriptSegmentsDao
 import com.sam.talkdraft.database.dao.TranscriptsDao
 import com.sam.talkdraft.database.entities.RecordingEntity
@@ -37,7 +37,7 @@ class LocalDatabaseTest : KoinTest {
     private lateinit var transcriptSegmentDao: TranscriptSegmentsDao
     private lateinit var generatedNoteDao: GeneratedNotesDao
     private lateinit var processingJobDao: ProcessingJobDao
-    private lateinit var transcriptModelDao: LocalTranscriptModelsDao
+    private lateinit var transcriptModelDao: TranscriptModelDownloadEntityDao
 
     @BeforeTest
     fun setup() {
@@ -47,7 +47,7 @@ class LocalDatabaseTest : KoinTest {
         transcriptSegmentDao = database.transcriptsSegmentDao()
         generatedNoteDao = database.generatedNotesDao()
         processingJobDao = database.processingDao()
-        transcriptModelDao = database.transcriptsModelDao()
+        transcriptModelDao = database.downloadEntityDao()
     }
 
     @AfterTest

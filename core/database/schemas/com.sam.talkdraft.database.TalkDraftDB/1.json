@@ -2,11 +2,11 @@
     "formatVersion": 1,
     "database": {
         "version": 1,
-        "identityHash": "e5be671c0d7b0e8f199b4337341280fb",
+        "identityHash": "43dce468ea2b7df0675b175317a509c4",
         "entities": [
             {
-                "tableName": "generated_notes",
-                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` TEXT NOT NULL, `recording_id` TEXT NOT NULL, `title` TEXT NOT NULL, `content` TEXT NOT NULL, `content_hash` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`_id`), FOREIGN KEY(`recording_id`) REFERENCES `recordings`(`_id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+                "tableName": "remotely_generated_notes_table",
+                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` TEXT NOT NULL, `recording_id` TEXT NOT NULL, `title` TEXT NOT NULL, `content` TEXT NOT NULL, `content_hash` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`_id`), FOREIGN KEY(`recording_id`) REFERENCES `recordings_table`(`_id`) ON UPDATE CASCADE ON DELETE CASCADE )",
                 "fields": [
                     {
                         "fieldPath": "id",
@@ -59,18 +59,18 @@
                 },
                 "indices": [
                     {
-                        "name": "index_generated_notes_recording_id",
+                        "name": "index_remotely_generated_notes_table_recording_id",
                         "unique": true,
                         "columnNames": [
                             "recording_id"
                         ],
                         "orders": [],
-                        "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_generated_notes_recording_id` ON `${TABLE_NAME}` (`recording_id`)"
+                        "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_remotely_generated_notes_table_recording_id` ON `${TABLE_NAME}` (`recording_id`)"
                     }
                 ],
                 "foreignKeys": [
                     {
-                        "table": "recordings",
+                        "table": "recordings_table",
                         "onDelete": "CASCADE",
                         "onUpdate": "CASCADE",
                         "columns": [
@@ -83,8 +83,8 @@
                 ]
             },
             {
-                "tableName": "processing_entries",
-                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` TEXT NOT NULL, `recording_id` TEXT NOT NULL, `model_id` TEXT, `status` TEXT NOT NULL, `type` TEXT NOT NULL, `error` TEXT, `created_at` INTEGER NOT NULL, `started_at` INTEGER NOT NULL, `finished_at` INTEGER NOT NULL, PRIMARY KEY(`_id`), FOREIGN KEY(`recording_id`) REFERENCES `recordings`(`_id`) ON UPDATE CASCADE ON DELETE CASCADE , FOREIGN KEY(`model_id`) REFERENCES `transcript_models`(`_id`) ON UPDATE CASCADE ON DELETE SET NULL )",
+                "tableName": "processing_entries_table",
+                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` TEXT NOT NULL, `recording_id` TEXT NOT NULL, `model_id` TEXT, `status` TEXT NOT NULL, `type` TEXT NOT NULL, `error` TEXT, `created_at` INTEGER NOT NULL, `started_at` INTEGER NOT NULL, `finished_at` INTEGER NOT NULL, PRIMARY KEY(`_id`), FOREIGN KEY(`recording_id`) REFERENCES `recordings_table`(`_id`) ON UPDATE CASCADE ON DELETE CASCADE , FOREIGN KEY(`model_id`) REFERENCES `downloaded_model_table`(`_id`) ON UPDATE CASCADE ON DELETE SET NULL )",
                 "fields": [
                     {
                         "fieldPath": "id",
@@ -147,27 +147,27 @@
                 },
                 "indices": [
                     {
-                        "name": "index_processing_entries_recording_id",
+                        "name": "index_processing_entries_table_recording_id",
                         "unique": false,
                         "columnNames": [
                             "recording_id"
                         ],
                         "orders": [],
-                        "createSql": "CREATE INDEX IF NOT EXISTS `index_processing_entries_recording_id` ON `${TABLE_NAME}` (`recording_id`)"
+                        "createSql": "CREATE INDEX IF NOT EXISTS `index_processing_entries_table_recording_id` ON `${TABLE_NAME}` (`recording_id`)"
                     },
                     {
-                        "name": "index_processing_entries_model_id",
+                        "name": "index_processing_entries_table_model_id",
                         "unique": false,
                         "columnNames": [
                             "model_id"
                         ],
                         "orders": [],
-                        "createSql": "CREATE INDEX IF NOT EXISTS `index_processing_entries_model_id` ON `${TABLE_NAME}` (`model_id`)"
+                        "createSql": "CREATE INDEX IF NOT EXISTS `index_processing_entries_table_model_id` ON `${TABLE_NAME}` (`model_id`)"
                     }
                 ],
                 "foreignKeys": [
                     {
-                        "table": "recordings",
+                        "table": "recordings_table",
                         "onDelete": "CASCADE",
                         "onUpdate": "CASCADE",
                         "columns": [
@@ -178,7 +178,7 @@
                         ]
                     },
                     {
-                        "table": "transcript_models",
+                        "table": "downloaded_model_table",
                         "onDelete": "SET NULL",
                         "onUpdate": "CASCADE",
                         "columns": [
@@ -191,7 +191,7 @@
                 ]
             },
             {
-                "tableName": "recordings",
+                "tableName": "recordings_table",
                 "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` TEXT NOT NULL, `title` TEXT NOT NULL, `audio_path` TEXT NOT NULL, `duration_ms` INTEGER NOT NULL, `is_pinned` INTEGER NOT NULL, `is_favourite` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`_id`))",
                 "fields": [
                     {
@@ -251,8 +251,8 @@
                 }
             },
             {
-                "tableName": "transcripts",
-                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` TEXT NOT NULL, `recording_id` TEXT NOT NULL, `language_code` TEXT NOT NULL, `model_id` TEXT, `text` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`_id`), FOREIGN KEY(`recording_id`) REFERENCES `recordings`(`_id`) ON UPDATE CASCADE ON DELETE CASCADE , FOREIGN KEY(`model_id`) REFERENCES `transcript_models`(`_id`) ON UPDATE CASCADE ON DELETE SET DEFAULT )",
+                "tableName": "transcripts_table",
+                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` TEXT NOT NULL, `recording_id` TEXT NOT NULL, `language_code` TEXT NOT NULL, `model_id` TEXT, `text` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`_id`), FOREIGN KEY(`recording_id`) REFERENCES `recordings_table`(`_id`) ON UPDATE CASCADE ON DELETE CASCADE , FOREIGN KEY(`model_id`) REFERENCES `downloaded_model_table`(`_id`) ON UPDATE CASCADE ON DELETE SET DEFAULT )",
                 "fields": [
                     {
                         "fieldPath": "id",
@@ -304,27 +304,27 @@
                 },
                 "indices": [
                     {
-                        "name": "index_transcripts_recording_id",
+                        "name": "index_transcripts_table_recording_id",
                         "unique": true,
                         "columnNames": [
                             "recording_id"
                         ],
                         "orders": [],
-                        "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_transcripts_recording_id` ON `${TABLE_NAME}` (`recording_id`)"
+                        "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_transcripts_table_recording_id` ON `${TABLE_NAME}` (`recording_id`)"
                     },
                     {
-                        "name": "index_transcripts_model_id",
+                        "name": "index_transcripts_table_model_id",
                         "unique": false,
                         "columnNames": [
                             "model_id"
                         ],
                         "orders": [],
-                        "createSql": "CREATE INDEX IF NOT EXISTS `index_transcripts_model_id` ON `${TABLE_NAME}` (`model_id`)"
+                        "createSql": "CREATE INDEX IF NOT EXISTS `index_transcripts_table_model_id` ON `${TABLE_NAME}` (`model_id`)"
                     }
                 ],
                 "foreignKeys": [
                     {
-                        "table": "recordings",
+                        "table": "recordings_table",
                         "onDelete": "CASCADE",
                         "onUpdate": "CASCADE",
                         "columns": [
@@ -335,7 +335,7 @@
                         ]
                     },
                     {
-                        "table": "transcript_models",
+                        "table": "downloaded_model_table",
                         "onDelete": "SET DEFAULT",
                         "onUpdate": "CASCADE",
                         "columns": [
@@ -348,8 +348,8 @@
                 ]
             },
             {
-                "tableName": "transcript_models",
-                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` TEXT NOT NULL, `version` TEXT NOT NULL, `model_path` TEXT NOT NULL, `size_in_bytes` INTEGER NOT NULL, `checksum` TEXT, `status` TEXT NOT NULL, `downloaded_at` INTEGER, PRIMARY KEY(`_id`))",
+                "tableName": "downloaded_model_table",
+                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` TEXT NOT NULL, `remote_id` TEXT NOT NULL, `model_path` TEXT, `status` TEXT NOT NULL, `downloaded_at` INTEGER, PRIMARY KEY(`_id`), FOREIGN KEY(`remote_id`) REFERENCES `transciption_model_table`(`_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
                 "fields": [
                     {
                         "fieldPath": "id",
@@ -358,26 +358,14 @@
                         "notNull": true
                     },
                     {
-                        "fieldPath": "version",
-                        "columnName": "version",
+                        "fieldPath": "remoteId",
+                        "columnName": "remote_id",
                         "affinity": "TEXT",
                         "notNull": true
                     },
                     {
                         "fieldPath": "modelPath",
                         "columnName": "model_path",
-                        "affinity": "TEXT",
-                        "notNull": true
-                    },
-                    {
-                        "fieldPath": "sizeInBytes",
-                        "columnName": "size_in_bytes",
-                        "affinity": "INTEGER",
-                        "notNull": true
-                    },
-                    {
-                        "fieldPath": "checkSum",
-                        "columnName": "checksum",
                         "affinity": "TEXT"
                     },
                     {
@@ -397,11 +385,35 @@
                     "columnNames": [
                         "_id"
                     ]
-                }
+                },
+                "indices": [
+                    {
+                        "name": "index_downloaded_model_table_remote_id",
+                        "unique": true,
+                        "columnNames": [
+                            "remote_id"
+                        ],
+                        "orders": [],
+                        "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_downloaded_model_table_remote_id` ON `${TABLE_NAME}` (`remote_id`)"
+                    }
+                ],
+                "foreignKeys": [
+                    {
+                        "table": "transciption_model_table",
+                        "onDelete": "CASCADE",
+                        "onUpdate": "NO ACTION",
+                        "columns": [
+                            "remote_id"
+                        ],
+                        "referencedColumns": [
+                            "_id"
+                        ]
+                    }
+                ]
             },
             {
-                "tableName": "transcripts_segments",
-                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` TEXT NOT NULL, `transcript_id` TEXT NOT NULL, `start_time` INTEGER NOT NULL, `end_time` INTEGER NOT NULL, `transcript_text` TEXT NOT NULL, `speaker_id` TEXT, PRIMARY KEY(`_id`), FOREIGN KEY(`transcript_id`) REFERENCES `transcripts`(`_id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+                "tableName": "transcripts_segments_table",
+                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` TEXT NOT NULL, `transcript_id` TEXT NOT NULL, `start_time` INTEGER NOT NULL, `end_time` INTEGER NOT NULL, `transcript_text` TEXT NOT NULL, `speaker_id` TEXT, PRIMARY KEY(`_id`), FOREIGN KEY(`transcript_id`) REFERENCES `transcripts_table`(`_id`) ON UPDATE CASCADE ON DELETE CASCADE )",
                 "fields": [
                     {
                         "fieldPath": "id",
@@ -447,18 +459,18 @@
                 },
                 "indices": [
                     {
-                        "name": "index_transcripts_segments_transcript_id",
+                        "name": "index_transcripts_segments_table_transcript_id",
                         "unique": false,
                         "columnNames": [
                             "transcript_id"
                         ],
                         "orders": [],
-                        "createSql": "CREATE INDEX IF NOT EXISTS `index_transcripts_segments_transcript_id` ON `${TABLE_NAME}` (`transcript_id`)"
+                        "createSql": "CREATE INDEX IF NOT EXISTS `index_transcripts_segments_table_transcript_id` ON `${TABLE_NAME}` (`transcript_id`)"
                     }
                 ],
                 "foreignKeys": [
                     {
-                        "table": "transcripts",
+                        "table": "transcripts_table",
                         "onDelete": "CASCADE",
                         "onUpdate": "CASCADE",
                         "columns": [
@@ -469,11 +481,113 @@
                         ]
                     }
                 ]
+            },
+            {
+                "tableName": "transciption_model_table",
+                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` TEXT NOT NULL, `model_family` TEXT NOT NULL, `remote_variant` TEXT NOT NULL, `remote_version` TEXT NOT NULL, `display_name` TEXT NOT NULL, `remote_source` TEXT NOT NULL, `remote_repository` TEXT NOT NULL, `remote_commit_hash` TEXT NOT NULL, `artifact_path` TEXT NOT NULL, `supported_languages` TEXT NOT NULL, `total_size_in_bytes` INTEGER NOT NULL, `model_checksum` TEXT NOT NULL, `model_status` TEXT NOT NULL, `cached_at` INTEGER NOT NULL, `last_sync` INTEGER NOT NULL, PRIMARY KEY(`_id`))",
+                "fields": [
+                    {
+                        "fieldPath": "id",
+                        "columnName": "_id",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "modelFamily",
+                        "columnName": "model_family",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "variant",
+                        "columnName": "remote_variant",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "version",
+                        "columnName": "remote_version",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "displayName",
+                        "columnName": "display_name",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "source",
+                        "columnName": "remote_source",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "repository",
+                        "columnName": "remote_repository",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "revision",
+                        "columnName": "remote_commit_hash",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "artifactPath",
+                        "columnName": "artifact_path",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "languages",
+                        "columnName": "supported_languages",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "sizeInBytes",
+                        "columnName": "total_size_in_bytes",
+                        "affinity": "INTEGER",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "checksum",
+                        "columnName": "model_checksum",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "status",
+                        "columnName": "model_status",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "cachedAt",
+                        "columnName": "cached_at",
+                        "affinity": "INTEGER",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "lastSync",
+                        "columnName": "last_sync",
+                        "affinity": "INTEGER",
+                        "notNull": true
+                    }
+                ],
+                "primaryKey": {
+                    "autoGenerate": false,
+                    "columnNames": [
+                        "_id"
+                    ]
+                }
             }
         ],
         "setupQueries": [
             "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-            "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e5be671c0d7b0e8f199b4337341280fb')"
+            "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '43dce468ea2b7df0675b175317a509c4')"
         ]
     }
 }

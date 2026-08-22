@@ -20,6 +20,7 @@ internal actual class AppDBBuilder(
         return Room.databaseBuilder<TalkDraftDB>(dbPath.toString())
             .setDriver(NativeSQLiteDriver())
             .setQueryCoroutineContext(dispatchers.io)
+            .fallbackToDestructiveMigration()
     }
 
     actual fun getMemoryDbBuilder(): RoomDatabase.Builder<TalkDraftDB> {

@@ -1,5 +1,5 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
 	alias(libs.plugins.androidApplication)
@@ -65,6 +65,7 @@ dependencies {
 	// koin
 	implementation(libs.bundles.koin.android)
 	implementation(libs.bundles.koin.common)
+    implementation(libs.koin.androidx.workmanager)
 
 	// local modules
 	implementation(project(":app"))

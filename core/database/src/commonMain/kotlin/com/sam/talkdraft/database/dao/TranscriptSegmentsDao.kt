@@ -6,8 +6,8 @@ import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import androidx.room3.Upsert
 import com.sam.talkdraft.database.entities.TranScriptSegmentsEntity
-import kotlinx.coroutines.flow.Flow
 import kotlin.uuid.Uuid
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TranscriptSegmentsDao {
@@ -18,15 +18,15 @@ interface TranscriptSegmentsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(segments: List<TranScriptSegmentsEntity>)
 
-    @Query("SELECT * FROM transcripts_segments WHERE transcript_id = :transcriptId ORDER BY start_time ASC")
+    @Query("SELECT * FROM transcripts_segments_table WHERE transcript_id = :transcriptId ORDER BY start_time ASC")
     suspend fun getByTranscriptId(transcriptId: Uuid): List<TranScriptSegmentsEntity>
 
-    @Query("SELECT * FROM transcripts_segments WHERE transcript_id = :transcriptId ORDER BY start_time ASC")
+    @Query("SELECT * FROM transcripts_segments_table WHERE transcript_id = :transcriptId ORDER BY start_time ASC")
     fun observeByTranscriptId(transcriptId: Uuid): Flow<List<TranScriptSegmentsEntity>>
 
-    @Query("DELETE FROM transcripts_segments WHERE transcript_id = :transcriptId")
+    @Query("DELETE FROM transcripts_segments_table WHERE transcript_id = :transcriptId")
     suspend fun deleteByTranscriptId(transcriptId: Uuid)
 
-    @Query("DELETE FROM transcripts_segments WHERE _id = :id")
+    @Query("DELETE FROM transcripts_segments_table WHERE _id = :id")
     suspend fun deleteById(id: Uuid)
 }

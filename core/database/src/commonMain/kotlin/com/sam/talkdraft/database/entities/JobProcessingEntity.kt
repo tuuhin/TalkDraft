@@ -23,7 +23,7 @@ import kotlin.uuid.Uuid
             onUpdate = ForeignKey.CASCADE,
         ),
         ForeignKey(
-            entity = LocalTranscriptModelEntity::class,
+            entity = DownloadedTranscriptionModelEntity::class,
             parentColumns = ["_id"],
             childColumns = ["model_id"],
             onDelete = ForeignKey.SET_NULL,

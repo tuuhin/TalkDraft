@@ -24,6 +24,7 @@ internal actual class AppDBBuilder(
         return Room.databaseBuilder<TalkDraftDB>(context = appContext, name = dbPath)
             .setDriver(AndroidSQLiteDriver())
             .setQueryCoroutineContext(dispatchers.io)
+            .fallbackToDestructiveMigration()
 
     }
 
