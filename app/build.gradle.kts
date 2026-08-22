@@ -34,6 +34,7 @@ kotlin {
         target.binaries.framework {
             baseName = xcfName
             linkerOpts.add("-lsqlite3")
+            // export them to read the model classes
             export(project(":feature:transcription-ios"))
         }
     }
@@ -53,6 +54,9 @@ kotlin {
             api(project(":core:database"))
             api(project(":core:supabase"))
             api(project(":core:auth"))
+            api(project(":core:platform-capability"))
+            api(project(":core:connectivity"))
+            // feature modules
             api(project(":feature:transcription-core"))
         }
 

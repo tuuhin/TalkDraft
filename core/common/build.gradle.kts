@@ -24,6 +24,9 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
 	sourceSets {
+        androidMain.dependencies {
+            implementation(ktorLibs.client.android)
+        }
 		commonMain.dependencies {
 			api(libs.kermit)
             // io
@@ -33,7 +36,15 @@ kotlin {
             api(libs.koin.annotations)
             // coroutines
             implementation(libs.kotlinx.coroutines.core)
-		}
+            // ktor
+            implementation(ktorLibs.client.core)
+            implementation(ktorLibs.client.contentNegotiation)
+            implementation(ktorLibs.serialization.kotlinx.json)
+            implementation(ktorLibs.client.logging)
+        }
+        iosMain.dependencies {
+            implementation(ktorLibs.client.darwin)
+        }
 	}
 
     compilerOptions {

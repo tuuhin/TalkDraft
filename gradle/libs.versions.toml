@@ -3,6 +3,7 @@ agp = "9.3.1"
 android-compileSdk = "37"
 android-minSdk = "28"
 android-targetSdk = "37"
+cryptoRand = "0.6.0"
 splashApiVersion = "1.2.0"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.8.0"
@@ -38,8 +39,11 @@ kotlinxImmutable = "0.5.1"
 kotlinxDatetime = "0.8.0"
 kotlinxSerialization = "1.11.0"
 kotlinx-coroutines = "1.11.0"
+workRuntimeKtx = "2.11.2"
 
 [libraries]
+
+crypto-rand = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "cryptoRand" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -82,6 +86,7 @@ koin-viewmodel = { module = "io.insert-koin:koin-core-viewmodel", version.ref = 
 koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 koin-android-startup = { module = "io.insert-koin:koin-androidx-startup", version.ref = "koin" }
+koin-androidx-workmanager = { module = "io.insert-koin:koin-androidx-workmanager", version.ref = "koin" }
 # Kermit
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 kermit-koin = { module = "co.touchlab:kermit-koin", version.ref = "kermit" }
@@ -113,6 +118,9 @@ googleid = { module = "com.google.android.libraries.identity.googleid:googleid",
 #coroutines
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+# work manager
+androidx-work-multiprocess = { module = "androidx.work:work-multiprocess", version.ref = "workRuntimeKtx" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -47,7 +47,7 @@ kotlin {
 			implementation(project(":core:supabase"))
 			implementation(project(":core:analytics"))
 			// crypto
-			implementation("org.kotlincrypto.random:crypto-rand:0.6.0")
+            implementation(libs.crypto.rand)
 			// others
 			implementation(libs.bundles.koin.common)
 			implementation(libs.supabase.auth)
