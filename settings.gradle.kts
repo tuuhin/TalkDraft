@@ -45,10 +45,13 @@ include(":core:supabase")
 include(":core:testing")
 include(":core:platform-capability")
 include(":core:connectivity")
+include(":core:notification-android")
+include(":core:worker-android")
 // feature modules
 include(":feature:transcription-core")
 include(":feature:transcription-android")
 include(":feature:transcription-ios")
 include(":feature:model-manager")
+include(":feature:model-downloader")
 
 include(":app")

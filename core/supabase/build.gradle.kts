@@ -27,10 +27,11 @@ kotlin {
 			// koin
 			implementation(libs.koin.core)
 			api(libs.koin.annotations)
-			implementation("org.kotlincrypto.random:crypto-rand:0.6.0")
+            implementation(libs.crypto.rand)
 
 			implementation(libs.bundles.koin.common)
 			implementation(libs.supabase.auth)
+            implementation(libs.supabase.postgrest)
 		}
 	}
 

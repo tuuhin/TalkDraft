@@ -45,6 +45,9 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.bundles.compose.ui)
             implementation(libs.bundles.koin.compose)
+            // android modules
+            api(project(":core:notification-android"))
+            api(project(":core:worker-android"))
         }
         commonMain.dependencies {
 
@@ -58,6 +61,7 @@ kotlin {
             api(project(":core:connectivity"))
             // feature modules
             api(project(":feature:transcription-core"))
+            api(project(":feature:model-manager"))
         }
 
         iosMain.dependencies {
@@ -85,6 +89,7 @@ configure<ComposeCompilerGradlePluginExtension> {
 koinCompiler {
     userLogs = true
     strictSafety = true
+    debugLogs = true
 }
 
 buildkonfig {
