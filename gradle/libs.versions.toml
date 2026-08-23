@@ -4,6 +4,7 @@ android-compileSdk = "37"
 android-minSdk = "28"
 android-targetSdk = "37"
 cryptoRand = "0.6.0"
+datastorePreferencesCore = "1.2.1"
 splashApiVersion = "1.2.0"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.8.0"
@@ -44,6 +45,8 @@ kotlinx-io = "0.9.1"
 
 [libraries]
 
+androidx-datastore-core = { module = "androidx.datastore:datastore-core", version.ref = "datastorePreferencesCore" }
+androidx-datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastorePreferencesCore" }
 crypto-rand = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "cryptoRand" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }

@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.androidLint)
     alias(libs.plugins.koin.compiler)
-    alias(libs.plugins.kotlinx.serialization)
 }
 
 kotlin {
@@ -13,7 +12,7 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
     android {
-        namespace = "com.sam.talkdraft.model_downloader"
+        namespace = "com.sam.talkdraft.feature_onboarding"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
@@ -23,11 +22,9 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.bundles.koin.common)
-            implementation(libs.okio)
-            implementation(libs.kotlinx.io.okio)
-            implementation(ktorLibs.client.core)
+            implementation(libs.androidx.datastore.preferences.core)
             // local
-            implementation(project(":feature:model-manager"))
+            implementation(project(":core:datastore"))
             implementation(project(":core:common"))
         }
     }

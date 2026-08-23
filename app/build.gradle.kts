@@ -59,10 +59,12 @@ kotlin {
             api(project(":core:auth"))
             api(project(":core:platform-capability"))
             api(project(":core:connectivity"))
+            api(project(":core:datastore"))
             // feature modules
             api(project(":feature:transcription-core"))
             api(project(":feature:model-manager"))
             api(project(":feature:model-downloader"))
+            api(project(":feature:onboarding"))
         }
 
         iosMain.dependencies {
