@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.androidMultiplatformLibrary) apply false
-    alias(libs.plugins.composeCompiler) apply false
+    alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.androidLint) apply false
     alias(libs.plugins.build.konfig) apply false
@@ -12,4 +12,5 @@ plugins {
     alias(libs.plugins.atomic.fu) apply false
     alias(libs.plugins.kotlinx.serialization) apply false
     alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.compose.multiplatform) apply false
 }

@@ -48,11 +48,16 @@ include(":core:connectivity")
 include(":core:notification-android")
 include(":core:worker-android")
 include(":core:remote-config")
+include(":core:datastore")
 // feature modules
 include(":feature:transcription-core")
 include(":feature:transcription-android")
 include(":feature:transcription-ios")
 include(":feature:model-manager")
 include(":feature:model-downloader")
-
+include(":feature:onboarding")
+// ui layers
+include("presentation:design-system")
+include("presentation:onboarding")
+// app layer to hold platform
 include(":app")

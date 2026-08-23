@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.androidLint)
     alias(libs.plugins.koin.compiler)
     alias(libs.plugins.skie)
-    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.build.konfig)
 }
 

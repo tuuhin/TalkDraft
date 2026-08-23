@@ -26,8 +26,8 @@ kotlin {
             // koin
             implementation(libs.bundles.koin.common)
             // datastore
-            implementation(libs.androidx.datastore.core)
-            implementation(libs.androidx.datastore.preferences.core)
+            implementation(libs.androidx.datastore)
+            implementation(libs.androidx.datastore.preferences)
             implementation(project(":core:common"))
         }
     }

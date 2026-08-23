@@ -15,7 +15,7 @@ platform-specific code.
 Follow strict **Clean Architecture** and the dependency rule:
 
 ```text
-Presentation
+Presentation (Android: Jetpack Compose / iOS: SwiftUI)
      ↓
 Application / Use Cases
      ↓
@@ -24,7 +24,9 @@ Domain
 Data / Infrastructure
 ```
 
-* Domain must not depend on Android, iOS, Room, Supabase, Compose, Whisper, or other infrastructure.
+* Domain must not depend on Android, iOS, Room, Supabase, Compose, SwiftUI, Whisper, or other infrastructure.
+* UI & Presentation: Jetpack Compose is used for Android and SwiftUI for iOS, keeping UI platform-specific without
+  polluting shared KMP business logic.
 * Infrastructure implements domain interfaces.
 * Keep business logic in domain/use cases, not UI or infrastructure.
 * Prefer small, focused modules with clear responsibilities.
