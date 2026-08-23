@@ -5,14 +5,8 @@ import android.content.Context
 import android.content.pm.ServiceInfo
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.work.BackoffPolicy
-import androidx.work.Constraints
 import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ForegroundInfo
-import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import co.touchlab.kermit.Logger
@@ -21,7 +15,6 @@ import com.sam.talkdraft.analytics.IAnalyticsProvider
 import com.sam.talkdraft.model_manager.domain.repository.IUpdateTranscriptionModelRepo
 import com.sam.talkdraft.notifications.NotificationConstants
 import com.sam.talkdraft.workers.R
-import java.time.Duration
 import org.koin.android.annotation.KoinWorker
 
 private const val TAG = "PERIODIC_SYNC_MODEL_WORKER"
@@ -57,7 +50,7 @@ internal class PeriodicRemoteDataSyncWorker(
                 AnalyticsEvent.ModelRemoteSyncFailed,
                 mapOf(
                     WorkParams.DB_MODEL_SYNC_KEY to WorkParams.DB_MODEL_SYNC_FAILED,
-                    WorkParams.DB_MODEL_SYNC_FAILED_REASON to (err?.localizedMessage ?: ""),
+                    WorkParams.DB_MODEL_SYNC_FAILED_REASON to message,
                 ),
             )
             Result.failure(
@@ -72,23 +65,12 @@ internal class PeriodicRemoteDataSyncWorker(
     private fun createAndShowForegroundInfo() {
         val notification = createNotification()
         // foreground info to indicate something is going on
+        val notificationID = NotificationConstants.LOCAL_DB_SYNC_WORKER_NOTIFICATION_ID
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                setForegroundAsync(
-                    ForegroundInfo(
-                        NotificationConstants.LOCAL_DB_SYNC_WORKER_NOTIFICATION_ID,
-                        notification,
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
-                    ),
-                )
-            } else {
-                setForegroundAsync(
-                    ForegroundInfo(
-                        NotificationConstants.LOCAL_DB_SYNC_WORKER_NOTIFICATION_ID,
-                        notification,
-                    ),
-                )
-            }
+            val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                ForegroundInfo(notificationID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            else ForegroundInfo(notificationID, notification)
+            setForegroundAsync(info)
         } catch (e: Exception) {
             Logger.w(tag = TAG, throwable = e) { "FAILED TO SHOW FOREGROUND INFO" }
         }
@@ -106,32 +88,4 @@ internal class PeriodicRemoteDataSyncWorker(
             .build()
     }
 
-    companion object {
-
-        private val constrains = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .setRequiresBatteryNotLow(true)
-            .build()
-
-
-        private val workRequest =
-            PeriodicWorkRequestBuilder<PeriodicRemoteDataSyncWorker>(repeatInterval = Duration.ofDays(1))
-                .setBackoffCriteria(BackoffPolicy.LINEAR, Duration.ofMinutes(10))
-                .setInitialDelay(Duration.ofSeconds(10))
-                .setConstraints(constrains)
-                .build()
-
-        private const val UNIQUE_NAME = "periodic_model_db_sync_worker"
-
-        fun startRepeatWorker(context: Context) {
-            Logger.d(tag = TAG) { "UNIQUE PERIODIC WORKER ENQUEUED " }
-            val workManager = WorkManager.getInstance(context)
-            workManager.enqueueUniquePeriodicWork(
-                UNIQUE_NAME,
-                ExistingPeriodicWorkPolicy.REPLACE,
-                workRequest,
-            )
-        }
-
-    }
 }

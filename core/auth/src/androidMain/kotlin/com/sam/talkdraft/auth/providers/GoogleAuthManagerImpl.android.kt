@@ -10,8 +10,8 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.sam.talkdraft.auth.exceptions.GoogleSignInException
 import com.sam.talkdraft.auth.models.GoogleOAuthToken
-import com.sam.talkdraft.auth.utils.HashGenerator
 import com.sam.talkdraft.auth.utils.credentialMessage
+import com.sam.talkdraft.common.platform.PlatformHashGenerator
 import com.sam.talkdraft.commons.AppSecretProperties
 import io.ktor.utils.io.CancellationException
 import org.koin.core.annotation.Singleton
@@ -20,8 +20,8 @@ private const val TAG = "GOOGLE_AUTH_MANAGER"
 
 @Singleton(binds = [IGoogleOAuthProvider::class])
 internal actual class GoogleAuthManagerImpl(
-	private val context: Context,
-	private val hashGenerator: HashGenerator,
+    private val context: Context,
+    private val hashGenerator: PlatformHashGenerator,
 ) : IGoogleOAuthProvider {
 
 	private val manager by lazy { CredentialManager.create(context) }

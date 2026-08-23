@@ -36,7 +36,6 @@ kotlin {
 
 	sourceSets {
 		androidMain.dependencies {
-			implementation(ktorLibs.client.android)
 			implementation(libs.androidx.credentials)
 			implementation(libs.androidx.credentials.play.services.auth)
 			implementation(libs.googleid)
@@ -46,15 +45,9 @@ kotlin {
 			implementation(project(":core:common"))
 			implementation(project(":core:supabase"))
 			implementation(project(":core:analytics"))
-			// crypto
-            implementation(libs.crypto.rand)
 			// others
 			implementation(libs.bundles.koin.common)
 			implementation(libs.supabase.auth)
-			implementation(ktorLibs.client.core)
-		}
-		iosMain.dependencies {
-			implementation(ktorLibs.client.darwin)
 		}
 	}
 

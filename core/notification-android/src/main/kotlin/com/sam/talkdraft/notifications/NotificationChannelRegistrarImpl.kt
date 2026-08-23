@@ -12,14 +12,19 @@ internal class NotificationChannelRegistrarImpl(
     private val context: Context,
 ) : INotificationChannelRegistrar {
 
-    private val notificationManager by lazy { context.getSystemService<NotificationManager>() }
+    private val _manager by lazy { context.getSystemService<NotificationManager>() }
 
     override fun registerChannels() {
-        createDbSyncChannel()
+        _manager?.createNotificationChannels(
+            listOf(
+                createDbSyncChannel(),
+                createDownloadModelChannel(),
+            ),
+        )
     }
 
-    private fun createDbSyncChannel() {
-        val channel = NotificationChannel(
+    private fun createDbSyncChannel(): NotificationChannel {
+        return NotificationChannel(
             NotificationConstants.DB_SYNC_WORKER_CHANNEL_ID, NotificationConstants.DB_SYNC_WORKER_CHANNEL_NAME,
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
@@ -27,6 +32,17 @@ internal class NotificationChannelRegistrarImpl(
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             description = NotificationConstants.DB_SYNC_WORKER_CHANNEL_DESCRIPTION
         }
-        notificationManager?.createNotificationChannel(channel)
+    }
+
+    private fun createDownloadModelChannel(): NotificationChannel {
+        return NotificationChannel(
+            NotificationConstants.DOWNLOAD_MODEL_WORKER_CHANNEL_ID,
+            NotificationConstants.DOWNLOAD_MODEL_WORKER_CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_HIGH,
+        ).apply {
+            setSound(null, null)
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            description = NotificationConstants.DOWNLOAD_MODEL_WORKER_CHANNEL_DESCRIPTION
+        }
     }
 }

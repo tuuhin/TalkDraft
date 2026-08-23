@@ -19,4 +19,27 @@ internal fun LocalTranscriptionModel.toDomainModel(): TranscriptionModel = Trans
     sizeInBytes = metadata.sizeInBytes,
     checksum = metadata.checksum,
     status = metadata.status,
+    cachedAt = metadata.cachedAt,
+)
+
+internal fun TranscriptionModel.toLocal() = LocalTranscriptionModel(
+    id = id,
+    modelPath = modelPath,
+    modelStatus = modelStatus,
+    downloadedAt = downloadedAt,
+    metadata = LocalTranscriptionModel.Metadata(
+        modelFamily = modelFamily,
+        variant = variant,
+        version = version,
+        displayName = displayName,
+        source = source,
+        repository = repository,
+        revision = revision,
+        artifactPath = artifactPath,
+        languages = languages,
+        sizeInBytes = sizeInBytes,
+        checksum = checksum,
+        cachedAt = cachedAt,
+        status = status,
+    ),
 )

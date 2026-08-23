@@ -2,10 +2,10 @@ import com.codingfeline.buildkonfig.compiler.FieldSpec
 import java.util.Properties
 
 plugins {
-	alias(libs.plugins.kotlinMultiplatform)
-	alias(libs.plugins.androidMultiplatformLibrary)
-	alias(libs.plugins.androidLint)
-	alias(libs.plugins.build.konfig)
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.androidMultiplatformLibrary)
+    alias(libs.plugins.androidLint)
+    alias(libs.plugins.build.konfig)
     alias(libs.plugins.koin.compiler)
 }
 
@@ -13,39 +13,54 @@ kotlin {
 
     jvmToolchain(25)
 
-	android {
-		namespace = "com.sam.talkdraft.commons"
-		compileSdk = libs.versions.android.compileSdk.get().toInt()
-		minSdk = libs.versions.android.minSdk.get().toInt()
-	}
+    android {
+        namespace = "com.sam.talkdraft.commons"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
 
-	listOf(iosArm64(), iosSimulatorArm64())
+        withHostTest {
+            isIncludeAndroidResources = true
+        }
+
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunner = "com.sam.talkdraft.testing.InstrumentTestRunner"
+            execution = "HOST"
+        }
+    }
+
+    listOf(iosArm64(), iosSimulatorArm64())
 
     applyDefaultHierarchyTemplate()
 
-	sourceSets {
+    sourceSets {
         androidMain.dependencies {
             implementation(ktorLibs.client.android)
         }
-		commonMain.dependencies {
-			api(libs.kermit)
+        commonMain.dependencies {
+            api(libs.kermit)
             // io
             implementation(libs.okio)
             // koin
-            implementation(libs.koin.core)
-            api(libs.koin.annotations)
+            implementation(libs.bundles.koin.common)
+            // crypto
+            implementation(libs.crypto.rand)
             // coroutines
             implementation(libs.kotlinx.coroutines.core)
-            // ktor
+            // ktor client
             implementation(ktorLibs.client.core)
             implementation(ktorLibs.client.contentNegotiation)
             implementation(ktorLibs.serialization.kotlinx.json)
             implementation(ktorLibs.client.logging)
         }
+        commonTest.dependencies {
+            implementation(project(":core:testing"))
+        }
         iosMain.dependencies {
             implementation(ktorLibs.client.darwin)
         }
-	}
+    }
 
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
@@ -53,16 +68,16 @@ kotlin {
 }
 
 buildkonfig {
-	packageName = "com.sam.talkdraft.commons"
-	exposeObjectWithName = "AppSecretProperties"
+    packageName = "com.sam.talkdraft.commons"
+    exposeObjectWithName = "AppSecretProperties"
 
-	val commonProperties = Properties().apply {
-		val commons = rootProject.file("secrets.properties")
-		commons.inputStream().use(::load)
-	}
+    val commonProperties = Properties().apply {
+        val commons = rootProject.file("secrets.properties")
+        commons.inputStream().use(::load)
+    }
 
-	defaultConfigs {
-		buildConfigField(
+    defaultConfigs {
+        buildConfigField(
             type = FieldSpec.Type.STRING,
             name = "POST_HOG_API_KEY",
             value = System.getenv("POST_HOG_API_KEY")
@@ -104,5 +119,5 @@ buildkonfig {
                     ?: commonProperties.getProperty("GOOGLE_IOS_SIGN_IN_CLIENT_ID"),
             )
         }
-	}
+    }
 }

@@ -40,6 +40,7 @@ kotlinxDatetime = "0.8.0"
 kotlinxSerialization = "1.11.0"
 kotlinx-coroutines = "1.11.0"
 workRuntimeKtx = "2.11.2"
+kotlinx-io = "0.9.1"
 
 [libraries]
 
@@ -106,6 +107,8 @@ androidx-room3-compiler = { module = "androidx.room3:room3-compiler", version.re
 androidx-room3-sqlite-wrapper = { module = "androidx.room3:room3-sqlite-wrapper", version.ref = "room3" }
 # Okio
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
+kotlinx-io-okio = { module = "org.jetbrains.kotlinx:kotlinx-io-okio", version.ref = "kotlinx-io" }
 # Kotlinx
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }

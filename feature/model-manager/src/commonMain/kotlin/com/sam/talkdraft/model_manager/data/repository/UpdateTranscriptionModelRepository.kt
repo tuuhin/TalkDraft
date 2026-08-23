@@ -19,7 +19,7 @@ internal class UpdateTranscriptionModelRepository(
         return runCatching {
             val remoteModels = remoteDataSource.readRemoteSource().getOrThrow()
             val localModels = remoteModels.map { remote -> remote.toLocal(timeZone) }
-            val result = localDataSource.upsertModels(localModels)
+            localDataSource.upsertModels(localModels)
         }.onFailure { err ->
             if (err is CancellationException) throw err
         }

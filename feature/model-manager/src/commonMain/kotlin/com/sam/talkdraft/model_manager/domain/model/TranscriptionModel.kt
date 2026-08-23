@@ -21,4 +21,5 @@ data class TranscriptionModel(
     val status: RemoteModelStatus,
     val modelStatus: LocalModelStatus,
     val downloadedAt: LocalDateTime? = null,
+    val cachedAt: LocalDateTime,
 )

@@ -7,7 +7,7 @@ import com.sam.talkdraft.auth.models.AuthUserModel
 import com.sam.talkdraft.auth.models.OAuthProviders
 import com.sam.talkdraft.auth.providers.IGoogleOAuthProvider
 import com.sam.talkdraft.auth.util.toAuthModel
-import com.sam.talkdraft.auth.utils.RandomNonceGenerator
+import com.sam.talkdraft.common.platform.PlatformRandomNonceGenerator
 import com.sam.talkdraft.supabase.SupabaseProvider
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -30,7 +30,7 @@ internal class UserAuthManagerImpl(
 	private val analytics: IAnalyticsProvider,
 	private val googleProvider: IGoogleOAuthProvider,
 	private val supabaseProvider: SupabaseProvider,
-	private val nonceGenerator: RandomNonceGenerator,
+    private val nonceGenerator: PlatformRandomNonceGenerator,
 ) : IUserAuthManager {
 
 	val client: SupabaseClient by lazy { supabaseProvider.providesSupabase() }

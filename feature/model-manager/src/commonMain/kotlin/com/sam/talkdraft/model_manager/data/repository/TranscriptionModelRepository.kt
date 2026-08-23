@@ -59,7 +59,13 @@ internal class TranscriptionModelRepository(
         }
     }
 
-    override suspend fun refreshModels(): Result<Unit> {
+    override suspend fun updateModel(model: TranscriptionModel): Result<Unit> {
+        return runCatching {
+            localDataSource.upsertModels(listOf(model.toLocal()))
+        }
+    }
+
+    private suspend fun refreshModels(): Result<Unit> {
         return runCatching {
             val remoteModels = remoteDataSource.readRemoteSource().getOrThrow()
             val localModels = remoteModels.map { remote -> remote.toLocal(timeZone) }

@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="sync_models_notification_title">Syncing db models</string>
+
+    <string name="start_download_notification_body">Starting model download</string>
+    <string name="downloading_speech_model_notification_title">Downloading Speech model</string>
+    <string name="downloading_speech_model_notification_body">Downloading</string>
+    <string name="verifying_speech_model_notification_body">Verifying</string>
+    <string name="failed_speech_model_download_notification_body">Failed to download model</string>
+    <string name="speech_model_notification_download_success">Successfully downloaded speech model</string>
 </resources>

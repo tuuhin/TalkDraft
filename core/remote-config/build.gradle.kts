@@ -3,17 +3,13 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.androidLint)
     alias(libs.plugins.koin.compiler)
-    alias(libs.plugins.kotlinx.serialization)
 }
 
 kotlin {
-
     jvmToolchain(25)
 
-    applyDefaultHierarchyTemplate()
-
     android {
-        namespace = "com.sam.talkdraft.model_downloader"
+        namespace = "com.sam.talkdraft.remote_config"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
@@ -21,19 +17,12 @@ kotlin {
     listOf(iosArm64(), iosSimulatorArm64())
 
     sourceSets {
-        androidMain.dependencies {
-            implementation(libs.androidx.work.runtime.ktx)
-            implementation(libs.androidx.work.multiprocess)
-        }
-
         commonMain.dependencies {
-            implementation(libs.bundles.koin.common)
-            implementation(libs.okio)
-            implementation(libs.kotlinx.io.okio)
-            implementation(ktorLibs.client.core)
-            // local
-            implementation(project(":feature:model-manager"))
+            // local modules
             implementation(project(":core:common"))
+
+            implementation(libs.bundles.koin.common)
+            implementation(libs.posthog.kmp)
         }
     }
 

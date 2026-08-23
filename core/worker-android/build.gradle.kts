@@ -10,14 +10,12 @@ android {
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
         testInstrumentationRunner = "com.sam.talkdraft.testing.InstrumentTestRunner"
-
-
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_22
+        targetCompatibility = JavaVersion.VERSION_22
     }
-
 }
 
 dependencies {
@@ -29,6 +27,7 @@ dependencies {
     implementation(libs.kermit)
 
     implementation(project(":feature:model-manager"))
+    implementation(project(":feature:model-downloader"))
     implementation(project(":core:analytics"))
     implementation(project(":core:notification-android"))
     androidTestImplementation(project(":core:testing"))

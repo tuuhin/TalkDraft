@@ -1,0 +1,95 @@
+package com.sam.talkdraft.model_downloader.data
+
+import co.touchlab.kermit.Logger
+import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
+import com.sam.talkdraft.common.platform.IPlatformFilePathProvider
+import com.sam.talkdraft.model_downloader.domain.IModelFileManager
+import com.sam.talkdraft.model_downloader.domain.exceptions.ModelFileAlreadyExistsException
+import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
+import com.sam.talkdraft.model_manager.domain.repository.ITranscriptionModelsRepo
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import okio.FileSystem
+import okio.Path
+import okio.Path.Companion.toPath
+import okio.SYSTEM
+import org.koin.core.annotation.Factory
+
+private const val TAG = "ModelDownloadFileManager"
+
+@Factory(binds = [IModelFileManager::class])
+internal class ModelDownloadFileManager(
+    private val repo: ITranscriptionModelsRepo,
+    private val fileProvider: IPlatformFilePathProvider,
+    private val dispatchers: IPlatformCoroutineDispatchers,
+) : IModelFileManager {
+
+    private val fs = FileSystem.SYSTEM
+    private val readModelPath by lazy { fileProvider.providesFileDirPath() / "transcription_models" }
+
+    override suspend fun deleteModelFile(model: TranscriptionModel): Result<Boolean> {
+        return runCatching {
+            val path = model.modelPath?.toPath()
+                ?: (readModelPath / model.checksum / model.artifactPath)
+
+            withContext(dispatchers.io) {
+                if (fs.exists(path)) {
+                    withContext(NonCancellable) {
+                        fs.delete(path)
+                        Logger.d(tag = TAG) { "FILE DELETED SUCCESSFULLY $path" }
+                    }
+                }
+                // Clean up empty parent directory if left over
+                val parentDir = path.parent
+                if (parentDir != null && fs.exists(parentDir) && fs.list(parentDir).isEmpty()) {
+                    withContext(NonCancellable) {
+                        fs.delete(parentDir)
+                        Logger.d(tag = TAG) { "CLEAN UP THE PARENT DIRECTORY $path" }
+                    }
+                }
+                val update = model.copy(modelPath = null)
+                repo.updateModel(update)
+            }
+            true
+        }.onFailure { e ->
+            if (e is CancellationException) throw e
+            Logger.e(tag = TAG, throwable = e) { "FAILED TO DELETE THE FILE" }
+        }
+    }
+
+    override suspend fun saveModel(model: TranscriptionModel, cachedPath: Path, overwrite: Boolean): Result<Unit> {
+        return runCatching {
+            val oldPath = model.modelPath?.toPath()
+
+            val newModelPath = readModelPath / model.checksum / model.artifactPath
+            val parentDir = newModelPath.parent
+
+            withContext(dispatchers.io) {
+                if (oldPath != null && !overwrite) throw ModelFileAlreadyExistsException()
+
+                if (oldPath != null && fs.exists(oldPath))
+                    fs.delete(oldPath)
+
+                if (parentDir != null && !fs.exists(parentDir)) {
+                    fs.createDirectories(parentDir)
+                }
+                try {
+                    fs.copy(cachedPath, newModelPath)
+                    val update = model.copy(modelPath = newModelPath.toString())
+                    repo.updateModel(update)
+                } catch (e: CancellationException) {
+                    Logger.d(tag = TAG) { "OPERATION CANCELLED DELETING THE FILE" }
+                    withContext(NonCancellable) {
+                        fs.delete(newModelPath)
+                    }
+                    throw e
+                }
+            }
+            Logger.d(tag = TAG) { "FILE HAS BEEN COPIED COPIED SUCCESSFULLY" }
+        }.onFailure { e ->
+            if (e is CancellationException) throw e
+            Logger.e(tag = TAG, throwable = e) { "FAILED TO SAVE THE FILE" }
+        }
+    }
+}

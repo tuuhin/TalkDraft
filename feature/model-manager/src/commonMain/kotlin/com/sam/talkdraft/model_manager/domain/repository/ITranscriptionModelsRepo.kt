@@ -9,5 +9,6 @@ interface ITranscriptionModelsRepo {
 
     fun readAllModels(): Flow<Resource<List<TranscriptionModel>, Exception>>
     suspend fun readModel(uuid: Uuid): Result<TranscriptionModel>
-    suspend fun refreshModels(): Result<Unit>
+
+    suspend fun updateModel(model: TranscriptionModel): Result<Unit>
 }

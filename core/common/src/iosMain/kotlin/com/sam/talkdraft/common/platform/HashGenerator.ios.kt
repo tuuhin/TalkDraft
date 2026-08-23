@@ -1,4 +1,4 @@
-package com.sam.talkdraft.auth.utils
+package com.sam.talkdraft.common.platform
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
@@ -10,7 +10,7 @@ import platform.CoreCrypto.CC_SHA256_DIGEST_LENGTH
 
 @Factory
 @OptIn(ExperimentalForeignApi::class)
-internal actual class HashGenerator {
+actual class PlatformHashGenerator {
 
 	actual fun hash(input: String): String {
 		val inputData = input.encodeToByteArray()

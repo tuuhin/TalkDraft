@@ -62,6 +62,7 @@ kotlin {
             // feature modules
             api(project(":feature:transcription-core"))
             api(project(":feature:model-manager"))
+            api(project(":feature:model-downloader"))
         }
 
         iosMain.dependencies {
