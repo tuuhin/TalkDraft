@@ -40,7 +40,7 @@ internal actual class PlatformTranscriptionEngine : ITranscriptionEngine {
         return TranscriptionState.Completed(
             result = TranscriptionResultModel(
                 text = state.fullText,
-                segments = state.segment.map { TranscriptionSegmentModel(text = it.text) } ?: emptyList(),
+                segments = state.segment.map { TranscriptionSegmentModel(text = it.text) },
             ),
         )
     }

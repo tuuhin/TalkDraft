@@ -80,6 +80,7 @@ kotlin {
 
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
+        optIn.add("kotlin.experimental.ExperimentalObjCRefinement")
     }
 }
 
