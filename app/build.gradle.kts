@@ -51,6 +51,9 @@ kotlin {
 
             // presentation module
             implementation(project(":presentation:design-system"))
+            implementation(project(":presentation:navigation"))
+            implementation(project(":presentation:onboarding"))
+            implementation(project(":presentation:home"))
         }
         commonMain.dependencies {
 

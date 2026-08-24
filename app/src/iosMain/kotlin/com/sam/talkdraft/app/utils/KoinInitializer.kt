@@ -1,4 +1,4 @@
-package com.sam.talkdraft
+package com.sam.talkdraft.app.utils
 
 import co.touchlab.kermit.Logger
 import co.touchlab.kermit.koin.KermitKoinLogger

@@ -3,6 +3,7 @@ package com.sam.talkdraft.app
 import com.sam.talkdraft.app.di.CoreModule
 import com.sam.talkdraft.app.di.FeatureModule
 import com.sam.talkdraft.app.di.PlatformModule
+import com.sam.talkdraft.app.di.PlatformUIModule
 import kotlin.native.HiddenFromObjC
 import org.koin.core.annotation.KoinApplication
 
@@ -11,6 +12,7 @@ import org.koin.core.annotation.KoinApplication
         CoreModule::class,
         FeatureModule::class,
         PlatformModule::class,
+        PlatformUIModule::class,
     ],
 )
 @HiddenFromObjC

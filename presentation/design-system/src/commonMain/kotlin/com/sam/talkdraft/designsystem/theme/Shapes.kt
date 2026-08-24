@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.graphics.shapes.Morph
 
-class MorphOverlayClip(
+internal class MorphOverlayClip(
     val morph: Morph,
     val progress: () -> Float,
 ) : SharedTransitionScope.OverlayClip {

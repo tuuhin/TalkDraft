@@ -1,3 +1,7 @@
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
@@ -13,51 +17,32 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
     android {
-        namespace = "com.sam.talkdraft.designsystem"
+        namespace = "com.sam.talkdraft.home"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
-
-        androidResources {
-            enable = true
-        }
     }
 
-    listOf(iosArm64(), iosSimulatorArm64())
-
     sourceSets {
-        androidMain.dependencies {
-            implementation(libs.androidx.downloadable.fonts)
-        }
+
         commonMain.dependencies {
             // compose ui & navigation
             implementation(libs.bundles.compose.ui)
             implementation(libs.bundles.compose.navigation3)
             implementation(libs.cmp.adaptive)
             implementation(libs.cmp.ui.tooling.preview)
-            implementation(libs.materialKolor)
             // logging & notifications
             implementation(libs.kermit)
             // koin
             implementation(libs.bundles.koin.common)
             implementation(libs.bundles.koin.compose)
+            // local
+            implementation(project(":presentation:design-system"))
+            implementation(project(":presentation:navigation"))
         }
     }
-}
 
+    compilerOptions {
+        optIn.add("androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
+    }
 
-compose.resources {
-    publicResClass = false
-    packageOfResClass = "com.sam.talkdraft.designs"
-    generateResClass = auto
-
-    customDirectory(
-        "iosMain",
-        provider {
-            layout.projectDirectory.dir("src/iosMain/composeResources")
-        },
-    )
-}
-
-dependencies {
-    add("androidRuntimeClasspath", libs.androidx.ui.tooling.preview)
 }

@@ -1,4 +1,4 @@
-package com.sam.talkdraft
+package com.sam.talkdraft.app.utils
 
 import com.sam.talkdraft.analytics.posthog.IPostHogInitManager
 import com.sam.talkdraft.app.BuildKonfig

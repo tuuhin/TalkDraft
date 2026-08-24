@@ -57,7 +57,9 @@ include(":feature:model-manager")
 include(":feature:model-downloader")
 include(":feature:onboarding")
 // ui layers
-include("presentation:design-system")
-include("presentation:onboarding")
+include(":presentation:design-system")
+include(":presentation:onboarding")
+include(":presentation:navigation")
+include(":presentation:home")
 // app layer to hold platform
 include(":app")

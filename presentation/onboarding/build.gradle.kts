@@ -22,8 +22,6 @@ kotlin {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
 
-    listOf(iosArm64(), iosSimulatorArm64())
-
     sourceSets {
 
         commonMain.dependencies {
@@ -36,9 +34,16 @@ kotlin {
             implementation(libs.kermit)
             // koin
             implementation(libs.bundles.koin.common)
+            implementation(libs.bundles.koin.compose)
             // local
             implementation(project(":presentation:design-system"))
+            implementation(project(":presentation:navigation"))
+            implementation(project(":feature:onboarding"))
         }
+    }
+
+    compilerOptions {
+        optIn.add("androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
     }
 
 }
