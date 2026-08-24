@@ -48,6 +48,9 @@ kotlin {
             // android modules
             api(project(":core:notification-android"))
             api(project(":core:worker-android"))
+
+            // presentation module
+            implementation(project(":presentation:design-system"))
         }
         commonMain.dependencies {
 

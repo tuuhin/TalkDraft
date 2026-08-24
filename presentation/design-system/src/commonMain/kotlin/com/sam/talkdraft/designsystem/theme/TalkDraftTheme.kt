@@ -7,8 +7,7 @@ import androidx.compose.runtime.Composable
 @Composable
 expect fun TalkDraftTheme(
     isDarkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false,
-    useSystemFonts: Boolean = true,
+    dynamicColor: Boolean = true,
     customTypography: Typography? = AppTypographyCustom,
     content: @Composable () -> Unit,
 )

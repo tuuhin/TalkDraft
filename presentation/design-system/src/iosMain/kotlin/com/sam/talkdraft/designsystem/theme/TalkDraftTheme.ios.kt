@@ -14,42 +14,35 @@ import com.materialkolor.rememberDynamicMaterialThemeState
 actual fun TalkDraftTheme(
     isDarkTheme: Boolean,
     dynamicColor: Boolean,
-    useSystemFonts: Boolean,
     customTypography: Typography?,
     content: @Composable (() -> Unit),
 ) {
-    val lightColorScheme = rememberDynamicMaterialThemeState(
-        isDark = false,
-        style = PaletteStyle.TonalSpot,
-        specVersion = ColorSpec.SpecVersion.SPEC_2025,
-        primary = PrimaryLight,
-        secondary = SecondaryLight,
-        tertiary = TertiaryLight,
-        error = ErrorLight,
-        neutral = NeutralLight,
-        neutralVariant = NeutralVariantLight,
-    )
+    val style = PaletteStyle.TonalSpot
+    val specVersion = ColorSpec.SpecVersion.SPEC_2025
 
-    val darkColorScheme = rememberDynamicMaterialThemeState(
-        isDark = true,
-        style = PaletteStyle.TonalSpot,
-        specVersion = ColorSpec.SpecVersion.SPEC_2025,
-        primary = PrimaryDark,
-        secondary = SecondaryDark,
-        tertiary = TertiaryDark,
-        error = ErrorDark,
-        neutral = NeutralDark,
-        neutralVariant = NeutralVariantDark,
-    )
+    val primary = if (isDarkTheme) PrimaryDark else PrimaryLight
+    val secondary = if (isDarkTheme) SecondaryDark else SecondaryLight
+    val tertiary = if (isDarkTheme) TertiaryDark else TertiaryLight
+    val error = if (isDarkTheme) ErrorDark else ErrorLight
+    val neutral = if (isDarkTheme) NeutralDark else NeutralLight
+    val neutralVariant = if (isDarkTheme) NeutralVariantDark else NeutralVariantLight
 
-    val colorScheme = when {
-        isDarkTheme -> darkColorScheme
-        else -> lightColorScheme
-    }
+    val colorScheme = rememberDynamicMaterialThemeState(
+        isDark = isDarkTheme,
+        style = style,
+        specVersion = specVersion,
+        primary = primary,
+        secondary = secondary,
+        tertiary = tertiary,
+        error = error,
+        neutral = neutral,
+        neutralVariant = neutralVariant,
+    )
 
     DynamicMaterialExpressiveTheme(
         state = colorScheme,
         motionScheme = MotionScheme.expressive(),
+        typography = customTypography ?: Typography(),
         animate = true,
         content = content,
     )

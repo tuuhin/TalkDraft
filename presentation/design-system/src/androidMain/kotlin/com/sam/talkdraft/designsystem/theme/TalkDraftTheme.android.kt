@@ -18,7 +18,6 @@ import com.materialkolor.rememberDynamicMaterialThemeState
 actual fun TalkDraftTheme(
     isDarkTheme: Boolean,
     dynamicColor: Boolean,
-    useSystemFonts: Boolean,
     customTypography: Typography?,
     content: @Composable (() -> Unit),
 ) {
@@ -26,51 +25,53 @@ actual fun TalkDraftTheme(
     val style = PaletteStyle.TonalSpot
     val specVersion = ColorSpec.SpecVersion.SPEC_2025
 
-    val lightColorScheme = rememberDynamicMaterialThemeState(
-        isDark = false,
-        style = style,
-        specVersion = specVersion,
-        primary = PrimaryLight,
-        secondary = SecondaryLight,
-        tertiary = TertiaryLight,
-        error = ErrorLight,
-        neutral = NeutralLight,
-        neutralVariant = NeutralVariantLight,
-    )
 
-    val darkColorScheme = rememberDynamicMaterialThemeState(
-        isDark = true,
-        style = style,
-        specVersion = specVersion,
-        primary = PrimaryDark,
-        secondary = SecondaryDark,
-        tertiary = TertiaryDark,
-        error = ErrorDark,
-        neutral = NeutralDark,
-        neutralVariant = NeutralVariantDark,
-    )
+    val colorSchemeState =
+        when {
+            dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+                val dynamicScheme = if (isDarkTheme) dynamicDarkColorScheme(context)
+                else dynamicLightColorScheme(context)
 
-    val colorScheme = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val colorScheme = if (isDarkTheme) dynamicDarkColorScheme(context)
-            else dynamicLightColorScheme(context)
+                rememberDynamicMaterialThemeState(
+                    isDark = isDarkTheme,
+                    style = style,
+                    specVersion = specVersion,
+                    primary = dynamicScheme.primary,
+                    secondary = dynamicScheme.secondary,
+                    tertiary = dynamicScheme.tertiary,
+                    error = dynamicScheme.error,
+                    neutral = dynamicScheme.surface,
+                    neutralVariant = dynamicScheme.surfaceVariant,
+                )
+            }
 
-            rememberDynamicMaterialThemeState(
-                isDark = true,
-                style = PaletteStyle.TonalSpot,
-                specVersion = ColorSpec.SpecVersion.SPEC_2025,
-                seedColor = colorScheme.primary,
-            )
+            else -> {
+                val primary = if (isDarkTheme) PrimaryDark else PrimaryLight
+                val secondary = if (isDarkTheme) SecondaryDark else SecondaryLight
+                val tertiary = if (isDarkTheme) TertiaryDark else TertiaryLight
+                val error = if (isDarkTheme) ErrorDark else ErrorLight
+                val neutral = if (isDarkTheme) NeutralDark else NeutralLight
+                val neutralVariant = if (isDarkTheme) NeutralVariantDark else NeutralVariantLight
+
+                rememberDynamicMaterialThemeState(
+                    isDark = isDarkTheme,
+                    style = style,
+                    specVersion = specVersion,
+                    primary = primary,
+                    secondary = secondary,
+                    tertiary = tertiary,
+                    error = error,
+                    neutral = neutral,
+                    neutralVariant = neutralVariant,
+                )
+            }
         }
 
-        isDarkTheme -> darkColorScheme
-        else -> lightColorScheme
-    }
-
     DynamicMaterialExpressiveTheme(
-        state = colorScheme,
+        state = colorSchemeState,
         motionScheme = MotionScheme.expressive(),
         animate = true,
+        typography = customTypography ?: Typography(),
         content = content,
     )
 }

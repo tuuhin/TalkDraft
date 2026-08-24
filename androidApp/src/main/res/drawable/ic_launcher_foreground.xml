@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <group
+        android:name="splash_icon_group"
+        android:pivotX="24"
+        android:pivotY="24"
+        android:scaleX="0.5"
+        android:scaleY="0.5"
+        android:translateX="0"
+        android:translateY="0">
+        <path
+            android:fillColor="#00000000"
+            android:fillType="nonZero"
+            android:pathData="M6,14L6,12C6,8.708 8.708,6 12,6L36,6C39.292,6 42,8.708 42,12L42,14M6,34L6,36C6,39.292 8.708,42 12,42L36,42C39.292,42 42,39.292 42,36L42,34"
+            android:strokeWidth="3"
+            android:strokeColor="#6B8DEB"
+            android:strokeLineCap="round" />
+        <path
+            android:fillColor="#00000000"
+            android:fillType="nonZero"
+            android:pathData="M10,25.3C11.536,25.3 12.8,24.126 12.8,22.7L12.8,17.5C12.8,16.074 14.064,14.9 15.6,14.9C17.136,14.9 18.4,16.074 18.4,17.5L18.4,34.4C18.4,35.826 19.664,37 21.2,37C22.736,37 24,35.826 24,34.4L24,13.6C24,12.174 25.264,11 26.8,11C28.336,11 29.6,12.174 29.6,13.6L29.6,30.5C29.6,31.926 30.864,33.1 32.4,33.1C33.936,33.1 35.2,31.926 35.2,30.5L35.2,25.3C35.2,23.874 36.464,22.7 38,22.7"
+            android:strokeWidth="3"
+            android:strokeColor="#E4CF5E"
+            android:strokeLineCap="round" />
+    </group>
+</vector>
