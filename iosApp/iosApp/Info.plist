@@ -1,35 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-  <dict>
-    <!-- App Performance Settings -->
-    <key>CADisableMinimumFrameDurationOnPhone</key>
-    <true />
-
-    <!-- Google OAuth Configuration -->
-    <key>GIDClientID</key>
-    <string>$(GID_CLIENT_ID)</string>
-
-    <key>GIDServerClientID</key>
-    <string>$(GID_SERVER_CLIENT_ID)</string>
-
-    <key>CFBundleURLTypes</key>
-    <array>
-      <dict>
-        <key>CFBundleTypeRole</key>
-        <string>Editor</string>
-        <key>CFBundleURLSchemes</key>
+    <dict>
+        <key>CADisableMinimumFrameDurationOnPhone</key>
+        <true />
+        <key>CFBundleIconFile</key>
+        <string>TalkDraft</string>
+        <key>CFBundleURLTypes</key>
         <array>
-          <string>$(REVERSED_CLIENT_ID)</string>
+            <dict>
+                <key>CFBundleTypeRole</key>
+                <string>Editor</string>
+                <key>CFBundleURLSchemes</key>
+                <array>
+                    <string>$(REVERSED_CLIENT_ID)</string>
+                </array>
+            </dict>
         </array>
-      </dict>
-    </array>
-
-    <!-- Required Privacy Permissions for TalkDraft -->
-    <key>NSMicrophoneUsageDescription</key>
-    <string>TalkDraft needs microphone access to record your voice notes for real-time
-      transcription.
-    </string>
-
-  </dict>
+        <key>GIDClientID</key>
+        <string>$(GID_CLIENT_ID)</string>
+        <key>GIDServerClientID</key>
+        <string>$(GID_SERVER_CLIENT_ID)</string>
+        <key>UIBackgroundModes</key>
+        <array>
+            <string>processing</string>
+            <string>fetch</string>
+        </array>
+    </dict>
 </plist>

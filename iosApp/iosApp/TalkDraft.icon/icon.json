@@ -1,0 +1,95 @@
+{
+    "color-space-for-untagged-svg-colors": "display-p3",
+    "fill": {
+        "solid": "srgb:0.95294,0.92941,0.87843,1.00000"
+    },
+    "groups": [
+        {
+            "blur-material-specializations": [
+                {
+                    "value": 0.5
+                },
+                {
+                    "appearance": "dark",
+                    "value": 0.45
+                }
+            ],
+            "hidden": false,
+            "layers": [
+                {
+                    "image-name": "app_border.png",
+                    "name": "app_border 2",
+                    "position": {
+                        "scale": 1.2,
+                        "translation-in-points": [
+                            0,
+                            0
+                        ]
+                    }
+                },
+                {
+                    "image-name": "app_foreground.png",
+                    "name": "app_foreground 2",
+                    "position": {
+                        "scale": 1.1,
+                        "translation-in-points": [
+                            0,
+                            0
+                        ]
+                    }
+                }
+            ],
+            "position": {
+                "scale": 1.5,
+                "translation-in-points": [
+                    0,
+                    0
+                ]
+            },
+            "shadow-specializations": [
+                {
+                    "value": {
+                        "kind": "layer-color",
+                        "opacity": 0.6
+                    }
+                },
+                {
+                    "appearance": "dark",
+                    "value": {
+                        "kind": "neutral",
+                        "opacity": 0.5
+                    }
+                }
+            ],
+            "specular-specializations": [
+                {
+                    "value": true
+                },
+                {
+                    "appearance": "dark",
+                    "value": true
+                }
+            ],
+            "translucency-specializations": [
+                {
+                    "value": {
+                        "enabled": true,
+                        "value": 0.75
+                    }
+                },
+                {
+                    "appearance": "dark",
+                    "value": {
+                        "enabled": true,
+                        "value": 0.6
+                    }
+                }
+            ]
+        }
+    ],
+    "supported-platforms": {
+        "squares": [
+            "iOS"
+        ]
+    }
+}
