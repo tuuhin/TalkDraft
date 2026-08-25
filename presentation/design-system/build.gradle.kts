@@ -42,6 +42,10 @@ kotlin {
             implementation(libs.bundles.koin.compose)
         }
     }
+
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
 }
 
 

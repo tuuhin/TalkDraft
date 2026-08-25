@@ -1,6 +1,4 @@
 import com.codingfeline.buildkonfig.compiler.FieldSpec
-import org.jetbrains.kotlin.compose.compiler.gradle.ComposeCompilerGradlePluginExtension
-import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -9,6 +7,7 @@ plugins {
     alias(libs.plugins.koin.compiler)
     alias(libs.plugins.skie)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.build.konfig)
 }
 
@@ -43,19 +42,13 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
-            implementation(libs.bundles.compose.ui)
-            implementation(libs.bundles.koin.compose)
             // android modules
             api(project(":core:notification-android"))
             api(project(":core:worker-android"))
-
-            // presentation module
-            implementation(project(":presentation:design-system"))
-            implementation(project(":presentation:navigation"))
-            implementation(project(":presentation:onboarding"))
-            implementation(project(":presentation:home"))
         }
         commonMain.dependencies {
+            implementation(libs.bundles.compose.ui)
+            implementation(libs.bundles.koin.compose)
 
             api(project(":core:common"))
             api(project(":core:analytics"))
@@ -72,6 +65,12 @@ kotlin {
             api(project(":feature:model-downloader"))
             api(project(":feature:onboarding"))
             api(project(":feature:recorder"))
+
+            // presentation module
+            implementation(project(":presentation:design-system"))
+            implementation(project(":presentation:navigation"))
+            implementation(project(":presentation:onboarding"))
+            implementation(project(":presentation:home"))
         }
 
         iosMain.dependencies {
@@ -93,9 +92,6 @@ kotlin {
     }
 }
 
-configure<ComposeCompilerGradlePluginExtension> {
-    targetKotlinPlatforms = setOf(KotlinPlatformType.androidJvm)
-}
 
 koinCompiler {
     userLogs = true

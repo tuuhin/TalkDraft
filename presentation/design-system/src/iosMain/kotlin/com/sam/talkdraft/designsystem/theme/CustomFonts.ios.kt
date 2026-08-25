@@ -1,20 +1,19 @@
 package com.sam.talkdraft.designsystem.theme
 
-
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
+import com.sam.talkdraft.designs.CommonResources
 import com.sam.talkdraft.designs.GoogleSansFlex
 import com.sam.talkdraft.designs.IBMPlexMono
 import com.sam.talkdraft.designs.Manrope
-import com.sam.talkdraft.designs.Res
 import org.jetbrains.compose.resources.Font
 
 @Composable
 actual fun googleSansFlexFont(settings: FontVariation.Settings): FontFamily {
     return FontFamily(
         Font(
-            resource = Res.font.GoogleSansFlex,
+            resource = CommonResources.font.GoogleSansFlex,
             variationSettings = settings,
         ),
     )
@@ -24,7 +23,7 @@ actual fun googleSansFlexFont(settings: FontVariation.Settings): FontFamily {
 actual fun ibmPlexMono(settings: FontVariation.Settings): FontFamily {
     return FontFamily(
         Font(
-            resource = Res.font.IBMPlexMono,
+            resource = CommonResources.font.IBMPlexMono,
             variationSettings = settings,
         ),
     )
@@ -34,7 +33,7 @@ actual fun ibmPlexMono(settings: FontVariation.Settings): FontFamily {
 actual fun manrope(settings: FontVariation.Settings): FontFamily {
     return FontFamily(
         Font(
-            resource = Res.font.Manrope,
+            resource = CommonResources.font.Manrope,
             variationSettings = settings,
         ),
     )
