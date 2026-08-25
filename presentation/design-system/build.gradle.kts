@@ -46,9 +46,10 @@ kotlin {
 
 
 compose.resources {
-    publicResClass = false
+    publicResClass = true
     packageOfResClass = "com.sam.talkdraft.designs"
     generateResClass = auto
+    nameOfResClass = "CommonResources"
 
     customDirectory(
         "iosMain",

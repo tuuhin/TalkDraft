@@ -71,6 +71,7 @@ kotlin {
             api(project(":feature:model-manager"))
             api(project(":feature:model-downloader"))
             api(project(":feature:onboarding"))
+            api(project(":feature:recorder"))
         }
 
         iosMain.dependencies {

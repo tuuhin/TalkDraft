@@ -23,6 +23,8 @@ kotlin {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
 
+    listOf(iosArm64(), iosSimulatorArm64())
+
     sourceSets {
 
         commonMain.dependencies {

@@ -56,6 +56,7 @@ include(":feature:transcription-ios")
 include(":feature:model-manager")
 include(":feature:model-downloader")
 include(":feature:onboarding")
+include(":feature:recorder")
 // ui layers
 include(":presentation:design-system")
 include(":presentation:onboarding")

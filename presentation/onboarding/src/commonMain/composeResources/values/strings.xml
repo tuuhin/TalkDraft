@@ -1,0 +1,12 @@
+<resources>
+    <string name="capture_option_idea_title">Idea</string>
+    <string name="capture_option_meetings_title">Meetings</string>
+    <string name="capture_option_brainstorming_title">BrainStorming</string>
+    <string name="capture_option_personal_note_title">Personal Note</string>
+    <string name="capture_option_idea_text">Thoughts before they disappear</string>
+    <string name="capture_option_meetings_text">Conversations and decisions</string>
+    <string name="capture_option_brainstorming_text">Think through problems out loud</string>
+    <string name="capture_option_personal_note_text">Things you want to remember</string>
+    <string name="permission_record_audio_text">Record your voice and turn it into text</string>
+    <string name="permission_notificaiton_text">Stay updated when recordings, downloads, or transcription tasks are ready</string>
+</resources>

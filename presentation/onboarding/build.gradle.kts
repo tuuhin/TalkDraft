@@ -20,7 +20,13 @@ kotlin {
         namespace = "com.sam.talkdraft.onboarding"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+
+        androidResources {
+            enable = true
+        }
     }
+
+    listOf(iosArm64(), iosSimulatorArm64())
 
     sourceSets {
 
@@ -32,10 +38,15 @@ kotlin {
             implementation(libs.cmp.ui.tooling.preview)
             // logging & notifications
             implementation(libs.kermit)
+            implementation(libs.kotlinx.collections.immutable)
             // koin
             implementation(libs.bundles.koin.common)
             implementation(libs.bundles.koin.compose)
+            // permissions
+            implementation(libs.calf.permissions.microphone)
+            implementation(libs.calf.permissions.notifications)
             // local
+            implementation(project(":core:common"))
             implementation(project(":presentation:design-system"))
             implementation(project(":presentation:navigation"))
             implementation(project(":feature:onboarding"))
@@ -43,6 +54,7 @@ kotlin {
     }
 
     compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
         optIn.add("androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
     }
 

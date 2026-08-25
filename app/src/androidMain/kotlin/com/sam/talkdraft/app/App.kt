@@ -20,7 +20,7 @@ import com.sam.talkdraft.navigation.NavDestinations
 @Composable
 fun App(
     modifier: Modifier = Modifier,
-    showOnboarding: Boolean = false,
+    showOnboarding: Boolean = true,
 ) {
     val windowInfo = currentWindowAdaptiveInfoV2()
     val snackBarHostState = remember { SnackbarHostState() }
