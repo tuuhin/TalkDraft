@@ -61,7 +61,7 @@ internal class AudioPlayerListener(private val player: Player) : Player.Listener
 
     override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
         val playerSpeed = playbackParameters.speed
-        val speed = PlayerPlayBackSpeed.fromInt(playerSpeed) ?: return
+        val speed = PlayerPlayBackSpeed.fromFloat(playerSpeed) ?: return
         _playBackSpeed.update { speed }
         Logger.d(tag = TAG) { "PLAYER SPEED: $playerSpeed" }
     }
@@ -81,7 +81,7 @@ internal class AudioPlayerListener(private val player: Player) : Player.Listener
         Logger.d(tag = TAG) { "UPDATING PLAYER CONFIG" }
         _isLooping.update { player.repeatMode == Player.REPEAT_MODE_ONE }
 
-        _playBackSpeed.update { current -> PlayerPlayBackSpeed.fromInt(player.playbackParameters.speed) ?: current }
+        _playBackSpeed.update { current -> PlayerPlayBackSpeed.fromFloat(player.playbackParameters.speed) ?: current }
 
         _playbackState.update {
             when (player.playbackState) {

@@ -16,7 +16,11 @@ internal actual class AppSettingsProvider(
         withContext(dispatcher.mainImmediate) {
             val settingsUrl = NSURL.URLWithString(UIApplicationOpenSettingsURLString)
             if (settingsUrl != null && UIApplication.sharedApplication.canOpenURL(settingsUrl)) {
-                UIApplication.sharedApplication.openURL(settingsUrl)
+                UIApplication.sharedApplication.openURL(
+                    url = settingsUrl,
+                    options = emptyMap<Any?, Any>(),
+                    completionHandler = null,
+                )
             }
         }
     }

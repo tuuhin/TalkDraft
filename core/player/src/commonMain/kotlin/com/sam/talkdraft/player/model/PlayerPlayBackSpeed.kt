@@ -13,7 +13,7 @@ sealed class PlayerPlayBackSpeed(val speed: Float) {
     companion object {
         private val SPEED_RANGE = 0f..2f
 
-        fun fromInt(value: Float): PlayerPlayBackSpeed? {
+        fun fromFloat(value: Float): PlayerPlayBackSpeed? {
             return when (value) {
                 0.25f -> VerySlow
                 .5f -> Slow

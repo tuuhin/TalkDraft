@@ -1,0 +1,12 @@
+package = platform.Foundation.KVO
+language = Objective-C
+---
+#import <Foundation/Foundation.h>
+
+@protocol NSKeyValueObserving <NSObject>
+@required
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context;
+@end

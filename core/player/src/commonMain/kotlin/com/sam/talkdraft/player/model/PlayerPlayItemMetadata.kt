@@ -5,4 +5,5 @@ data class PlayerPlayItemMetadata(
     val playBackSpeed: PlayerPlayBackSpeed = PlayerPlayBackSpeed.Normal,
     val isRepeating: Boolean = false,
     val isMuted: Boolean = false,
+    val isPlaying: Boolean = false,
 )
