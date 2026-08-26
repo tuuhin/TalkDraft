@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.sam.talkdraft.common.model.PlatformTarget
 import com.sam.talkdraft.onboarding.composables.scenes.HowDoesItWorkContainer
 import com.sam.talkdraft.onboarding.composables.scenes.LocalAndPrivacyScene
 import com.sam.talkdraft.onboarding.composables.scenes.PermissionsScene
@@ -25,6 +26,7 @@ internal fun OnBoardingScreens(
     onOpenAppSettings: () -> Unit = {},
     capturedIdeas: ImmutableSet<CaptureIdeaOption> = persistentSetOf(),
     contentPadding: PaddingValues = PaddingValues.Zero,
+    platform: PlatformTarget = PlatformTarget.UNKNOWN,
 ) {
     Box(
         modifier = modifier
@@ -58,6 +60,7 @@ internal fun OnBoardingScreens(
                 onAction = onAction,
                 openAppSettings = onOpenAppSettings,
                 contentPadding = contentPadding,
+                platform = platform,
             )
 
             else -> {}

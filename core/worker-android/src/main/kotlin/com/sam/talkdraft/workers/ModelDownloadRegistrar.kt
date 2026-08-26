@@ -8,7 +8,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import com.sam.talkdraft.model_downloader.domain.IModelDownloadManager
 import com.sam.talkdraft.model_downloader.domain.models.ModelDownloadStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 import com.sam.talkdraft.workers.workers.TranscriptionModuleDownloadWorker
@@ -21,7 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 import org.koin.core.annotation.Factory
 
-@Factory(binds = [IModelDownloadManager::class])
+@Factory(binds = [IModelDownloadRegistrar::class])
 internal class ModelDownloadRegistrar(private val context: Context) : IModelDownloadRegistrar {
 
     override fun startModelDownload(model: TranscriptionModel): Uuid {
@@ -42,7 +41,7 @@ internal class ModelDownloadRegistrar(private val context: Context) : IModelDown
             .build()
 
         val workManager = WorkManager.getInstance(context)
-        workManager.enqueueUniqueWork(WORK_NAME_PREFIX + model.id, ExistingWorkPolicy.KEEP, downloadRequest)
+        workManager.enqueueUniqueWork(WORK_NAME_PREFIX + model.id, ExistingWorkPolicy.REPLACE, downloadRequest)
 
         return workId
     }

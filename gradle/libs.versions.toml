@@ -6,6 +6,7 @@ android-targetSdk = "37"
 cryptoRand = "0.6.0"
 datastore = "1.2.1"
 media3Exoplayer = "1.11.0"
+mockk = "1.14.11"
 splashApiVersion = "1.2.0"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.8.0"
@@ -131,6 +132,7 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 # Work Manager
 androidx-work-multiprocess = { module = "androidx.work:work-multiprocess", version.ref = "workRuntimeKtx" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
+androidx-work-test = { module = "androidx.work:work-testing", version.ref = "workRuntimeKtx" }
 #datastore
 androidx-datastore = { module = "androidx.datastore:datastore-core", version.ref = "datastore" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }
@@ -148,6 +150,9 @@ androidx-media3-testing = { module = "androidx.media3:media3-test-utils", versio
 #assertk
 asserrtk = { module = "com.willowtreeapps.assertk:assertk", version.ref = "assertk" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+#mock
+mockk-agent = { module = "io.mockk:mockk-agent", version.ref = "mockk" }
+mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
 
 [plugins]
 #agp

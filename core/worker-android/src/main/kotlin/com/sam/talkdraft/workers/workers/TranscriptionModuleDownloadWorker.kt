@@ -16,6 +16,7 @@ import com.sam.talkdraft.model_downloader.domain.IModelDownloadManager
 import com.sam.talkdraft.model_downloader.domain.models.ModelDownloadStatus
 import com.sam.talkdraft.notifications.NotificationConstants
 import com.sam.talkdraft.workers.R
+import com.sam.talkdraft.workers.utils.IWorkerEnvironment
 import kotlin.uuid.Uuid
 import org.koin.android.annotation.KoinWorker
 
@@ -25,6 +26,7 @@ internal class TranscriptionModuleDownloadWorker(
     private val params: WorkerParameters,
     private val downloader: IModelDownloadManager,
     private val analytics: IAnalyticsProvider,
+    private val environment: IWorkerEnvironment,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -54,20 +56,8 @@ internal class TranscriptionModuleDownloadWorker(
             )
         }
 
-        // Set initial foreground status before starting long-running task
-        try {
-            setForeground(createNotification(ModelDownloadStatus.DownloadInitiated))
-        } catch (e: Exception) {
-            // Foreground service start might fail if app is in background on Android 12+
-            analytics.track(
-                AnalyticsEvent.ModelDownloadFailed,
-                mapOf(
-                    WorkParams.TRANSCRIPTION_INPUT_MODEL_ID to modelId,
-                    WorkParams.TRANSCRIPTION_MODEL_DOWNLOAD_FAILED_REASON_MESSAGE to (e.message
-                        ?: "Foreground execution failed"),
-                ),
-            )
-        }
+        if (environment.isProd)
+            setForegroundAsync(createNotification(ModelDownloadStatus.DownloadInitiated))
 
         val taskResult = downloader.downloadAndSaveModel(
             modelId = modelId,
@@ -75,7 +65,8 @@ internal class TranscriptionModuleDownloadWorker(
                 // Update worker intermediate progress state
                 setProgressAsync(getWorkDataForState(state))
                 // Safely post foreground notification update
-                setForegroundAsync(createNotification(state))
+                if (environment.isProd)
+                    setForegroundAsync(createNotification(state))
             },
         )
 

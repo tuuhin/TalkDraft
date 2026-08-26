@@ -35,8 +35,11 @@ import androidx.compose.ui.util.fastForEach
 import com.mohamedrejeb.calf.permissions.ExperimentalPermissionsApi
 import com.mohamedrejeb.calf.permissions.Notification
 import com.mohamedrejeb.calf.permissions.Permission
+import com.mohamedrejeb.calf.permissions.PermissionStatus
 import com.mohamedrejeb.calf.permissions.RecordAudio
+import com.mohamedrejeb.calf.permissions.isDenied
 import com.mohamedrejeb.calf.permissions.rememberMultiplePermissionsState
+import com.sam.talkdraft.common.model.PlatformTarget
 import com.sam.talkdraft.designs.CommonResources
 import com.sam.talkdraft.designs.app_name
 import com.sam.talkdraft.designs.ic_settings
@@ -57,12 +60,26 @@ internal fun PermissionsScene(
     modifier: Modifier = Modifier,
     titleStyle: TextStyle = MaterialTheme.typography.displaySmallEmphasized,
     contentPadding: PaddingValues = PaddingValues.Zero,
+    platform: PlatformTarget = PlatformTarget.UNKNOWN,
 ) {
     val permissions = rememberMultiplePermissionsState(listOf(Permission.Notification, Permission.RecordAudio))
 
-    val showSettings by remember(permissions) {
+    val isPermanentlyDenied by remember(permissions, platform) {
         derivedStateOf {
-            !permissions.shouldShowRationale && permissions.revokedPermissions.isNotEmpty()
+            if (permissions.allPermissionsGranted) return@derivedStateOf false
+
+            when (platform) {
+                PlatformTarget.IOS -> permissions.revokedPermissions.any { permissionState -> permissionState.status.isDenied }
+
+
+                else -> {
+                    permissions.revokedPermissions.isNotEmpty() &&
+                        !permissions.shouldShowRationale &&
+                        permissions.revokedPermissions.any {
+                            (it.status as? PermissionStatus.Denied)?.shouldShowRationale == false
+                        }
+                }
+            }
         }
     }
 
@@ -106,26 +123,22 @@ internal fun PermissionsScene(
         ) {
             val buttonTitle = when {
                 permissions.allPermissionsGranted -> "Permissions Granted"
-                permissions.shouldShowRationale -> "Grant Permissions"
-                permissions.revokedPermissions.isNotEmpty() -> "Open Settings"
-                else -> "Request Permissions"
+                isPermanentlyDenied -> "Open Settings"
+                else -> "Grant Permissions"
             }
             OnboardingContextAction(
                 title = buttonTitle,
                 onClick = {
-                    when {
-                        permissions.shouldShowRationale || permissions.revokedPermissions.isEmpty() -> {
-                            permissions.launchMultiplePermissionRequest()
-                        }
-                    }
+                    if (isPermanentlyDenied) openAppSettings()
+                    else permissions.launchMultiplePermissionRequest()
                 },
-                enabled = !showSettings,
+                enabled = !permissions.allPermissionsGranted,
                 modifier = Modifier.weight(1f)
                     .animateContentSize(MaterialTheme.motionScheme.defaultEffectsSpec()),
             )
 
             AnimatedVisibility(
-                visible = showSettings,
+                visible = isPermanentlyDenied,
                 enter = expandHorizontally(MaterialTheme.motionScheme.defaultEffectsSpec()),
                 modifier = Modifier.fillMaxHeight(),
             ) {

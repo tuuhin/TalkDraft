@@ -9,7 +9,7 @@ import com.sam.talkdraft.database.di.DBModule
 import com.sam.talkdraft.datastore.di.DataStoreModule
 import com.sam.talkdraft.platform_capability.di.PlatformCapabilityModule
 import com.sam.talkdraft.player.di.PlayerModule
-import com.sam.talkdraft.recorder.FeatureRecorderModule
+import com.sam.talkdraft.recorder.di.RecorderModule
 import com.sam.talkdraft.supabase.di.SupabaseModule
 import kotlin.native.HiddenFromObjC
 import org.koin.core.annotation.Module
@@ -25,7 +25,7 @@ import org.koin.core.annotation.Module
         ConnectivityModule::class,
         PlatformCapabilityModule::class,
         DataStoreModule::class,
-        FeatureRecorderModule::class,
+        RecorderModule::class,
         PlayerModule::class,
     ],
 )

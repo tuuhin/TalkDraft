@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.dp
+import com.sam.talkdraft.common.model.PlatformTarget
 import com.sam.talkdraft.designsystem.annotations.PreviewAppTheme
 import com.sam.talkdraft.designsystem.utils.Dimensions
 import com.sam.talkdraft.designsystem.utils.LocalSnackBarState
@@ -51,6 +52,7 @@ import kotlinx.coroutines.launch
 internal fun OnBoardingScreen(
     onEvent: (OnboardingEvents) -> Unit,
     modifier: Modifier = Modifier,
+    platform: PlatformTarget = PlatformTarget.UNKNOWN,
     capturedIdeas: ImmutableSet<CaptureIdeaOption> = persistentSetOf<CaptureIdeaOption>(),
 ) {
 
@@ -90,10 +92,11 @@ internal fun OnBoardingScreen(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
     ) { padding ->
         Column(
-            modifier = Modifier.padding(
-                top = padding.calculateTopPadding() + Dimensions.SCAFFOLD_VERTICAL_PADDING,
-                bottom = padding.calculateBottomPadding() + Dimensions.SCAFFOLD_VERTICAL_PADDING,
-            ),
+            modifier = Modifier.fillMaxSize()
+                .padding(
+                    top = padding.calculateTopPadding() + Dimensions.SCAFFOLD_VERTICAL_PADDING,
+                    bottom = padding.calculateBottomPadding() + Dimensions.SCAFFOLD_VERTICAL_PADDING,
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -131,6 +134,7 @@ internal fun OnBoardingScreen(
                         capturedIdeas = capturedIdeas,
                         onUpdateCaptureIdea = { onEvent(OnboardingEvents.OnAddToCaptureItems(it)) },
                         onOpenAppSettings = { onEvent(OnboardingEvents.RequestOpenAppSettings) },
+                        platform = platform,
                         onAction = {
                             scope.launch {
                                 val current = pager.currentPage
