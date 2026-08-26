@@ -5,11 +5,12 @@ android-minSdk = "28"
 android-targetSdk = "37"
 cryptoRand = "0.6.0"
 datastore = "1.2.1"
+media3Exoplayer = "1.11.0"
 splashApiVersion = "1.2.0"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.8.0"
 androidx-core = "1.19.0"
-composeMultiplatform = "1.11.1"
+composeMultiplatform = "1.12.0"
 composeMultiplatform-material3 = "1.11.0-alpha07"
 compose-multiplatform-adaptive = "1.3.0-beta02"
 androidx-tooling-version = "1.12.0"
@@ -26,7 +27,7 @@ junit = "4.13.2"
 kermit = "2.1.0"
 kotlin = "2.4.10"
 buildkonfig = "0.22.0"
-posthog-kmp = "0.4.0"
+posthog-kmp = "0.5.0"
 koin-plugin = "1.1.0"
 koin = "4.2.2"
 measure = "0.19.0"
@@ -45,9 +46,12 @@ workRuntimeKtx = "2.11.2"
 kotlinx-io = "0.9.1"
 google-fonts = "1.12.0"
 materialKolor = "5.0.0"
-calfPermissionsMicrophone = "0.13.0"
+calfPermissions = "0.13.0"
+assertk = "0.28.1"
+turbine = "1.2.1"
 
 [libraries]
+
 crypto-rand = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "cryptoRand" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
@@ -135,8 +139,15 @@ androidx-datastore-okio = { module = "androidx.datastore:datastore-core-okio", v
 androidx-downloadable-fonts = { module = "androidx.compose.ui:ui-text-google-fonts", version.ref = "google-fonts" }
 materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 #permissions
-calf-permissions-microphone = { module = "com.mohamedrejeb.calf:calf-permissions-microphone", version.ref = "calfPermissionsMicrophone" }
-calf-permissions-notifications = { module = "com.mohamedrejeb.calf:calf-permissions-notifications", version.ref = "calfPermissionsMicrophone" }
+calf-permissions-microphone = { module = "com.mohamedrejeb.calf:calf-permissions-microphone", version.ref = "calfPermissions" }
+calf-permissions-notifications = { module = "com.mohamedrejeb.calf:calf-permissions-notifications", version.ref = "calfPermissions" }
+#exoplayer
+androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3Exoplayer" }
+androidx-media3-exoplayer-dash = { module = "androidx.media3:media3-exoplayer-dash", version.ref = "media3Exoplayer" }
+androidx-media3-testing = { module = "androidx.media3:media3-test-utils", version.ref = "media3Exoplayer" }
+#assertk
+asserrtk = { module = "com.willowtreeapps.assertk:assertk", version.ref = "assertk" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 [plugins]
 #agp
@@ -159,7 +170,8 @@ atomic-fu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "atomic-fu" }
 skie = { id = "co.touchlab.skie", version.ref = "skie" }
 
 [bundles]
-testing-android = ["androidx-testExt-junit", "androidx-espresso-core"]
+testing-android = ["androidx-testExt-junit", "androidx-espresso-core", "koin-test", "koin-test-junit", "kotlin-test", "kotlin-testJunit", "asserrtk"]
+testing-common = ["koin-test", "kotlin-test"]
 koin-common = ["koin-core", "koin-annotations"]
 koin-compose = ["koin-viewmodel", "koin-compose", "koin-compose-viewmodel"]
 kotlinx-common = ["kotlinx-coroutines-core", "kotlinx-datetime", "kotlinx-collections-immutable", "kotlinx-serialization-core", "kotlinx-io-core"]

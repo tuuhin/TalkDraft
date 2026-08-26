@@ -22,6 +22,9 @@ kotlin {
             instrumentationRunner = "com.sam.talkdraft.testing.InstrumentTestRunner"
             execution = "HOST"
         }
+        androidResources {
+            enable = true
+        }
     }
 
     listOf(iosArm64(), iosSimulatorArm64())
@@ -35,6 +38,7 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.koin.annotations)
             api(libs.kotlinx.coroutines.test)
+            api(libs.turbine)
         }
     }
 

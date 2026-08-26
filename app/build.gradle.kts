@@ -59,12 +59,13 @@ kotlin {
             api(project(":core:platform-capability"))
             api(project(":core:connectivity"))
             api(project(":core:datastore"))
+            api(project(":core:recorder"))
+            api(project(":core:player"))
             // feature modules
             api(project(":feature:transcription-core"))
             api(project(":feature:model-manager"))
             api(project(":feature:model-downloader"))
             api(project(":feature:onboarding"))
-            api(project(":feature:recorder"))
 
             // presentation module
             implementation(project(":presentation:design-system"))

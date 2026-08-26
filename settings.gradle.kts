@@ -49,6 +49,8 @@ include(":core:notification-android")
 include(":core:worker-android")
 include(":core:remote-config")
 include(":core:datastore")
+include(":core:recorder")
+include(":core:player")
 // feature modules
 include(":feature:transcription-core")
 include(":feature:transcription-android")
@@ -56,7 +58,7 @@ include(":feature:transcription-ios")
 include(":feature:model-manager")
 include(":feature:model-downloader")
 include(":feature:onboarding")
-include(":feature:recorder")
+
 // ui layers
 include(":presentation:design-system")
 include(":presentation:onboarding")
