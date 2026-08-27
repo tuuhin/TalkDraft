@@ -385,7 +385,7 @@
 				3945BC6AE180E04E099F52DF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		45C7473A1BDC5EC3E2FF0F13 /* Build configuration list for PBXProject "iosApp" */ = {
 			isa = XCConfigurationList;
@@ -394,7 +394,7 @@
 				BE80D2D217B7E8F2CD55FB37 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 

@@ -30,5 +30,10 @@ dependencies {
     implementation(project(":feature:model-downloader"))
     implementation(project(":core:analytics"))
     implementation(project(":core:notification-android"))
+
+    androidTestImplementation(libs.bundles.testing.android)
     androidTestImplementation(project(":core:testing"))
+    androidTestImplementation(libs.androidx.work.test)
+    androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.mockk.agent)
 }
