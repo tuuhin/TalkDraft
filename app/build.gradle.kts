@@ -17,8 +17,8 @@ kotlin {
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
-        withHostTestBuilder {
-
+        withHostTest {
+            isIncludeAndroidResources = true
         }
         withDeviceTestBuilder {
             sourceSetTreeName = "test"
@@ -34,7 +34,7 @@ kotlin {
             baseName = xcfName
             linkerOpts.add("-lsqlite3")
             // export them to read the model classes
-            export(project(":feature:transcription-ios"))
+            export(project(":core:transcription-ios"))
         }
     }
 
@@ -61,14 +61,14 @@ kotlin {
             api(project(":core:datastore"))
             api(project(":core:recorder"))
             api(project(":core:player"))
+            api(project(":core:transcription-core"))
             // feature modules
-            api(project(":feature:transcription-core"))
             api(project(":feature:model-manager"))
             api(project(":feature:model-downloader"))
             api(project(":feature:onboarding"))
 
             // presentation module
-            implementation(project(":presentation:design-system"))
+            api(project(":presentation:design-system"))
             implementation(project(":presentation:navigation"))
             implementation(project(":presentation:onboarding"))
             implementation(project(":presentation:home"))

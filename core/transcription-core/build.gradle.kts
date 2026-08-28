@@ -1,7 +1,3 @@
-@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
-
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
@@ -25,7 +21,7 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
-            implementation(project(":feature:transcription-android"))
+            implementation(project(":core:transcription-android"))
         }
 
         commonMain.dependencies {
@@ -37,7 +33,7 @@ kotlin {
         }
 
         iosMain.dependencies {
-            implementation(project(":feature:transcription-ios"))
+            implementation(project(":core:transcription-ios"))
         }
     }
 

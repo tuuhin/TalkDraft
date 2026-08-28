@@ -51,14 +51,13 @@ include(":core:remote-config")
 include(":core:datastore")
 include(":core:recorder")
 include(":core:player")
+include(":core:transcription-core")
+include(":core:transcription-android")
+include(":core:transcription-ios")
 // feature modules
-include(":feature:transcription-core")
-include(":feature:transcription-android")
-include(":feature:transcription-ios")
 include(":feature:model-manager")
 include(":feature:model-downloader")
 include(":feature:onboarding")
-
 // ui layers
 include(":presentation:design-system")
 include(":presentation:onboarding")
