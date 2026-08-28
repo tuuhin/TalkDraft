@@ -1,6 +1,7 @@
 package com.sam.talkdraft.recorder.data
 
 import android.media.MediaRecorder
+import android.webkit.MimeTypeMap
 import androidx.media3.common.MimeTypes
 import com.sam.talkdraft.recorder.domain.IAudioFormatDataExtractor
 import com.sam.talkdraft.recorder.domain.models.RecordingFormats
@@ -8,6 +9,8 @@ import org.koin.core.annotation.Factory
 
 @Factory(binds = [IAudioFormatDataExtractor::class])
 internal actual class AudioFormatDataExtractor : IAudioFormatDataExtractor {
+
+
     actual override fun getEncoder(format: RecordingFormats): Int {
         return when (format) {
             RecordingFormats.FORMAT_M4A -> MediaRecorder.AudioEncoder.AAC
@@ -24,5 +27,15 @@ internal actual class AudioFormatDataExtractor : IAudioFormatDataExtractor {
         return when (format) {
             RecordingFormats.FORMAT_M4A -> MediaRecorder.OutputFormat.MPEG_4
         }
+    }
+
+    actual override fun getFileExtension(format: RecordingFormats): String {
+        return when (format) {
+            RecordingFormats.FORMAT_M4A -> mimeMap.getExtensionFromMimeType(MimeTypes.AUDIO_MP4) ?: ".mp3"
+        }
+    }
+
+    companion object {
+        private val mimeMap = MimeTypeMap.getSingleton()
     }
 }

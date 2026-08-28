@@ -8,6 +8,7 @@ import platform.UniformTypeIdentifiers.UTTypeMPEG4Audio
 
 @Factory(binds = [IAudioFormatDataExtractor::class])
 internal actual class AudioFormatDataExtractor : IAudioFormatDataExtractor {
+
     actual override fun getEncoder(format: RecordingFormats): Int {
         return when (format) {
             RecordingFormats.FORMAT_M4A -> kAudioFormatMPEG4AAC.toInt()
@@ -21,7 +22,9 @@ internal actual class AudioFormatDataExtractor : IAudioFormatDataExtractor {
     }
 
     actual override fun getFileExtension(format: RecordingFormats): String {
-        TODO("Not yet implemented")
+        return when (format) {
+            RecordingFormats.FORMAT_M4A -> UTTypeMPEG4Audio.preferredFilenameExtension ?: ".mp3"
+        }
     }
 
     actual override fun getOutputFormat(format: RecordingFormats): Int {

@@ -1,10 +1,10 @@
 package com.sam.talkdraft.recorder.domain.stopwatch
 
 import co.touchlab.kermit.Logger
+import com.sam.talkdraft.recorder.RecorderConstants
 import com.sam.talkdraft.recorder.domain.models.RecorderState
 import kotlin.time.Clock
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.currentCoroutineContext
@@ -25,7 +25,7 @@ private const val TAG = "RecorderStopWatch"
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class RecorderStopWatch(
-    private val delayTime: Duration = 80.milliseconds,
+    private val delayTime: Duration = RecorderConstants.STOPWATCH_DELAY_RATE,
     private val scope: CoroutineScope,
 ) {
     private val _state = MutableStateFlow(RecorderState.IDLE)

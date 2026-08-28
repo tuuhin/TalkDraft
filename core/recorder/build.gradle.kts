@@ -16,6 +16,10 @@ kotlin {
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
+        withHostTest {
+            isIncludeAndroidResources = true
+        }
+
         withDeviceTestBuilder {
             sourceSetTreeName = "test"
         }.configure {
