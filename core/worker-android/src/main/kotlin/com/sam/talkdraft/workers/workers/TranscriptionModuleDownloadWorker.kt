@@ -17,6 +17,7 @@ import com.sam.talkdraft.model_downloader.domain.models.ModelDownloadStatus
 import com.sam.talkdraft.notifications.NotificationConstants
 import com.sam.talkdraft.workers.R
 import com.sam.talkdraft.workers.utils.IWorkerEnvironment
+import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 import org.koin.android.annotation.KoinWorker
 
@@ -30,7 +31,7 @@ class TranscriptionModuleDownloadWorker internal constructor(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        val modelIdString = params.inputData.getString(WorkParams.TRANSCRIPTION_INPUT_MODEL_ID)
+        val modelIdString = params.inputData.getString(WorkParams.TRANSCRIPTION_MODEL_ID_INPUT_KEY)
             ?: return Result.failure(
                 workDataOf(
                     WorkParams.TRANSCRIPTION_MODEL_DOWNLOAD_FAILED to
@@ -75,7 +76,7 @@ class TranscriptionModuleDownloadWorker internal constructor(
             analytics.track(
                 AnalyticsEvent.ModelDownloadFailed,
                 mapOf(
-                    WorkParams.TRANSCRIPTION_INPUT_MODEL_ID to modelId,
+                    WorkParams.TRANSCRIPTION_MODEL_ID_INPUT_KEY to modelId,
                     WorkParams.TRANSCRIPTION_MODEL_DOWNLOAD_KEY to WorkParams.TRANSCRIPTION_MODEL_DOWNLOAD_FAILED,
                     WorkParams.TRANSCRIPTION_MODEL_DOWNLOAD_FAILED_REASON_MESSAGE to reason,
                 ),
@@ -89,7 +90,7 @@ class TranscriptionModuleDownloadWorker internal constructor(
         analytics.track(
             AnalyticsEvent.ModelDownloadCompleted,
             mapOf(
-                WorkParams.TRANSCRIPTION_INPUT_MODEL_ID to modelId,
+                WorkParams.TRANSCRIPTION_MODEL_ID_INPUT_KEY to modelId,
                 WorkParams.TRANSCRIPTION_MODEL_DOWNLOAD_KEY to WorkParams.TRANSCRIPTION_MODEL_DOWNLOAD_SUCCESS,
                 WorkParams.TRANSCRIPTION_MODEL_DOWNLOAD_SAVE_STATUS to isSuccess,
             ),
@@ -110,8 +111,9 @@ class TranscriptionModuleDownloadWorker internal constructor(
             WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_PERCENTAGE to state.percentage,
         )
 
-        ModelDownloadStatus.Failed -> workDataOf(
+        is ModelDownloadStatus.Failed -> workDataOf(
             WorkParams.TRANSCRIPTION_STATUS_KEY to WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED,
+            WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED_REASON to state.message,
         )
 
         ModelDownloadStatus.Success -> workDataOf(
@@ -130,7 +132,7 @@ class TranscriptionModuleDownloadWorker internal constructor(
         val textResource = when (state) {
             ModelDownloadStatus.DownloadInitiated -> R.string.start_download_notification_body
             is ModelDownloadStatus.Downloading -> R.string.downloading_speech_model_notification_body
-            ModelDownloadStatus.Failed -> R.string.failed_speech_model_download_notification_body
+            is ModelDownloadStatus.Failed -> R.string.failed_speech_model_download_notification_body
             ModelDownloadStatus.Success -> R.string.speech_model_notification_download_success
             ModelDownloadStatus.Verifying -> R.string.verifying_speech_model_notification_body
         }
@@ -156,7 +158,12 @@ class TranscriptionModuleDownloadWorker internal constructor(
         }
 
         when (state) {
-            is ModelDownloadStatus.Downloading -> builder.setProgress(100, state.percentage, false)
+            is ModelDownloadStatus.Downloading -> builder.setProgress(
+                100,
+                state.percentage.roundToInt().coerceAtMost(100),
+                false,
+            )
+
             ModelDownloadStatus.Verifying -> builder.setProgress(100, 0, true)
             else -> builder.setProgress(0, 0, false)
         }

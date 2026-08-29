@@ -1,7 +1,7 @@
 package com.sam.talkdraft.common.di
 
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.engine.android.Android
+import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Singleton
 
@@ -9,5 +9,9 @@ import org.koin.core.annotation.Singleton
 internal actual class CommonPlatformModule {
 
     @Singleton
-    fun ktorEngine(): HttpClientEngine = Android.create()
+    fun ktorEngine(): HttpClientEngine = OkHttp.create {
+        config {
+            retryOnConnectionFailure(true)
+        }
+    }
 }

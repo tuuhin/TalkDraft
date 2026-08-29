@@ -3,7 +3,9 @@ package com.sam.talkdraft.model_manager.data.repository
 import com.sam.talkdraft.common.utils.Resource
 import com.sam.talkdraft.model_manager.data.mapper.toDomainModel
 import com.sam.talkdraft.model_manager.data.mapper.toLocal
+import com.sam.talkdraft.model_manager.domain.exceptions.ModelWithGivenIdNotFoundException
 import com.sam.talkdraft.model_manager.domain.local.IModelLocalDataSource
+import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
 
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 import com.sam.talkdraft.model_manager.domain.remote.IModelRemoteDataSource
@@ -32,14 +34,10 @@ internal class TranscriptionModelRepository(
             .onStart {
                 emit(Resource.Loading)
                 if (!localDataSource.hasLocalData()) {
-                    runCatching {
-                        refreshModels().getOrThrow()
-                    }.onFailure { err ->
+                    refreshModels().onFailure { err ->
+                        if (err !is Exception) return@onFailure
                         emit(
-                            Resource.Error(
-                                err as? Exception ?: Exception(err),
-                                "Failed to load initial models from remote",
-                            ),
+                            Resource.Error(err, "Failed to load initial models from remote"),
                         )
                     }
                 }
@@ -80,9 +78,17 @@ internal class TranscriptionModelRepository(
         }
     }
 
-    override suspend fun updateModel(model: TranscriptionModel): Result<Unit> {
+    override suspend fun updateModelStatus(modelId: Uuid, status: LocalModelStatus): Result<TranscriptionModel> {
         return runCatching {
-            localDataSource.upsertModels(listOf(model.toLocal()))
+            localDataSource.updateModelStatus(modelId, status)?.toDomainModel()
+                ?: throw ModelWithGivenIdNotFoundException(modelId)
+        }
+    }
+
+    override suspend fun updateModelPath(modelId: Uuid, path: String?): Result<TranscriptionModel> {
+        return runCatching {
+            localDataSource.updateModelPath(modelId, path)?.toDomainModel()
+                ?: throw ModelWithGivenIdNotFoundException(modelId)
         }
     }
 

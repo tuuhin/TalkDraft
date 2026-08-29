@@ -54,7 +54,7 @@ internal class DownloadTempFileManager(
             Result.success(path)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            Logger.d(tag = TAG) { "FAILED TO DOWNLOAD AND SAVE FILE" }
+            Logger.e(tag = TAG) { "FAILED TO DOWNLOAD AND SAVE FILE" }
             Result.failure(e)
         }
     }
@@ -68,7 +68,7 @@ internal class DownloadTempFileManager(
                 Result.success(true)
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                Logger.d(tag = TAG, throwable = e) { "FAILED TO DELETE THE FILE" }
+                Logger.e(tag = TAG, throwable = e) { "FAILED TO DELETE THE FILE" }
                 Result.failure(e)
             }
         }

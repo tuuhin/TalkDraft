@@ -6,7 +6,7 @@ import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 internal fun LocalTranscriptionModel.toDomainModel(): TranscriptionModel = TranscriptionModel(
     id = id,
     downloadedAt = downloadedAt,
-    modelStatus = modelStatus,
+    modelStatus = status,
     modelFamily = metadata.modelFamily,
     variant = metadata.variant,
     version = metadata.version,
@@ -18,14 +18,14 @@ internal fun LocalTranscriptionModel.toDomainModel(): TranscriptionModel = Trans
     languages = metadata.languages,
     sizeInBytes = metadata.sizeInBytes,
     checksum = metadata.checksum,
-    status = metadata.status,
+    status = metadata.remoteStatus,
     cachedAt = metadata.cachedAt,
 )
 
 internal fun TranscriptionModel.toLocal() = LocalTranscriptionModel(
     id = id,
     modelPath = modelPath,
-    modelStatus = modelStatus,
+    status = modelStatus,
     downloadedAt = downloadedAt,
     metadata = LocalTranscriptionModel.Metadata(
         modelFamily = modelFamily,
@@ -40,6 +40,6 @@ internal fun TranscriptionModel.toLocal() = LocalTranscriptionModel(
         sizeInBytes = sizeInBytes,
         checksum = checksum,
         cachedAt = cachedAt,
-        status = status,
+        remoteStatus = status,
     ),
 )

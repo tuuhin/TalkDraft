@@ -5,5 +5,8 @@ import kotlin.uuid.Uuid
 
 fun interface IModelDownloadManager {
 
-    suspend fun downloadAndSaveModel(modelId: Uuid, onDownloadState: (ModelDownloadStatus) -> Unit): Result<Boolean>
+    suspend fun downloadAndSaveModel(
+        modelId: Uuid,
+        onDownloadState: suspend (ModelDownloadStatus) -> Unit,
+    ): Result<Boolean>
 }

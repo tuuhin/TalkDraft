@@ -1,5 +1,3 @@
-import com.codingfeline.buildkonfig.compiler.FieldSpec
-
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
@@ -35,6 +33,7 @@ kotlin {
             linkerOpts.add("-lsqlite3")
             // export them to read the model classes
             export(project(":core:transcription-ios"))
+            export(project(":core:background-jobs"))
         }
     }
 
@@ -44,7 +43,7 @@ kotlin {
         androidMain.dependencies {
             // android modules
             api(project(":core:notification-android"))
-            api(project(":core:worker-android"))
+            implementation(project(":core:worker-android"))
         }
         commonMain.dependencies {
             implementation(libs.bundles.compose.ui)
@@ -62,13 +61,15 @@ kotlin {
             api(project(":core:recorder"))
             api(project(":core:player"))
             api(project(":core:transcription-core"))
+            api(project(":core:background-jobs"))
+            api(project(":core:remote-config"))
             // feature modules
-            api(project(":feature:model-manager"))
-            api(project(":feature:model-downloader"))
+            implementation(project(":feature:model-manager"))
+            implementation(project(":feature:model-downloader"))
             api(project(":feature:onboarding"))
 
             // presentation module
-            api(project(":presentation:design-system"))
+            implementation(project(":presentation:design-system"))
             implementation(project(":presentation:navigation"))
             implementation(project(":presentation:onboarding"))
             implementation(project(":presentation:home"))
@@ -93,27 +94,16 @@ kotlin {
     }
 }
 
+composeCompiler {
+    metricsDestination = layout.buildDirectory.dir("compose_compiler")
+    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
+}
 
 koinCompiler {
     userLogs = true
     strictSafety = true
     debugLogs = true
-}
-
-buildkonfig {
-    packageName = "com.sam.talkdraft.app"
-
-    defaultConfigs {}
-
-    targetConfigs {
-        create("ios") {
-            buildConfigField(
-                type = FieldSpec.Type.BOOLEAN,
-                name = "SETUP_POSTHOG_AND_MEASURE",
-                value = "false",
-            )
-        }
-    }
 }
 
 skie {

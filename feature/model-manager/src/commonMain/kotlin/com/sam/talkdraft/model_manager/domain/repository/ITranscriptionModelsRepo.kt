@@ -1,6 +1,7 @@
 package com.sam.talkdraft.model_manager.domain.repository
 
 import com.sam.talkdraft.common.utils.Resource
+import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.flow.Flow
@@ -58,8 +59,23 @@ interface ITranscriptionModelsRepo {
     /**
      * Updates the state or metadata of an existing transcription model.
      *
-     * @param model The [TranscriptionModel] containing updated values.
-     * @return A [Result] containing [Unit] on success, or an error if the update fails.
+     * @param modelId The [TranscriptionModel]'s id whose status need to be updated
+     * @param status The status to update to
+     * @return A [Result] of matching [TranscriptionModel] otherwise,an error if the model
+     * does not exist or the operation fails.
      */
-    suspend fun updateModel(model: TranscriptionModel): Result<Unit>
+    suspend fun updateModelStatus(
+        modelId: Uuid,
+        status: LocalModelStatus = LocalModelStatus.NOT_INSTALLED,
+    ): Result<TranscriptionModel>
+
+    /**
+     * Updates the state or metadata of an existing transcription model.
+     *
+     * @param modelId The [TranscriptionModel]'s id whose status need to be updated
+     * @param path New model path to update to
+     * @return A [Result] of matching [TranscriptionModel] otherwise,an error if the model
+     * does not exist or the operation fails.
+     */
+    suspend fun updateModelPath(modelId: Uuid, path: String? = null): Result<TranscriptionModel>
 }

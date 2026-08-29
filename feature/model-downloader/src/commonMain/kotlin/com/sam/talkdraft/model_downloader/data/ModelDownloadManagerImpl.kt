@@ -8,6 +8,7 @@ import com.sam.talkdraft.model_downloader.domain.IModelFileManager
 import com.sam.talkdraft.model_downloader.domain.exceptions.ModelDownloadFailedException
 import com.sam.talkdraft.model_downloader.domain.exceptions.ModelVerificationFailedException
 import com.sam.talkdraft.model_downloader.domain.models.ModelDownloadStatus
+import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 import com.sam.talkdraft.model_manager.domain.repository.ITranscriptionModelsRepo
 import io.ktor.client.HttpClient
@@ -23,7 +24,7 @@ import kotlinx.io.okio.asOkioSource
 import okio.Path
 import org.koin.core.annotation.Factory
 
-private const val TAG = "ModelDownloadManager"
+private const val TAG = "MODEL_DOWNLOAD_MANAGER"
 
 @Factory(binds = [IModelDownloadManager::class])
 internal class ModelDownloadManagerImpl(
@@ -36,7 +37,7 @@ internal class ModelDownloadManagerImpl(
 
     override suspend fun downloadAndSaveModel(
         modelId: Uuid,
-        onDownloadState: (ModelDownloadStatus) -> Unit,
+        onDownloadState: suspend (ModelDownloadStatus) -> Unit,
     ): Result<Boolean> {
 
         val modelResult = repository.readModel(modelId)
@@ -45,64 +46,91 @@ internal class ModelDownloadManagerImpl(
             return Result.failure(ex)
         }
 
-        val readModel = modelResult.getOrThrow()
-        val downloadURI =
-            "${readModel.source}/${readModel.repository}/resolve/${readModel.revision}/${readModel.artifactPath}"
-
+        val transcriptionModel = modelResult.getOrThrow()
+        val downloadURI = transcriptionModel.getToURL()
+        // update model state to downloading
+        repository.updateModelStatus(transcriptionModel.id, LocalModelStatus.DOWNLOADING)
         onDownloadState(ModelDownloadStatus.DownloadInitiated)
 
-        // 1. Download the file into temp cache
-        var prevProgress = -1
-        val downloadResult = downloadModelFile(readModel, downloadURI) { progress ->
-            val progressPercentage = (progress * 100).toInt()
-            if (progressPercentage > prevProgress) {
-                prevProgress = progressPercentage
-                Logger.d(tag = TAG) { "DOWNLOAD PROGRESS: $progressPercentage%" }
-                onDownloadState(ModelDownloadStatus.Downloading(prevProgress))
+        var tempFilePath: Path? = null
+
+        return try {
+            // 1. Download the file into temp cache
+            var prevProgress = -1
+            val downloadResult = downloadModelFile(transcriptionModel, downloadURI) { progress ->
+                val progressPercentage = (progress * 100).toInt()
+                if (progressPercentage > prevProgress) {
+                    prevProgress = progressPercentage
+                    Logger.d(tag = TAG) { "DOWNLOAD PROGRESS: $progressPercentage%" }
+                    onDownloadState(ModelDownloadStatus.Downloading(prevProgress.toFloat()))
+                }
             }
-        }
 
-        // Handle download failures
-        if (downloadResult.isFailure) {
-            val exc = downloadResult.exceptionOrNull() as? Exception ?: Exception("Download failed")
-            Logger.d(tag = TAG) { "FAILED TO DOWNLOAD THE MODEL" }
-            onDownloadState(ModelDownloadStatus.Failed)
-            return Result.failure(exc)
-        }
-
-        val tempFilePath = downloadResult.getOrThrow()
-
-        // 2. Verify hash
-        Logger.d(tag = TAG) { "VERIFYING DOWNLOADED MODEL" }
-        onDownloadState(ModelDownloadStatus.Verifying)
-
-        val isVerified = verifier.validateModelHash(tempFilePath, readModel)
-        if (!isVerified) {
-            Logger.e(tag = TAG) { "MODEL HASH VERIFICATION FAILED" }
-            withContext(NonCancellable) {
-                tempFileManage.clearCache(tempFilePath)
-            }
-            onDownloadState(ModelDownloadStatus.Failed)
-            return Result.failure(ModelVerificationFailedException())
-        }
-
-        // 3. Save model from temp location to permanent storage
-        val saveResult = modelFileManager.saveModel(readModel, tempFilePath)
-
-        return saveResult.fold(
-            onSuccess = {
-                onDownloadState(ModelDownloadStatus.Success)
-                Result.success(true)
-            },
-            onFailure = { error ->
-                Logger.e(tag = TAG, throwable = error) { "FAILED TO SAVE MODEL FILE" }
+            // Handle download failures
+            if (downloadResult.isFailure) {
+                val exc = downloadResult.exceptionOrNull() as? Exception ?: Exception("Download failed")
+                Logger.d(tag = TAG) { "FAILED TO DOWNLOAD THE MODEL" }
                 withContext(NonCancellable) {
+                    // update model state to not installed as it's a failed download
+                    repository.updateModelStatus(transcriptionModel.id, LocalModelStatus.NOT_INSTALLED)
+                }
+                onDownloadState(ModelDownloadStatus.Failed(downloadResult.exceptionOrNull()?.message))
+                return Result.failure(exc)
+            }
+
+            tempFilePath = downloadResult.getOrThrow()
+            // 2. Verify hash
+            Logger.d(tag = TAG) { "VERIFYING DOWNLOADED MODEL" }
+            onDownloadState(ModelDownloadStatus.Verifying)
+
+            val isVerified = verifier.validateModelHash(tempFilePath, transcriptionModel)
+            if (!isVerified) {
+                Logger.e(tag = TAG) { "MODEL HASH VERIFICATION FAILED" }
+                withContext(NonCancellable) {
+                    // update model state to not installed as it's a failed download
+                    repository.updateModelStatus(transcriptionModel.id, LocalModelStatus.NOT_INSTALLED)
+                    // delete the temporary downloaded model
                     tempFileManage.clearCache(tempFilePath)
                 }
-                onDownloadState(ModelDownloadStatus.Failed)
-                Result.failure(error)
-            },
-        )
+                onDownloadState(ModelDownloadStatus.Failed("Verification failed"))
+                return Result.failure(ModelVerificationFailedException())
+            }
+
+            // 3. Save model from temp location to permanent storage
+            val saveResult = modelFileManager.saveModel(transcriptionModel, tempFilePath)
+
+            saveResult.fold(
+                onSuccess = {
+                    onDownloadState(ModelDownloadStatus.Success)
+                    Result.success(true)
+                },
+                onFailure = { error ->
+                    Logger.e(tag = TAG, throwable = error) { "FAILED TO SAVE MODEL FILE" }
+                    withContext(NonCancellable) {
+                        tempFileManage.clearCache(tempFilePath)
+                    }
+                    onDownloadState(ModelDownloadStatus.Failed(error.message))
+                    Result.failure(error)
+                },
+            )
+
+        } catch (e: CancellationException) {
+            Logger.w(tag = TAG) { "OPERATION CANCELLED" }
+            onDownloadState(ModelDownloadStatus.Failed("Operation Cancelled"))
+            throw e
+        } catch (e: Exception) {
+            Logger.e(tag = TAG, throwable = e) { "FAILED TO PERFORM DOWNLOAD" }
+            Result.failure(e)
+        } finally {
+            withContext(NonCancellable) {
+                val currentModel = repository.readModel(modelId).getOrNull()
+                if (currentModel?.modelStatus != LocalModelStatus.INSTALLED) {
+                    Logger.d(tag = TAG) { "RESETTING THE MODEL AS STATUS IS NOT INSTALLED" }
+                    repository.updateModelStatus(transcriptionModel.id, LocalModelStatus.NOT_INSTALLED)
+                }
+                tempFilePath?.let { path -> tempFileManage.clearCache(path) }
+            }
+        }
     }
 
     private suspend fun downloadModelFile(
@@ -116,28 +144,27 @@ internal class ModelDownloadManagerImpl(
             }
             onDownload { readBytes, totalBytes ->
                 val total = totalBytes ?: 0
-                if (total > 0) {
-                    val progress = readBytes.toFloat() / total
-                    onProgress(progress)
-                }
+                if (total > 0) onProgress(readBytes.toFloat() / total)
             }
         }
-
         statement.execute { response ->
-            if (response.status.value != 200) {
-                return@execute Result.failure(ModelDownloadFailedException())
-            }
-
             Logger.d(tag = TAG) { "HTTP RESPONSE CODE: ${response.status}" }
+            if (response.status.value != 200)
+                return@execute Result.failure(ModelDownloadFailedException())
 
-            // Stream response body to Okio source
+            // Stream in the source and save it to a cache file
             val channel = response.bodyAsChannel()
             val source = channel.readBuffer().asOkioSource()
-
             tempFileManage.saveToCache(source, model.id.toString())
         }
+    } catch (e: CancellationException) {
+        Logger.w(tag = TAG) { "CANCELLATION OCCURRED WHILE DOWNLOAD" }
+        throw e
     } catch (e: Exception) {
-        if (e is CancellationException) throw e
+        Logger.e(tag = TAG, throwable = e) { "FAILED TO DOWNLOAD THE THING" }
         Result.failure(e)
     }
+
+    private fun TranscriptionModel.getToURL(): String =
+        "${source}/${repository}/resolve/${revision}/${artifactPath}"
 }

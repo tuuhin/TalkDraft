@@ -8,7 +8,7 @@ import kotlinx.datetime.LocalDateTime
 internal data class LocalTranscriptionModel(
     val id: Uuid,
     val modelPath: String? = null,
-    val modelStatus: LocalModelStatus = LocalModelStatus.NOT_INSTALLED,
+    val status: LocalModelStatus = LocalModelStatus.NOT_INSTALLED,
     val downloadedAt: LocalDateTime? = null,
     val metadata: Metadata,
 ) {
@@ -24,7 +24,7 @@ internal data class LocalTranscriptionModel(
         val languages: List<String>,
         val sizeInBytes: Long,
         val checksum: String,
-        val status: RemoteModelStatus,
+        val remoteStatus: RemoteModelStatus,
         val cachedAt: LocalDateTime,
     )
 }

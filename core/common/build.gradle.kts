@@ -36,7 +36,7 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
-            implementation(ktorLibs.client.android)
+            implementation(ktorLibs.client.okhttp)
         }
         commonMain.dependencies {
             api(libs.kermit)

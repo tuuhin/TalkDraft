@@ -25,7 +25,7 @@ internal class ModelDownloadVerifier(
     private val fs = FileSystem.SYSTEM
 
     override suspend fun validateModelHash(modelPath: Path, model: TranscriptionModel): Boolean {
-        return withContext(dispatchers.default) {
+        return withContext(dispatchers.io) {
             try {
                 val isPresent = fs.exists(modelPath)
                 if (!isPresent) return@withContext false
@@ -41,7 +41,7 @@ internal class ModelDownloadVerifier(
                 return@withContext readHash == model.checksum
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                Logger.d(tag = TAG) { "FAILED TO VERIFY HASH" }
+                Logger.e(tag = TAG, throwable = e) { "FAILED TO VERIFY HASH" }
                 false
             }
         }

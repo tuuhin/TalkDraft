@@ -49,8 +49,8 @@ internal class ModelDownloadFileManager(
                         Logger.d(tag = TAG) { "CLEAN UP THE PARENT DIRECTORY $path" }
                     }
                 }
-                val update = model.copy(modelPath = null)
-                repo.updateModel(update)
+                repo.updateModelPath(model.id, null)
+                repo.updateModelStatus(model.id, LocalModelStatus.NOT_INSTALLED)
             }
             true
         }.onFailure { e ->
@@ -78,9 +78,8 @@ internal class ModelDownloadFileManager(
                 }
                 try {
                     fs.copy(cachedPath, newModelPath)
-                    val update =
-                        model.copy(modelPath = newModelPath.toString(), modelStatus = LocalModelStatus.INSTALLED)
-                    repo.updateModel(update)
+                    repo.updateModelStatus(modelId = model.id, status = LocalModelStatus.INSTALLED)
+                    repo.updateModelPath(modelId = model.id, path = newModelPath.toString())
                 } catch (e: CancellationException) {
                     Logger.d(tag = TAG) { "Operation cancelled, deleting partial file" }
                     withContext(NonCancellable) {

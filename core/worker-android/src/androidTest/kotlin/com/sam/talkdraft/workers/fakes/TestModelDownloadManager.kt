@@ -8,11 +8,11 @@ internal class TestModelDownloadManager : IModelDownloadManager {
 
     override suspend fun downloadAndSaveModel(
         modelId: Uuid,
-        onDownloadState: (ModelDownloadStatus) -> Unit,
+        onDownloadState: suspend (ModelDownloadStatus) -> Unit,
     ): Result<Boolean> {
         onDownloadState(ModelDownloadStatus.DownloadInitiated)
         repeat(10) {
-            onDownloadState(ModelDownloadStatus.Downloading(it * 10))
+            onDownloadState(ModelDownloadStatus.Downloading(it.toFloat()))
         }
         onDownloadState(ModelDownloadStatus.Verifying)
         onDownloadState(ModelDownloadStatus.Success)

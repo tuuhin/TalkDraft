@@ -16,7 +16,7 @@ internal fun LocalTranscriptionModelWithDownloadInfo.toDomain(timeZone: TimeZone
     return LocalTranscriptionModel(
         id = metadata.id,
         modelPath = downloadState?.modelPath,
-        modelStatus = when (downloadState?.modelStatus) {
+        status = when (downloadState?.modelStatus) {
             ModelDownloadStatus.UNKNOWN -> LocalModelStatus.NOT_INSTALLED
             ModelDownloadStatus.DOWNLOADING -> LocalModelStatus.DOWNLOADING
             ModelDownloadStatus.DOWNLOADED -> LocalModelStatus.INSTALLED
@@ -35,7 +35,7 @@ internal fun LocalTranscriptionModelWithDownloadInfo.toDomain(timeZone: TimeZone
             languages = metadata.languages,
             sizeInBytes = metadata.sizeInBytes,
             checksum = metadata.checksum,
-            status = metadata.status,
+            remoteStatus = metadata.status,
             cachedAt = metadata.cachedAt.toLocalDateTime(timeZone),
         ),
     )
@@ -55,7 +55,7 @@ internal fun LocalTranscriptionModel.toEntity(timeZone: TimeZone): Transcription
         languages = metadata.languages,
         sizeInBytes = metadata.sizeInBytes,
         checksum = metadata.checksum,
-        status = metadata.status,
+        status = metadata.remoteStatus,
         cachedAt = metadata.cachedAt.toInstant(timeZone),
         lastSync = Clock.System.now(),
     )
