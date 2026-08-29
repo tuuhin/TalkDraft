@@ -1,4 +1,4 @@
-package com.sam.talkdraft.workers
+package com.sam.talkdraft.background_jobs.data
 
 import android.content.Context
 import androidx.work.BackoffPolicy
@@ -8,16 +8,20 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import co.touchlab.kermit.Logger
+import com.sam.talkdraft.background_jobs.IStartupWorkerRegistrar
 import com.sam.talkdraft.workers.workers.PeriodicRemoteDataSyncWorker
-import java.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 import org.koin.core.annotation.Singleton
 
 private const val TAG = "START_UP_WORKER_REGISTRAR"
 
 @Singleton(binds = [IStartupWorkerRegistrar::class])
-internal class StartupWorkerRegistrar(private val context: Context) : IStartupWorkerRegistrar {
+internal actual class StartupWorkRegistrar(private val context: Context) : IStartupWorkerRegistrar {
 
-    override fun enqueueWorkers() {
+    actual override fun enqueueWorkers() {
         startPeriodicSyncWorker()
     }
 
@@ -28,9 +32,9 @@ internal class StartupWorkerRegistrar(private val context: Context) : IStartupWo
             .build()
 
         val workRequest =
-            PeriodicWorkRequestBuilder<PeriodicRemoteDataSyncWorker>(repeatInterval = Duration.ofDays(1))
-                .setBackoffCriteria(BackoffPolicy.LINEAR, Duration.ofMinutes(10))
-                .setInitialDelay(Duration.ofSeconds(10))
+            PeriodicWorkRequestBuilder<PeriodicRemoteDataSyncWorker>(repeatInterval = 1.days.toJavaDuration())
+                .setBackoffCriteria(BackoffPolicy.LINEAR, 10.minutes.toJavaDuration())
+                .setInitialDelay(10.seconds.toJavaDuration())
                 .setConstraints(constrains)
                 .build()
 
@@ -38,7 +42,7 @@ internal class StartupWorkerRegistrar(private val context: Context) : IStartupWo
         val workManager = WorkManager.getInstance(context.applicationContext)
         workManager.enqueueUniquePeriodicWork(
             PERIODIC_SYNC_WORKER_NAME,
-            ExistingPeriodicWorkPolicy.REPLACE,
+            ExistingPeriodicWorkPolicy.KEEP,
             workRequest,
         )
 

@@ -8,6 +8,7 @@ import com.sam.talkdraft.model_manager.domain.local.IModelLocalDataSource
 import com.sam.talkdraft.model_manager.domain.local.LocalTranscriptionModel
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.TimeZone
 import org.koin.core.annotation.Factory
@@ -23,12 +24,26 @@ internal class ModelLocalDataSource(
         dao.deleteTranscriptionsModels(entities)
     }
 
-    override suspend fun getModel(id: Uuid): LocalTranscriptionModel {
-        return dao.getModel(id)?.toDomain(timeZone)
+    override fun getModelAsFlow(id: Uuid): Flow<LocalTranscriptionModel> {
+        return dao.getModelFlow(id).filterNotNull()
+            .map { it.toDomain(timeZone) }
+    }
+
+    override suspend fun getModelById(uuid: Uuid): LocalTranscriptionModel {
+        return dao.getModel(uuid)?.toDomain(timeZone)
             ?: throw LocalDataSourceException.InvalidSourceException()
     }
 
-    override fun observeModels(): Flow<List<LocalTranscriptionModel>> {
+    override suspend fun getAllModels(): List<LocalTranscriptionModel> {
+        return dao.readAllModels().map { it.toDomain(timeZone) }
+    }
+
+    override suspend fun readSmallestModel(maxSizeInBytes: Long): LocalTranscriptionModel {
+        return dao.readSmallestModel(maxSizeInBytes)?.toDomain(timeZone)
+            ?: throw LocalDataSourceException.InvalidSourceException()
+    }
+
+    override fun readAllModelsAsFlow(): Flow<List<LocalTranscriptionModel>> {
         return dao.observeModels().map { models ->
             models.map { relation -> relation.toDomain(timeZone) }
         }

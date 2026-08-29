@@ -5,6 +5,7 @@ import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.common.platform.IPlatformFilePathProvider
 import com.sam.talkdraft.model_downloader.domain.IModelFileManager
 import com.sam.talkdraft.model_downloader.domain.exceptions.ModelFileAlreadyExistsException
+import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 import com.sam.talkdraft.model_manager.domain.repository.ITranscriptionModelsRepo
 import kotlinx.coroutines.CancellationException
@@ -61,32 +62,34 @@ internal class ModelDownloadFileManager(
     override suspend fun saveModel(model: TranscriptionModel, cachedPath: Path, overwrite: Boolean): Result<Unit> {
         return runCatching {
             val oldPath = model.modelPath?.toPath()
-
             val newModelPath = readModelPath / model.checksum / model.artifactPath
-            val parentDir = newModelPath.parent
 
             withContext(dispatchers.io) {
-                if (oldPath != null && !overwrite) throw ModelFileAlreadyExistsException()
+                if (!fs.exists(cachedPath))
+                    throw IllegalStateException("Source cached file does not exist at: $cachedPath")
 
-                if (oldPath != null && fs.exists(oldPath))
-                    fs.delete(oldPath)
+                if (oldPath != null && fs.exists(oldPath) && !overwrite) throw ModelFileAlreadyExistsException()
 
-                if (parentDir != null && !fs.exists(parentDir)) {
+
+                if (fs.exists(newModelPath)) fs.delete(newModelPath)
+
+                newModelPath.parent?.let { parentDir ->
                     fs.createDirectories(parentDir)
                 }
                 try {
                     fs.copy(cachedPath, newModelPath)
-                    val update = model.copy(modelPath = newModelPath.toString())
+                    val update =
+                        model.copy(modelPath = newModelPath.toString(), modelStatus = LocalModelStatus.INSTALLED)
                     repo.updateModel(update)
                 } catch (e: CancellationException) {
-                    Logger.d(tag = TAG) { "OPERATION CANCELLED DELETING THE FILE" }
+                    Logger.d(tag = TAG) { "Operation cancelled, deleting partial file" }
                     withContext(NonCancellable) {
-                        fs.delete(newModelPath)
+                        if (fs.exists(newModelPath)) fs.delete(newModelPath)
                     }
                     throw e
                 }
             }
-            Logger.d(tag = TAG) { "FILE HAS BEEN COPIED COPIED SUCCESSFULLY" }
+            Logger.d(tag = TAG) { "File copied successfully to $newModelPath" }
         }.onFailure { e ->
             if (e is CancellationException) throw e
             Logger.e(tag = TAG, throwable = e) { "FAILED TO SAVE THE FILE" }

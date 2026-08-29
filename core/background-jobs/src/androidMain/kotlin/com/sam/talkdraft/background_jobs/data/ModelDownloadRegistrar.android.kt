@@ -1,4 +1,4 @@
-package com.sam.talkdraft.workers
+package com.sam.talkdraft.background_jobs.data
 
 import android.content.Context
 import androidx.work.Constraints
@@ -8,6 +8,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.sam.talkdraft.background_jobs.IModelDownloadRegistrar
 import com.sam.talkdraft.model_downloader.domain.models.ModelDownloadStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 import com.sam.talkdraft.workers.workers.TranscriptionModuleDownloadWorker
@@ -21,9 +22,9 @@ import kotlinx.coroutines.flow.mapNotNull
 import org.koin.core.annotation.Factory
 
 @Factory(binds = [IModelDownloadRegistrar::class])
-internal class ModelDownloadRegistrar(private val context: Context) : IModelDownloadRegistrar {
+actual class ModelDownloadRegistrar(private val context: Context) : IModelDownloadRegistrar {
 
-    override fun startModelDownload(model: TranscriptionModel): Uuid {
+    actual override fun startModelDownload(model: TranscriptionModel): Uuid {
         val workId = Uuid.random()
         val inputData = workDataOf(WorkParams.TRANSCRIPTION_INPUT_MODEL_ID to model.id.toString())
 
@@ -46,7 +47,7 @@ internal class ModelDownloadRegistrar(private val context: Context) : IModelDown
         return workId
     }
 
-    override fun observerDownloadStatus(uuid: Uuid): Flow<ModelDownloadStatus> {
+    actual override fun observerDownloadStatus(uuid: Uuid): Flow<ModelDownloadStatus> {
         val workManager = WorkManager.getInstance(context)
         return workManager.getWorkInfoByIdFlow(uuid.toJavaUuid())
             .mapNotNull { workInfo ->
@@ -55,7 +56,7 @@ internal class ModelDownloadRegistrar(private val context: Context) : IModelDown
             }
     }
 
-    override fun cancelDownload(uuid: Uuid) {
+    actual override fun cancelDownload(uuid: Uuid) {
         val workManager = WorkManager.getInstance(context)
         workManager.cancelWorkById(uuid.toJavaUuid())
     }

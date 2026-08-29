@@ -31,6 +31,7 @@ kotlin {
             // okio
             implementation(libs.okio)
             // local
+            implementation(project(":core:platform-capability"))
             implementation(project(":core:database"))
             implementation(project(":core:common"))
             implementation(project(":core:supabase"))

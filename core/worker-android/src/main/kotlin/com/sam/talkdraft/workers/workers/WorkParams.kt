@@ -1,6 +1,6 @@
 package com.sam.talkdraft.workers.workers
 
-internal object WorkParams {
+object WorkParams {
     // Associated with remote db sync
     const val DB_MODEL_SYNC_KEY = "db_model_sync"
     const val DB_MODEL_SYNC_SUCCESS = "db_model_sync_success"
@@ -18,8 +18,7 @@ internal object WorkParams {
 
     const val TRANSCRIPTION_STATUS_KEY = "transcription_status"
     const val TRANSCRIPTION_STATUS_STARTING_DOWNLOAD = "transcription_status_download_started"
-    const val TRANSCRIPTOON_STATUS_VERIFYING_DOWNLOAD = "transcription_status_verifying"
-    const val TRANCRIPTION_STATUS_DOWNLOAD_FAILED = "transcription_status_download_failed"
+    const val TRANSCRIPTION_STATUS_DOWNLOAD_FAILED = "transcription_status_download_failed"
     const val TRANSCRIPTION_STATUS_DOWNLOADING = "transcription_status_downloading"
     const val TRANSCRIPTION_STATUS_VERIFYING = "transcription_status_verifying"
     const val TRANSCRIPTION_STATUS_DOWNLOAD_SUCCESS = "transcription_status_download_success"

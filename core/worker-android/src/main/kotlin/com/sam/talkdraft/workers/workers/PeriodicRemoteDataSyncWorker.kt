@@ -20,7 +20,7 @@ import org.koin.android.annotation.KoinWorker
 private const val TAG = "PERIODIC_SYNC_MODEL_WORKER"
 
 @KoinWorker
-internal class PeriodicRemoteDataSyncWorker(
+class PeriodicRemoteDataSyncWorker internal constructor(
     workParams: WorkerParameters,
     private val context: Context,
     private val repo: IUpdateTranscriptionModelRepo,

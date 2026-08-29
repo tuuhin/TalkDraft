@@ -21,7 +21,7 @@ import kotlin.uuid.Uuid
 import org.koin.android.annotation.KoinWorker
 
 @KoinWorker
-internal class TranscriptionModuleDownloadWorker(
+class TranscriptionModuleDownloadWorker internal constructor(
     context: Context,
     private val params: WorkerParameters,
     private val downloader: IModelDownloadManager,
@@ -111,7 +111,7 @@ internal class TranscriptionModuleDownloadWorker(
         )
 
         ModelDownloadStatus.Failed -> workDataOf(
-            WorkParams.TRANSCRIPTION_STATUS_KEY to WorkParams.TRANCRIPTION_STATUS_DOWNLOAD_FAILED,
+            WorkParams.TRANSCRIPTION_STATUS_KEY to WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED,
         )
 
         ModelDownloadStatus.Success -> workDataOf(

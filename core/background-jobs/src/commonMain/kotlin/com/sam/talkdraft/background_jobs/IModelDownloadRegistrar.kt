@@ -1,4 +1,4 @@
-package com.sam.talkdraft.workers
+package com.sam.talkdraft.background_jobs
 
 import com.sam.talkdraft.model_downloader.domain.models.ModelDownloadStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel

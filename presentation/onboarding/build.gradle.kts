@@ -47,9 +47,12 @@ kotlin {
             implementation(libs.calf.permissions.notifications)
             // local
             implementation(project(":core:common"))
+            implementation(project(":core:analytics"))
+            implementation(project(":core:background-jobs"))
             implementation(project(":presentation:design-system"))
             implementation(project(":presentation:navigation"))
             implementation(project(":feature:onboarding"))
+            implementation(project(":feature:model-manager"))
         }
     }
 

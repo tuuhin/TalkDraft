@@ -18,6 +18,18 @@ interface LocalTranscriptionEntityDao {
     fun observeModels(): Flow<List<LocalTranscriptionModelWithDownloadInfo>>
 
     @Transaction
+    @Query("SELECT * FROM transciption_model_table ORDER BY display_name ASC")
+    suspend fun readAllModels(): List<LocalTranscriptionModelWithDownloadInfo>
+
+    @Transaction
+    @Query("SELECT * FROM transciption_model_table WHERE total_size_in_bytes <= :maxModelSize ORDER BY total_size_in_bytes ASC LIMIT 1")
+    suspend fun readSmallestModel(maxModelSize: Long): LocalTranscriptionModelWithDownloadInfo?
+
+    @Transaction
+    @Query("SELECT * FROM transciption_model_table WHERE _id=:id")
+    fun getModelFlow(id: Uuid): Flow<LocalTranscriptionModelWithDownloadInfo?>
+
+    @Transaction
     @Query("SELECT * FROM transciption_model_table WHERE _id=:id")
     suspend fun getModel(id: Uuid): LocalTranscriptionModelWithDownloadInfo?
 

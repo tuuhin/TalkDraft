@@ -26,7 +26,7 @@ internal fun List<RemoteModelMetadataDTO>.toDomainModels(artifacts: List<RemoteM
             },
             artifact = RemoteTranscriptionModel.Artifact(
                 artifactId = artifact.id,
-                source = artifact.source.name,
+                source = artifact.source.providerURL,
                 repository = artifact.repository,
                 artifactPath = artifact.artifactPath,
                 supportedLanguages = artifact.languages,

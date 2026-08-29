@@ -23,8 +23,8 @@ internal class TranscriptionModelRepository(
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),
 ) : ITranscriptionModelsRepo {
 
-    override fun readAllModels(): Flow<Resource<List<TranscriptionModel>, Exception>> {
-        return localDataSource.observeModels()
+    override fun readAllModelsFlow(): Flow<Resource<List<TranscriptionModel>, Exception>> {
+        return localDataSource.readAllModelsAsFlow()
             .map { data ->
                 Resource.Success<List<TranscriptionModel>, Exception>(data.map { it.toDomainModel() })
                     as Resource<List<TranscriptionModel>, Exception>
@@ -53,9 +53,30 @@ internal class TranscriptionModelRepository(
             }
     }
 
+    override fun readModelAsFlow(uuid: Uuid): Flow<TranscriptionModel?> {
+        return localDataSource.getModelAsFlow(uuid).map { it.toDomainModel() }
+    }
+
+
+    override suspend fun readAllModels(): Result<List<TranscriptionModel>> {
+        return runCatching {
+            if (!localDataSource.hasLocalData()) refreshModels().getOrThrow()
+
+            localDataSource.getAllModels().map { it.toDomainModel() }
+        }
+    }
+
+    override suspend fun readSmallestModel(maxModelSize: Long): Result<TranscriptionModel> {
+        return runCatching {
+            if (!localDataSource.hasLocalData()) refreshModels().getOrThrow()
+            localDataSource.readSmallestModel(maxModelSize).toDomainModel()
+        }
+    }
+
     override suspend fun readModel(uuid: Uuid): Result<TranscriptionModel> {
         return runCatching {
-            localDataSource.getModel(uuid).toDomainModel()
+            if (!localDataSource.hasLocalData()) refreshModels().getOrThrow()
+            localDataSource.getModelById(uuid).toDomainModel()
         }
     }
 

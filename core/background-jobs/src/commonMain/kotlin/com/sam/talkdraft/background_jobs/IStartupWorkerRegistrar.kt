@@ -1,4 +1,4 @@
-package com.sam.talkdraft.workers
+package com.sam.talkdraft.background_jobs
 
 fun interface IStartupWorkerRegistrar {
 
