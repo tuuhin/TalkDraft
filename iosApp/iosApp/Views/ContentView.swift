@@ -14,7 +14,6 @@ struct ContentView: View {
             }
             .navigationTitle("Talk Draft")
         }
-
     }
 }
 

@@ -23,6 +23,7 @@ kotlin {
 
             implementation(libs.bundles.koin.common)
             implementation(libs.posthog.kmp)
+            implementation(libs.kotlinx.coroutines.core)
         }
     }
 

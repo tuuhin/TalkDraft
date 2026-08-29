@@ -6,12 +6,27 @@ import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import com.sam.talkdraft.app.App
+import com.sam.talkdraft.feature_onboarding.IOnboardingPreferences
+import com.sam.talkdraft.remote_config.IRemoteConfigProvider
 import com.sam.talkdraft.utils.animateOnExit
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
 
+    private val remoteConfig by inject<IRemoteConfigProvider>()
+    private val onboardingProvider by inject<IOnboardingPreferences>()
+
+    private var _isRemoteConfigLoaded by mutableStateOf(false)
+    private var _isOnboardingValueChecked by mutableStateOf(false)
+    private var _showOnboardingScreen by mutableStateOf(true)
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -21,11 +36,20 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // on splash complete again enable edge to edge
         splash.animateOnExit(onAnimationEnd = { enableEdgeToEdge() })
+        splash.setKeepOnScreenCondition { !_isRemoteConfigLoaded || !_isOnboardingValueChecked }
+
         // set activity transitions
         setTransitions()
 
+        // set fields
+        lifecycleScope.launch { remoteConfig.loadFlags() }
+            .invokeOnCompletion { _isRemoteConfigLoaded = true }
+
+        lifecycleScope.launch { _showOnboardingScreen = onboardingProvider.showOnboarding.first() }
+            .invokeOnCompletion { _isOnboardingValueChecked = true }
+
         setContent {
-            App()
+            App(showOnboarding = _showOnboardingScreen)
         }
     }
 

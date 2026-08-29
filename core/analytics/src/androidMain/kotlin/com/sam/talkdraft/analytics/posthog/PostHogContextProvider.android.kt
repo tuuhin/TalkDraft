@@ -7,7 +7,5 @@ import org.koin.core.annotation.Singleton
 @Singleton
 internal actual class PostHogContextProvider(private val app: Application) {
 
-	actual fun readContext(): PostHogContext {
-		return PostHogContext(app)
-	}
+    actual fun readContext(): PostHogContext = PostHogContext(app)
 }

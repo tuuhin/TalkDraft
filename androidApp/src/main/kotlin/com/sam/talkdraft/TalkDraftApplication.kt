@@ -3,9 +3,9 @@ package com.sam.talkdraft
 import android.app.Application
 import com.sam.talkdraft.analytics.posthog.IPostHogInitManager
 import com.sam.talkdraft.app.KoinTalkDraftApp
+import com.sam.talkdraft.background_jobs.IStartupWorkerRegistrar
 import com.sam.talkdraft.crashlytics.MeasureSetupManager
 import com.sam.talkdraft.notifications.INotificationChannelRegistrar
-import com.sam.talkdraft.workers.IStartupWorkerRegistrar
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -25,11 +25,10 @@ class TalkDraftApplication : Application(), KoinStartup {
 
     override fun onCreate() {
         super.onCreate()
-        if (!BuildConfig.DEBUG) {
-            // only set in release mode
-            posthogInit.setup()
-            measure.setup()
-        }
+        posthogInit.turnOffDataCollection()
+        posthogInit.setup()
+        measure.setup()
+
         notificationRegistrar.registerChannels()
         workerRegistrar.enqueueWorkers()
     }

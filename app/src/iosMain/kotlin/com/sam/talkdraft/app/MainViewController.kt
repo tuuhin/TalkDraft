@@ -8,8 +8,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ComposeUIViewController
 
 object MainViewController {
-    fun viewController() = ComposeUIViewController {
+    fun viewController(showContentForIos: Boolean = true) = ComposeUIViewController {
         App(
+            showContentForIos = showContentForIos,
             modifier = Modifier
                 .fillMaxSize()
                 .consumeWindowInsets(WindowInsets.navigationBars),

@@ -7,13 +7,17 @@ import org.koin.core.annotation.Singleton
 
 @Singleton(binds = [IPostHogInitManager::class])
 internal class PostHogInitManager(
-	val provider: PostHogContextProvider
+    val provider: PostHogContextProvider,
 ) : IPostHogInitManager {
 
-	override fun setup() {
-		PostHog.setup(
-			config = PostHogConfig(apiKey = AppSecretProperties.POST_HOG_API_KEY),
-			context = provider.readContext()
-		)
-	}
+    override fun setup() {
+        PostHog.setup(
+            config = PostHogConfig(apiKey = AppSecretProperties.POST_HOG_API_KEY),
+            context = provider.readContext(),
+        )
+    }
+
+    override fun turnOffDataCollection() = PostHog.optOut()
+    override fun turnOnDataCollection() = PostHog.optIn()
+
 }

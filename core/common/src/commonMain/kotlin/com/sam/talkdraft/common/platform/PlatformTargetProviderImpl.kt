@@ -6,4 +6,5 @@ import org.koin.core.annotation.Factory
 @Factory(binds = [IPlatformTargetProvider::class])
 internal expect class PlatformTargetProviderImpl : IPlatformTargetProvider {
     override fun target(): PlatformTarget
+    override val platformVersionCode: Long
 }

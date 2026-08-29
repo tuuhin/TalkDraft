@@ -21,3 +21,4 @@ secrets.properties
 .swiftpm-locks/
 .agents/
 skills-lock.json
+.junie/
