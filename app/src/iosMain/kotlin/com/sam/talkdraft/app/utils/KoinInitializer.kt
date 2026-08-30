@@ -9,9 +9,7 @@ object KoinInitializer {
 
 	fun initKoin() {
 		startKoin<KoinTalkDraftApp> {
-			logger(KermitKoinLogger(logger = Logger.withTag("TalkDraft-iOS")))
+            logger(KermitKoinLogger(logger = Logger.withTag("KoiniOS")))
 		}
-		// setup post hog and measure
-		IosAppInitializer.setup()
 	}
 }

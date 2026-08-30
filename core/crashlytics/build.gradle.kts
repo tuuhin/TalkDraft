@@ -24,11 +24,11 @@ kotlin {
 	swiftPMDependencies {
 		packageResolvedSynchronization = noSynchronization()
 		swiftPackage(
-			url = url("https://github.com/measure-sh/measure.git"),
-			version = revision("ios-v0.12.1"),
-			products = listOf(product("Measure")),
-			packageName = "measure"
-		)
+            url = url("https://github.com/measure-sh/measure.git"),
+            version = revision("ios-v0.13.0"),
+            products = listOf(product("Measure")),
+            packageName = "measure",
+        )
 	}
 
 	sourceSets {

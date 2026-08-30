@@ -29,6 +29,9 @@ struct iOSApp: App {
                 ComposeView(showContentForIos: showContent)
                     .ignoresSafeArea()
             }
+            .task {
+                try? await IosAppInitializer.shared.setup()
+            }
     }
     }
 }

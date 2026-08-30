@@ -13,23 +13,23 @@ import swiftPMImport.TalkDraft.core.core.crashlytics.initializeWith
 @OptIn(ExperimentalForeignApi::class)
 internal actual class MeasureSetupImpl : MeasureSetupManager {
 
-	actual override fun setup() {
-		val clientInfo = ClientInfo(
-			apiKey = AppSecretProperties.MEASURE_IOS_KEY,
-			apiUrl = AppSecretProperties.POST_HOG_API_KEY
-		)
+    actual override fun setup() {
+        val clientInfo = ClientInfo(
+            apiKey = AppSecretProperties.MEASURE_IOS_KEY,
+            apiUrl = "https://ingest.measure.sh",
+        )
 
-		// copied from swift
-		val config = BaseMeasureConfig(
-			enableLogging = false,
-			autoStart = false,
-			requestHeadersProvider = null,
-			maxDiskUsageInMb = NSNumber(50),
-			enableFullCollectionMode = false,
-			enableDiagnosticMode = false,
-			enableDiagnosticModeGesture = false
-		)
+        // copied from swift
+        val config = BaseMeasureConfig(
+            enableLogging = false,
+            autoStart = true,
+            requestHeadersProvider = null,
+            maxDiskUsageInMb = NSNumber(50),
+            enableFullCollectionMode = false,
+            enableDiagnosticMode = true,
+            enableDiagnosticModeGesture = false,
+        )
 
-		Measure.initializeWith(clientInfo, config)
-	}
+        Measure.initializeWith(clientInfo, config)
+    }
 }
