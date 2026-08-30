@@ -14,7 +14,7 @@ internal fun RemoteTranscriptionModel.toLocal(timeZone: TimeZone = TimeZone.curr
     return LocalTranscriptionModel(
         id = remote.id,
         modelPath = null,
-        modelStatus = LocalModelStatus.NOT_INSTALLED,
+        status = LocalModelStatus.NOT_INSTALLED,
         downloadedAt = null,
         metadata = LocalTranscriptionModel.Metadata(
             modelFamily = remote.modelFamily,
@@ -28,7 +28,7 @@ internal fun RemoteTranscriptionModel.toLocal(timeZone: TimeZone = TimeZone.curr
             languages = remote.artifact.supportedLanguages,
             sizeInBytes = remote.artifact.sizeBytes,
             checksum = remote.artifact.artifactHash,
-            status = when (remote.remoteStatus) {
+            remoteStatus = when (remote.remoteStatus) {
                 DomainRemoteModelStatus.ACTIVE -> DbRemoteModelStatus.ACTIVE
                 DomainRemoteModelStatus.DEPRECATED -> DbRemoteModelStatus.DEPRECATED
                 DomainRemoteModelStatus.DISABLED -> DbRemoteModelStatus.INACTIVE

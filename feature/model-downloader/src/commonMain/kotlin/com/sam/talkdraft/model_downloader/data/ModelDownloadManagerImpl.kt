@@ -7,6 +7,7 @@ import com.sam.talkdraft.model_downloader.domain.IModelDownloadVerifier
 import com.sam.talkdraft.model_downloader.domain.IModelFileManager
 import com.sam.talkdraft.model_downloader.domain.exceptions.ModelDownloadFailedException
 import com.sam.talkdraft.model_downloader.domain.exceptions.ModelVerificationFailedException
+import com.sam.talkdraft.model_downloader.domain.models.DownloadState
 import com.sam.talkdraft.model_downloader.domain.models.ModelDownloadStatus
 import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
@@ -35,6 +36,7 @@ internal class ModelDownloadManagerImpl(
     private val repository: ITranscriptionModelsRepo,
 ) : IModelDownloadManager {
 
+
     override suspend fun downloadAndSaveModel(
         modelId: Uuid,
         onDownloadState: suspend (ModelDownloadStatus) -> Unit,
@@ -48,9 +50,15 @@ internal class ModelDownloadManagerImpl(
 
         val transcriptionModel = modelResult.getOrThrow()
         val downloadURI = transcriptionModel.getToURL()
-        // update model state to downloading
+
+        // Helper to emit states concisely
+        suspend fun emitState(state: DownloadState) {
+            onDownloadState(ModelDownloadStatus(modelId = modelId, state = state))
+        }
+
+        // Update model state to downloading
         repository.updateModelStatus(transcriptionModel.id, LocalModelStatus.DOWNLOADING)
-        onDownloadState(ModelDownloadStatus.DownloadInitiated)
+        emitState(DownloadState.Initiated)
 
         var tempFilePath: Path? = null
 
@@ -62,7 +70,7 @@ internal class ModelDownloadManagerImpl(
                 if (progressPercentage > prevProgress) {
                     prevProgress = progressPercentage
                     Logger.d(tag = TAG) { "DOWNLOAD PROGRESS: $progressPercentage%" }
-                    onDownloadState(ModelDownloadStatus.Downloading(prevProgress.toFloat()))
+                    emitState(DownloadState.Downloading(prevProgress.toFloat()))
                 }
             }
 
@@ -74,14 +82,14 @@ internal class ModelDownloadManagerImpl(
                     // update model state to not installed as it's a failed download
                     repository.updateModelStatus(transcriptionModel.id, LocalModelStatus.NOT_INSTALLED)
                 }
-                onDownloadState(ModelDownloadStatus.Failed(downloadResult.exceptionOrNull()?.message))
+                emitState(DownloadState.Failed(exc.message))
                 return Result.failure(exc)
             }
 
             tempFilePath = downloadResult.getOrThrow()
             // 2. Verify hash
             Logger.d(tag = TAG) { "VERIFYING DOWNLOADED MODEL" }
-            onDownloadState(ModelDownloadStatus.Verifying)
+            emitState(DownloadState.Verifying)
 
             val isVerified = verifier.validateModelHash(tempFilePath, transcriptionModel)
             if (!isVerified) {
@@ -92,7 +100,7 @@ internal class ModelDownloadManagerImpl(
                     // delete the temporary downloaded model
                     tempFileManage.clearCache(tempFilePath)
                 }
-                onDownloadState(ModelDownloadStatus.Failed("Verification failed"))
+                emitState(DownloadState.Failed("Verification failed"))
                 return Result.failure(ModelVerificationFailedException())
             }
 
@@ -101,7 +109,7 @@ internal class ModelDownloadManagerImpl(
 
             saveResult.fold(
                 onSuccess = {
-                    onDownloadState(ModelDownloadStatus.Success)
+                    emitState(DownloadState.Success)
                     Result.success(true)
                 },
                 onFailure = { error ->
@@ -109,17 +117,17 @@ internal class ModelDownloadManagerImpl(
                     withContext(NonCancellable) {
                         tempFileManage.clearCache(tempFilePath)
                     }
-                    onDownloadState(ModelDownloadStatus.Failed(error.message))
+                    emitState(DownloadState.Failed(error.message))
                     Result.failure(error)
                 },
             )
 
         } catch (e: CancellationException) {
             Logger.w(tag = TAG) { "OPERATION CANCELLED" }
-            onDownloadState(ModelDownloadStatus.Failed("Operation Cancelled"))
             throw e
         } catch (e: Exception) {
             Logger.e(tag = TAG, throwable = e) { "FAILED TO PERFORM DOWNLOAD" }
+            emitState(DownloadState.Failed(e.message))
             Result.failure(e)
         } finally {
             withContext(NonCancellable) {

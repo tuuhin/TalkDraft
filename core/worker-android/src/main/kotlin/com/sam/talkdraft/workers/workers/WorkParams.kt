@@ -18,6 +18,7 @@ object WorkParams {
 
     // associated with model download observation
     const val TRANSCRIPTION_STATUS_KEY = "transcription_status"
+    const val TRANSCRIPTION_STATUS_MODEL_ID_KEY = "transcription_status_model_id"
     const val TRANSCRIPTION_STATUS_STARTING_DOWNLOAD = "transcription_status_download_started"
     const val TRANSCRIPTION_STATUS_DOWNLOAD_FAILED = "transcription_status_download_failed"
     const val TRANSCRIPTION_STATUS_DOWNLOAD_FAILED_REASON = "transcription_status_download_failed_reason"

@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import co.touchlab.kermit.Logger
 import com.sam.talkdraft.background_jobs.IModelDownloadRegistrar
+import com.sam.talkdraft.model_downloader.domain.models.DownloadState
 import com.sam.talkdraft.model_downloader.domain.models.ModelDownloadStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 import com.sam.talkdraft.workers.workers.TranscriptionModuleDownloadWorker
@@ -18,7 +19,9 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
+import kotlin.uuid.toKotlinUuid
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
@@ -46,6 +49,7 @@ actual class ModelDownloadRegistrar(private val context: Context) : IModelDownlo
             .setConstraints(constraints)
             .setInitialDelay(2.seconds.toJavaDuration())
             .addTag(DOWNLOAD_WORK_TAG_PREFIX + model.id)
+            .addTag(DOWNLOAD_WORKER_TAG)
             .build()
 
         workManager.enqueueUniqueWork(WORK_NAME_PREFIX + model.id, ExistingWorkPolicy.REPLACE, downloadRequest)
@@ -62,6 +66,21 @@ actual class ModelDownloadRegistrar(private val context: Context) : IModelDownlo
                 if (workInfo == null) return@mapNotNull null
                 mapWorkInfoToStatus(workInfo)
             }
+            .distinctUntilChanged()
+    }
+
+    override fun observerDownloadStatus(model: TranscriptionModel): Flow<Pair<Uuid, ModelDownloadStatus?>> {
+        return workManager.getWorkInfosByTagFlow(DOWNLOAD_WORKER_TAG)
+            .onStart { Logger.d(tag = TAG) { "OBSERVING WORKER WITH WORKER TAG" } }
+            .onCompletion { Logger.d(tag = TAG) { "OBSERVATION FINISHED WORKER TAG" } }
+            .mapNotNull { workInfos ->
+                workInfos
+                    .filter { it.state == WorkInfo.State.RUNNING }
+                    .map { it.id.toKotlinUuid() to mapWorkInfoToStatus(it) }
+                    .filter { (_, value) -> value != null }
+                    .firstOrNull { (_, status) -> status?.modelId == model.id }
+            }
+            .distinctUntilChanged()
     }
 
     actual override fun cancelDownload(uuid: Uuid) {
@@ -70,49 +89,64 @@ actual class ModelDownloadRegistrar(private val context: Context) : IModelDownlo
     }
 
     private fun mapWorkInfoToStatus(workInfo: WorkInfo): ModelDownloadStatus? {
+
         val progressData = workInfo.progress
         val outputData = workInfo.outputData
+
+        val modelIdString = progressData.getString(WorkParams.TRANSCRIPTION_STATUS_MODEL_ID_KEY)
+            ?: outputData.getString(WorkParams.TRANSCRIPTION_STATUS_MODEL_ID_KEY)
+            ?: return null
+
+        val modelId = try {
+            Uuid.parse(modelIdString)
+        } catch (_: Exception) {
+            Logger.d(tag = TAG) { "MISSING MODEL ID CANNOT OBSERVE" }
+            return null
+        }
+
         val statusKey = progressData.getString(WorkParams.TRANSCRIPTION_STATUS_KEY)
 
-        return when (workInfo.state) {
+        val state: DownloadState = when (workInfo.state) {
             WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
-                Logger.d(tag = TAG) { "WORKER ENQUEUE " }
-                ModelDownloadStatus.DownloadInitiated
+                Logger.d(tag = TAG) { "WORKER ENQUEUE" }
+                DownloadState.Initiated
             }
 
             WorkInfo.State.RUNNING -> when (statusKey) {
+                WorkParams.TRANSCRIPTION_STATUS_STARTING_DOWNLOAD -> DownloadState.Initiated
                 WorkParams.TRANSCRIPTION_STATUS_DOWNLOADING -> {
                     val percentage = progressData.getFloat(WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_PERCENTAGE, 0f)
-                    ModelDownloadStatus.Downloading(percentage)
+                    DownloadState.Downloading(percentage)
                 }
 
-                WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_SUCCESS -> ModelDownloadStatus.Success
-                WorkParams.TRANSCRIPTION_STATUS_VERIFYING -> ModelDownloadStatus.Verifying
-                WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED -> ModelDownloadStatus.Failed()
-                WorkParams.TRANSCRIPTION_STATUS_STARTING_DOWNLOAD -> ModelDownloadStatus.DownloadInitiated
-                else -> null
+                WorkParams.TRANSCRIPTION_STATUS_VERIFYING -> DownloadState.Verifying
+                WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_SUCCESS -> DownloadState.Success
+                WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED -> DownloadState.Failed()
+                else -> return null
             }
 
             WorkInfo.State.SUCCEEDED -> {
                 Logger.d(tag = TAG) { "WORKER SUCCESSFULLY COMPLETED" }
-                ModelDownloadStatus.Success
+                DownloadState.Success
             }
 
             WorkInfo.State.FAILED -> {
                 val message = outputData.getString(WorkParams.TRANSCRIPTION_MODEL_DOWNLOAD_FAILED_REASON_MESSAGE)
                 Logger.d(tag = TAG) { "WORKER FAILED :$message" }
-                ModelDownloadStatus.Failed(message)
+                DownloadState.Failed(message)
             }
 
             WorkInfo.State.CANCELLED -> {
                 Logger.d(tag = TAG) { "WORKER WAS CANCELLED" }
-                ModelDownloadStatus.Failed("Download Cancelled")
+                DownloadState.Failed("Download Cancelled")
             }
         }
+        return ModelDownloadStatus(modelId = modelId, state = state)
     }
 
     companion object {
         private const val WORK_NAME_PREFIX = "model_download_"
         private const val DOWNLOAD_WORK_TAG_PREFIX = "tag_model_download_"
+        private const val DOWNLOAD_WORKER_TAG = "model_downloader_tag"
     }
 }

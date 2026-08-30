@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.work.CoroutineWorker
+import androidx.work.Data
 import androidx.work.ForegroundInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -13,6 +14,7 @@ import androidx.work.workDataOf
 import com.sam.talkdraft.analytics.AnalyticsEvent
 import com.sam.talkdraft.analytics.IAnalyticsProvider
 import com.sam.talkdraft.model_downloader.domain.IModelDownloadManager
+import com.sam.talkdraft.model_downloader.domain.models.DownloadState
 import com.sam.talkdraft.model_downloader.domain.models.ModelDownloadStatus
 import com.sam.talkdraft.notifications.NotificationConstants
 import com.sam.talkdraft.workers.R
@@ -58,7 +60,7 @@ class TranscriptionModuleDownloadWorker internal constructor(
         }
 
         if (environment.isProd)
-            setForegroundAsync(createNotification(ModelDownloadStatus.DownloadInitiated))
+            setForegroundAsync(createNotification(DownloadState.Initiated))
 
         val taskResult = downloader.downloadAndSaveModel(
             modelId = modelId,
@@ -67,7 +69,7 @@ class TranscriptionModuleDownloadWorker internal constructor(
                 setProgressAsync(getWorkDataForState(state))
                 // Safely post foreground notification update
                 if (environment.isProd)
-                    setForegroundAsync(createNotification(state))
+                    setForegroundAsync(createNotification(state.state))
             },
         )
 
@@ -101,40 +103,56 @@ class TranscriptionModuleDownloadWorker internal constructor(
         )
     }
 
-    private fun getWorkDataForState(state: ModelDownloadStatus) = when (state) {
-        ModelDownloadStatus.DownloadInitiated -> workDataOf(
-            WorkParams.TRANSCRIPTION_STATUS_KEY to WorkParams.TRANSCRIPTION_STATUS_STARTING_DOWNLOAD,
-        )
+    private fun getWorkDataForState(status: ModelDownloadStatus): Data {
+        val builder = Data.Builder()
+        builder.putString(WorkParams.TRANSCRIPTION_STATUS_MODEL_ID_KEY, status.modelId.toString())
 
-        is ModelDownloadStatus.Downloading -> workDataOf(
-            WorkParams.TRANSCRIPTION_STATUS_KEY to WorkParams.TRANSCRIPTION_STATUS_DOWNLOADING,
-            WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_PERCENTAGE to state.percentage,
-        )
+        when (val state = status.state) {
+            DownloadState.Initiated ->
+                builder.putString(
+                    WorkParams.TRANSCRIPTION_STATUS_KEY,
+                    WorkParams.TRANSCRIPTION_STATUS_STARTING_DOWNLOAD,
+                )
 
-        is ModelDownloadStatus.Failed -> workDataOf(
-            WorkParams.TRANSCRIPTION_STATUS_KEY to WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED,
-            WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED_REASON to state.message,
-        )
+            is DownloadState.Downloading -> {
+                builder.putString(WorkParams.TRANSCRIPTION_STATUS_KEY, WorkParams.TRANSCRIPTION_STATUS_DOWNLOADING)
+                builder.putFloat(WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_PERCENTAGE, state.progress)
+            }
 
-        ModelDownloadStatus.Success -> workDataOf(
-            WorkParams.TRANSCRIPTION_STATUS_KEY to WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_SUCCESS,
-        )
+            DownloadState.Verifying -> builder.putString(
+                WorkParams.TRANSCRIPTION_STATUS_KEY, WorkParams.TRANSCRIPTION_STATUS_VERIFYING,
+            )
 
-        ModelDownloadStatus.Verifying -> workDataOf(
-            WorkParams.TRANSCRIPTION_STATUS_KEY to WorkParams.TRANSCRIPTION_STATUS_VERIFYING,
-        )
+            DownloadState.Success -> builder.putString(
+                WorkParams.TRANSCRIPTION_STATUS_KEY, WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_SUCCESS,
+            )
+
+            is DownloadState.Failed -> {
+                builder.putString(WorkParams.TRANSCRIPTION_STATUS_KEY, WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED)
+                state.message?.let {
+                    builder.putString(WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED_REASON, it)
+                }
+            }
+        }
+        return builder.build()
     }
 
-    private fun createNotification(state: ModelDownloadStatus): ForegroundInfo {
+    // Helper function to safely drop null entries when state.message is null
+    private fun <K, V> arrayOfNotNull(vararg elements: Pair<K, V>?): Array<Pair<K, V>> =
+        elements.filterNotNull().toTypedArray()
+
+    private fun createNotification(state: DownloadState): ForegroundInfo {
         val title = applicationContext.getString(R.string.downloading_speech_model_notification_title)
-        val isTerminalState = state is ModelDownloadStatus.Success || state is ModelDownloadStatus.Failed
+        val isTerminalState = state is DownloadState.Success ||
+            state is DownloadState.Failed
+
 
         val textResource = when (state) {
-            ModelDownloadStatus.DownloadInitiated -> R.string.start_download_notification_body
-            is ModelDownloadStatus.Downloading -> R.string.downloading_speech_model_notification_body
-            is ModelDownloadStatus.Failed -> R.string.failed_speech_model_download_notification_body
-            ModelDownloadStatus.Success -> R.string.speech_model_notification_download_success
-            ModelDownloadStatus.Verifying -> R.string.verifying_speech_model_notification_body
+            is DownloadState.Downloading -> R.string.downloading_speech_model_notification_body
+            is DownloadState.Failed -> R.string.failed_speech_model_download_notification_body
+            DownloadState.Initiated -> R.string.start_download_notification_body
+            DownloadState.Success -> R.string.speech_model_notification_download_success
+            DownloadState.Verifying -> R.string.verifying_speech_model_notification_body
         }
 
         val builder =
@@ -157,14 +175,15 @@ class TranscriptionModuleDownloadWorker internal constructor(
             builder.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
         }
 
+
         when (state) {
-            is ModelDownloadStatus.Downloading -> builder.setProgress(
+            is DownloadState.Downloading -> builder.setProgress(
                 100,
-                state.percentage.roundToInt().coerceAtMost(100),
+                state.progress.roundToInt().coerceAtMost(100),
                 false,
             )
 
-            ModelDownloadStatus.Verifying -> builder.setProgress(100, 0, true)
+            DownloadState.Verifying -> builder.setProgress(100, 0, true)
             else -> builder.setProgress(0, 0, false)
         }
 

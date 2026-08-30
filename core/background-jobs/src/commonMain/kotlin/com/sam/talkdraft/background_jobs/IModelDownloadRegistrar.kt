@@ -11,5 +11,7 @@ interface IModelDownloadRegistrar {
 
     fun observerDownloadStatus(uuid: Uuid): Flow<ModelDownloadStatus>
 
+    fun observerDownloadStatus(model: TranscriptionModel): Flow<Pair<Uuid, ModelDownloadStatus?>>
+
     fun cancelDownload(uuid: Uuid)
 }
