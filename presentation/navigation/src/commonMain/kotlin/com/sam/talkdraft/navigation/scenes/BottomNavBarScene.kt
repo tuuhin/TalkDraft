@@ -5,7 +5,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -38,7 +39,14 @@ internal class BottomSheetScene<T : Any>(
 
         val scope = rememberCoroutineScope()
 
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = isSkipPartiallyExpanded)
+        val sheetState = rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = buildSet {
+                addAll(listOf(SheetValue.Hidden, SheetValue.Expanded))
+                if (!isSkipPartiallyExpanded) add(SheetValue.PartiallyExpanded)
+            },
+
+            )
 
         LaunchedEffect(Unit) {
             if (isSkipPartiallyExpanded) sheetState.show()
@@ -55,7 +63,8 @@ internal class BottomSheetScene<T : Any>(
         ) {
             Box(
                 modifier = Modifier
-                    .padding(horizontal = Dimensions.MODAL_BOTTOM_SHEET_CONTENT_PADDING),
+                    .padding(horizontal = Dimensions.MODAL_BOTTOM_SHEET_CONTENT_PADDING)
+                    .padding(bottom = Dimensions.SCAFFOLD_VERTICAL_PADDING),
                 contentAlignment = Alignment.Center,
             ) {
                 entry.Content()

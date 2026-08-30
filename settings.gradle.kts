@@ -64,5 +64,6 @@ include(":presentation:design-system")
 include(":presentation:onboarding")
 include(":presentation:navigation")
 include(":presentation:home")
+include(":presentation:model-management")
 // app layer to hold platform
 include(":app")

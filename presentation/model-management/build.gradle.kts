@@ -17,7 +17,7 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
     android {
-        namespace = "com.sam.talkdraft.onboarding"
+        namespace = "com.sam.talkdraft.model_management"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
@@ -48,10 +48,12 @@ kotlin {
             // local
             implementation(project(":core:common"))
             implementation(project(":core:analytics"))
+            implementation(project(":core:background-jobs"))
             implementation(project(":presentation:design-system"))
             implementation(project(":presentation:navigation"))
             implementation(project(":feature:onboarding"))
             implementation(project(":feature:model-manager"))
+            implementation(project(":feature:model-downloader"))
         }
     }
 

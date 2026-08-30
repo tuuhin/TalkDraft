@@ -63,6 +63,7 @@ kotlin {
             api(project(":core:transcription-core"))
             api(project(":core:background-jobs"))
             api(project(":core:remote-config"))
+
             // feature modules
             implementation(project(":feature:model-manager"))
             implementation(project(":feature:model-downloader"))
@@ -73,6 +74,7 @@ kotlin {
             implementation(project(":presentation:navigation"))
             implementation(project(":presentation:onboarding"))
             implementation(project(":presentation:home"))
+            implementation(project(":presentation:model-management"))
         }
 
         iosMain.dependencies {
