@@ -9,12 +9,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -22,6 +19,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RichTooltip
+import androidx.compose.material3.RichTooltipColors
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
@@ -38,8 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sam.talkdraft.designs.CommonResources
 import com.sam.talkdraft.designs.app_name
-import com.sam.talkdraft.designs.ic_app_logo
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -48,110 +44,73 @@ internal fun OnBoardingScreenTopBar(
     onPreviousScreen: () -> Unit,
     modifier: Modifier = Modifier,
     showPrevious: Boolean = false,
+    showSkipTourButton: Boolean = false,
     scrollBehaviour: TopAppBarScrollBehavior? = null,
     colors: TopAppBarColors = TopAppBarDefaults.topAppBarColors(),
 ) {
     CenterAlignedTopAppBar(
         title = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Image(
-                    painter = painterResource(CommonResources.drawable.ic_app_logo),
-                    contentDescription = "App logo",
-                    modifier = Modifier.size(32.dp),
-                )
-                Text(
-                    text = stringResource(CommonResources.string.app_name),
-                    style = MaterialTheme.typography.titleLargeEmphasized,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.6.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
+            Text(
+                text = stringResource(CommonResources.string.app_name),
+                style = MaterialTheme.typography.titleLargeEmphasized,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.6.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
         },
         actions = {
-            TooltipBox(
-                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                    positioning = TooltipAnchorPosition.Below,
-                    spacingBetweenTooltipAndAnchor = 4.dp,
-                ),
-                tooltip = {
-                    RichTooltip(
-                        title = { Text("Skip tour") },
-                        text = { Text(text = "Skip this whole tour and get start with ") },
-                        shape = MaterialTheme.shapes.extraLarge,
-                    )
-                },
-                state = rememberTooltipState(),
+            AnimatedTopAppbarButtons(
+                show = showSkipTourButton,
+                tooltipTitle = "Skip tour",
+                tooltipText = "Skip this whole tour and get start with ",
             ) {
                 Button(
                     onClick = onSkipFullTour,
+                    enabled = showSkipTourButton,
                     shapes = ButtonDefaults.shapes(
                         shape = MaterialTheme.shapes.extraLarge,
                         pressedShape = ButtonDefaults.pressedShape,
                     ),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     ),
                     contentPadding = PaddingValues(vertical = 8.dp, horizontal = 16.dp),
                 ) {
-                    Text(text = "Skip tour", style = MaterialTheme.typography.titleMediumEmphasized, fontSize = 14.sp)
+                    Text(
+                        text = "Skip tour",
+                        style = MaterialTheme.typography.titleMediumEmphasized,
+                        fontSize = 14.sp,
+                    )
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
         },
         navigationIcon = {
-            AnimatedVisibility(
-                showPrevious,
-                enter = scaleIn(
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                    initialScale = .4f,
-                ) + fadeIn(
-                    animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
-                    initialAlpha = .2f,
-                ),
-                exit = shrinkOut(
-                    animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
-                    shrinkTowards = Alignment.Center,
-                ) + fadeOut(
-                    animationSpec = tween(durationMillis = 80, easing = EaseOut),
-                ),
+            AnimatedTopAppbarButtons(
+                show = showPrevious,
+                tooltipTitle = "Previous",
+                tooltipText = "Check the previous screen about what we offer",
+                modifier = Modifier.offset(x = 2.dp),
             ) {
-                TooltipBox(
-                    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                        positioning = TooltipAnchorPosition.Below,
-                        spacingBetweenTooltipAndAnchor = 4.dp,
+                OutlinedButton(
+                    onClick = onPreviousScreen,
+                    enabled = showPrevious,
+                    shapes = ButtonDefaults.shapes(
+                        shape = MaterialTheme.shapes.extraLarge,
+                        pressedShape = ButtonDefaults.pressedShape,
                     ),
-                    tooltip = {
-                        RichTooltip(
-                            title = { Text("Previous") },
-                            text = { Text(text = "Check the previous screen about what we offer") },
-                            shape = MaterialTheme.shapes.extraLarge,
-                        )
-                    },
-                    state = rememberTooltipState(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.tertiary,
+                    ),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.tertiary),
+                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 16.dp),
                 ) {
-                    OutlinedButton(
-                        onClick = onPreviousScreen,
-                        shapes = ButtonDefaults.shapes(
-                            shape = MaterialTheme.shapes.extraLarge,
-                            pressedShape = ButtonDefaults.pressedShape,
-                        ),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.tertiary,
-                        ),
-                        border = BorderStroke(2.dp, MaterialTheme.colorScheme.tertiary),
-                        contentPadding = PaddingValues(vertical = 8.dp, horizontal = 16.dp),
-                    ) {
-                        Text(
-                            text = "Previous",
-                            style = MaterialTheme.typography.titleMediumEmphasized,
-                            fontSize = 14.sp,
-                        )
-                    }
+                    Text(
+                        text = "Previous",
+                        style = MaterialTheme.typography.titleMediumEmphasized,
+                        fontSize = 14.sp,
+                    )
                 }
             }
         },
@@ -159,4 +118,52 @@ internal fun OnBoardingScreenTopBar(
         scrollBehavior = scrollBehaviour,
         colors = colors,
     )
+}
+
+
+@Composable
+private fun AnimatedTopAppbarButtons(
+    tooltipTitle: String,
+    tooltipText: String,
+    show: Boolean,
+    modifier: Modifier = Modifier,
+    tooltipColors: RichTooltipColors = TooltipDefaults.richTooltipColors(),
+    content: @Composable () -> Unit,
+) {
+    AnimatedVisibility(
+        visible = show,
+        enter = scaleIn(
+            animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+            initialScale = .4f,
+        ) + fadeIn(
+            animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
+            initialAlpha = .2f,
+        ),
+        exit = shrinkOut(
+            animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
+            shrinkTowards = Alignment.Center,
+        ) + fadeOut(
+            animationSpec = tween(durationMillis = 80, easing = EaseOut),
+        ),
+        modifier = modifier,
+    ) {
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                positioning = TooltipAnchorPosition.Below,
+                spacingBetweenTooltipAndAnchor = 4.dp,
+            ),
+            enableUserInput = false,
+            tooltip = {
+                RichTooltip(
+                    title = { Text(text = tooltipTitle) },
+                    text = { Text(text = tooltipText) },
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = tooltipColors,
+                )
+            },
+
+            state = rememberTooltipState(),
+            content = content,
+        )
+    }
 }

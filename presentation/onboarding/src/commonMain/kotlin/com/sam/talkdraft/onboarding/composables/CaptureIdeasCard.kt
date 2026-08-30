@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -54,7 +55,7 @@ internal fun CaptureIdeaCard(
         onClick = onSelect,
         modifier = modifier,
         shape = if (isSelected) MaterialTheme.shapes.extraExtraLarge else MaterialTheme.shapes.extraLarge,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary),
         color = colorAnimation,
         contentColor = contentColorFor(selectedContainerColor),
         interactionSource = interactionSource,
@@ -64,7 +65,14 @@ internal fun CaptureIdeaCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Checkbox(checked = isSelected, onCheckedChange = { onSelect() })
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onSelect() },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.secondary,
+                    checkmarkColor = MaterialTheme.colorScheme.onSecondary,
+                ),
+            )
             Column(
                 verticalArrangement = Arrangement.spacedBy(2.dp),
                 modifier = Modifier.weight(1f),

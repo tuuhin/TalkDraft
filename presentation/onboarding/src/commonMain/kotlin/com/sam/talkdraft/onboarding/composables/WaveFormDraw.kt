@@ -99,7 +99,8 @@ internal fun WaveFormDraw(
         transitionSpec = { tween(durationMillis = 350, easing = FastOutSlowInEasing) },
         label = "WaveFormPointCount",
     ) { scene ->
-        val progress = (scene.index / OnboardingScene.FIRST_TRANSCRIPT_SCREEN.index.toFloat()).coerceIn(0f, 1f)
+        val maxEntry = OnboardingScene.entries.maxOf { it.index }.toFloat()
+        val progress = (scene.index / maxEntry).coerceIn(0f, 1f)
         lerp(1.0f, 0.4f, progress)
     }
 
@@ -122,7 +123,7 @@ internal fun WaveFormDraw(
             }
             .drawWithCache {
 
-                val maxNoOfPoints = (numberOfPoints * 0.8f).fastRoundToInt()
+                val maxNoOfPoints = (numberOfPoints * 0.75f).fastRoundToInt()
                 val maxRandomSize = randomSet.max()
                 val randomMultiplier = size.height * 0.08f / maxRandomSize
                 val waveYAxisAnchor = .35f

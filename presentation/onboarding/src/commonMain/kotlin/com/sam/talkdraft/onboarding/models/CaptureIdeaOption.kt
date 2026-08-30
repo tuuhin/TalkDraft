@@ -22,7 +22,7 @@ import talkdraft.presentation.onboarding.generated.resources.ic_metting_outlined
 import talkdraft.presentation.onboarding.generated.resources.ic_note_filled
 import talkdraft.presentation.onboarding.generated.resources.ic_note_outlined
 
-enum class CaptureIdeaOption {
+internal enum class CaptureIdeaOption {
     IDEAS,
     PERSONAL_NOTE,
     MEETINGS,

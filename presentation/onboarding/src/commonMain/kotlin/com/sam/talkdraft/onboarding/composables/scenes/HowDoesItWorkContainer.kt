@@ -13,8 +13,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sam.talkdraft.onboarding.composables.OnboardingContextAction
@@ -39,18 +44,45 @@ internal fun HowDoesItWorkContainer(
                     color = MaterialTheme.colorScheme.secondary,
                 ),
             ) {
-                Text(text = "Turn thoughts")
-                Text(text = "into something clear.")
+                Text(
+                    text = buildAnnotatedString {
+                        append("Turn ")
+                        withStyle(
+                            style = SpanStyle(
+                                fontWeight = FontWeight.ExtraBold,
+                                fontStyle = FontStyle.Italic,
+                                textDecoration = TextDecoration.Underline,
+                            ),
+                        ) {
+                            append("thoughts")
+                        }
+                    },
+                )
+                Text(text = "into")
+                Text(
+                    text = buildAnnotatedString {
+                        append("something ")
+                        withStyle(
+                            style = SpanStyle(
+                                fontWeight = FontWeight.ExtraBold,
+                                fontStyle = FontStyle.Italic,
+                                textDecoration = TextDecoration.Underline,
+                            ),
+                        ) {
+                            append("clear")
+                        }
+                    },
+                )
             }
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Speak naturally. Your words become text as you think",
-            style = MaterialTheme.typography.titleMediumEmphasized,
+            style = MaterialTheme.typography.bodyLargeEmphasized,
             letterSpacing = 1.1.sp,
             fontWeight = FontWeight.SemiBold,
         )
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         OnboardingContextAction(title = "Continue", onClick = onAction)
     }
 }

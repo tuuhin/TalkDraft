@@ -9,12 +9,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sam.talkdraft.onboarding.composables.OnboardingContextAction
@@ -45,25 +47,38 @@ internal fun LocalAndPrivacyScene(
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = "Transcribe with AI running locally, even when you're offline",
-            style = MaterialTheme.typography.bodyMediumEmphasized,
+            style = MaterialTheme.typography.bodyLargeEmphasized,
             letterSpacing = 1.1.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "More powerful AI when you need it",
-            style = MaterialTheme.typography.bodySmallEmphasized,
+            style = MaterialTheme.typography.bodyMediumEmphasized,
             fontWeight = FontWeight.Normal,
             color = MaterialTheme.colorScheme.tertiary,
         )
         Text(
             text = "Use optional cloud AI for advanced processing",
-            style = MaterialTheme.typography.bodySmallEmphasized,
+            style = MaterialTheme.typography.bodyMediumEmphasized,
             fontWeight = FontWeight.Normal,
             color = MaterialTheme.colorScheme.tertiary,
         )
         Spacer(modifier = Modifier.height(10.dp))
         OnboardingContextAction(title = "Continue", onClick = onAction)
+        TextButton(
+            onClick = {},
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+            enabled = false,
+        ) {
+            Text(
+                text = "Privacy policy",
+                letterSpacing = 1.2.sp,
+                style = MaterialTheme.typography.labelLargeEmphasized,
+                textDecoration = TextDecoration.Underline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 
 }

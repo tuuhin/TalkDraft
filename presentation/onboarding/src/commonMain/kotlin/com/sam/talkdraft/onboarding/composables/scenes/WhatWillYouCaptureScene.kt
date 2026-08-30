@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,6 +36,7 @@ internal fun WhatWillYouCaptureScene(
     titleStyle: TextStyle = MaterialTheme.typography.displaySmallEmphasized,
     contentPadding: PaddingValues = PaddingValues.Zero,
 ) {
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = modifier.fillMaxWidth()
@@ -56,26 +59,36 @@ internal fun WhatWillYouCaptureScene(
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = "Choose what matters to you. You can change this anytime",
-            style = MaterialTheme.typography.titleSmallEmphasized,
+            style = MaterialTheme.typography.bodyLargeEmphasized,
             letterSpacing = 1.1.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Text(
             text = "There’s no wrong choice",
-            style = MaterialTheme.typography.titleSmallEmphasized,
+            style = MaterialTheme.typography.bodyMediumEmphasized,
+            color = MaterialTheme.colorScheme.tertiary,
             letterSpacing = 1.1.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(modifier = Modifier.height(10.dp))
-        CaptureIdeaOption.entries.fastForEach { idea ->
-            val isSelected = idea in capturedItems
-            CaptureIdeaCard(
-                idea = idea,
-                onSelect = { onSelectIdea(idea) },
-                isSelected = isSelected,
-            )
+        Column(
+            modifier = Modifier.verticalScroll(scrollState),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            CaptureIdeaOption.entries.fastForEach { idea ->
+                val isSelected = idea in capturedItems
+                CaptureIdeaCard(
+                    idea = idea,
+                    onSelect = { onSelectIdea(idea) },
+                    isSelected = isSelected,
+                )
+            }
         }
         Spacer(modifier = Modifier.weight(1f))
-        OnboardingContextAction(title = "Continue", onClick = onAction)
+        OnboardingContextAction(
+            title = "Continue",
+            onClick = onAction,
+            modifier = Modifier.padding(top = 12.dp),
+        )
     }
 }

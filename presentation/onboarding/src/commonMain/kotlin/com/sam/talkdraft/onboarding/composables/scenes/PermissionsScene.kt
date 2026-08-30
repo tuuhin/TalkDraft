@@ -1,8 +1,15 @@
 package com.sam.talkdraft.onboarding.composables.scenes
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -38,7 +45,9 @@ import com.mohamedrejeb.calf.permissions.Permission
 import com.mohamedrejeb.calf.permissions.PermissionStatus
 import com.mohamedrejeb.calf.permissions.RecordAudio
 import com.mohamedrejeb.calf.permissions.isDenied
+import com.mohamedrejeb.calf.permissions.isGranted
 import com.mohamedrejeb.calf.permissions.rememberMultiplePermissionsState
+import com.mohamedrejeb.calf.permissions.shouldShowRationale
 import com.sam.talkdraft.common.model.PlatformTarget
 import com.sam.talkdraft.designs.CommonResources
 import com.sam.talkdraft.designs.app_name
@@ -48,6 +57,8 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import talkdraft.presentation.onboarding.generated.resources.Res
 import talkdraft.presentation.onboarding.generated.resources.ic_mic_filled
+import talkdraft.presentation.onboarding.generated.resources.ic_no_mic
+import talkdraft.presentation.onboarding.generated.resources.ic_no_notification
 import talkdraft.presentation.onboarding.generated.resources.ic_notification_bell
 import talkdraft.presentation.onboarding.generated.resources.permission_notificaiton_text
 import talkdraft.presentation.onboarding.generated.resources.permission_record_audio_text
@@ -62,58 +73,67 @@ internal fun PermissionsScene(
     contentPadding: PaddingValues = PaddingValues.Zero,
     platform: PlatformTarget = PlatformTarget.UNKNOWN,
 ) {
-    val permissions = rememberMultiplePermissionsState(listOf(Permission.Notification, Permission.RecordAudio))
+    val permissions = rememberMultiplePermissionsState(
+        listOf(Permission.Notification, Permission.RecordAudio),
+    )
 
-    val isPermanentlyDenied by remember(permissions, platform) {
+    val isPermanentlyDenied by remember {
         derivedStateOf {
             if (permissions.allPermissionsGranted) return@derivedStateOf false
-
             when (platform) {
-                PlatformTarget.IOS -> permissions.revokedPermissions.any { permissionState -> permissionState.status.isDenied }
+                PlatformTarget.IOS -> permissions.revokedPermissions
+                    .any { permissionState -> permissionState.status is PermissionStatus.Denied }
 
-
-                else -> {
-                    permissions.revokedPermissions.isNotEmpty() &&
-                        !permissions.shouldShowRationale &&
-                        permissions.revokedPermissions.any {
-                            (it.status as? PermissionStatus.Denied)?.shouldShowRationale == false
-                        }
+                PlatformTarget.ANDROID -> permissions.revokedPermissions.isNotEmpty() && permissions.revokedPermissions.any { state ->
+                    state.status.isDenied && state.status.shouldShowRationale
                 }
+
+                else -> true
             }
         }
     }
+    val recorderStatus =
+        if (permissions.permissions.any { it.permission == Permission.RecordAudio && it.status.isGranted })
+            AppPermissionStatus.GRANTED
+        else
+            AppPermissionStatus.DENIED
+
+
+    val notificationStatus =
+        if (permissions.permissions.any { it.permission == Permission.Notification && it.status.isGranted })
+            AppPermissionStatus.GRANTED
+        else AppPermissionStatus.DENIED
+
 
     Column(
-        modifier = modifier
-            .padding(contentPadding),
+        modifier = modifier.padding(contentPadding),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Column(horizontalAlignment = Alignment.Start) {
-            Text(
-                text = "A few things to get started",
-                style = MaterialTheme.typography.headlineSmallEmphasized,
-                letterSpacing = 1.2.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "1. Permissions",
-                style = titleStyle,
-                letterSpacing = 1.8.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-        }
+        Text(
+            text = "Permissions",
+            style = titleStyle,
+            letterSpacing = 1.8.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.secondary,
+        )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = stringResource(CommonResources.string.app_name) + " needs access to the features that make recording and transcription work smoothly",
+            text = stringResource(CommonResources.string.app_name) +
+                " needs access to the features that make recording and transcription work smoothly",
             style = MaterialTheme.typography.titleSmallEmphasized,
             letterSpacing = 1.1.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(modifier = Modifier.height(2.dp))
-        AppPermissions.entries.fastForEach {
-            PermissionMarker(it, modifier = Modifier.fillMaxWidth())
+        AppPermissions.entries.fastForEach { permission ->
+            PermissionMarker(
+                permission = permission,
+                status = when (permission) {
+                    AppPermissions.RECORD_AUDIO -> recorderStatus
+                    AppPermissions.NOTIFICATIONS -> notificationStatus
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
         Spacer(modifier = Modifier.height(8.dp))
         Row(
@@ -123,17 +143,21 @@ internal fun PermissionsScene(
         ) {
             val buttonTitle = when {
                 permissions.allPermissionsGranted -> "Permissions Granted"
-                isPermanentlyDenied -> "Open Settings"
+                isPermanentlyDenied -> "Permission Denied"
                 else -> "Grant Permissions"
             }
             OnboardingContextAction(
                 title = buttonTitle,
                 onClick = {
-                    if (isPermanentlyDenied) openAppSettings()
-                    else permissions.launchMultiplePermissionRequest()
+                    if (isPermanentlyDenied) {
+                        openAppSettings()
+                    } else {
+                        permissions.launchMultiplePermissionRequest()
+                    }
                 },
                 enabled = !permissions.allPermissionsGranted,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
                     .animateContentSize(MaterialTheme.motionScheme.defaultEffectsSpec()),
             )
 
@@ -144,14 +168,14 @@ internal fun PermissionsScene(
             ) {
                 FilledIconButton(
                     onClick = openAppSettings,
-                    modifier =
-                        Modifier.minimumInteractiveComponentSize()
-                            .size(IconButtonDefaults.mediumContainerSize(IconButtonDefaults.IconButtonWidthOption.Wide)),
+                    modifier = Modifier
+                        .minimumInteractiveComponentSize()
+                        .size(IconButtonDefaults.mediumContainerSize(IconButtonDefaults.IconButtonWidthOption.Wide)),
                     shape = IconButtonDefaults.extraLargeRoundShape,
                 ) {
                     Icon(
                         painter = painterResource(CommonResources.drawable.ic_settings),
-                        "Settings",
+                        contentDescription = "Settings",
                         modifier = Modifier.size(IconButtonDefaults.largeIconSize),
                     )
                 }
@@ -165,7 +189,6 @@ internal fun PermissionsScene(
     }
 }
 
-
 private enum class AppPermissions {
     RECORD_AUDIO,
     NOTIFICATIONS;
@@ -177,32 +200,61 @@ private enum class AppPermissions {
             NOTIFICATIONS -> stringResource(Res.string.permission_notificaiton_text)
         }
 
-    val painter: Painter
+    val grantedPainter: Painter
         @Composable
         get() = when (this) {
             RECORD_AUDIO -> painterResource(Res.drawable.ic_mic_filled)
             NOTIFICATIONS -> painterResource(Res.drawable.ic_notification_bell)
         }
+
+    val notGrantedPainter: Painter
+        @Composable
+        get() = when (this) {
+            RECORD_AUDIO -> painterResource(Res.drawable.ic_no_mic)
+            NOTIFICATIONS -> painterResource(Res.drawable.ic_no_notification)
+        }
+}
+
+private enum class AppPermissionStatus {
+    GRANTED, DENIED
 }
 
 @Composable
 private fun PermissionMarker(
-    permissions: AppPermissions,
+    permission: AppPermissions,
     modifier: Modifier = Modifier,
+    status: AppPermissionStatus = AppPermissionStatus.DENIED,
 ) {
+    val colorAnimation by animateColorAsState(
+        targetValue = if (status == AppPermissionStatus.GRANTED) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.error
+        },
+        label = "app_label_color",
+    )
+
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(
-            painter = permissions.painter,
-            contentDescription = "permission :${permissions.name}",
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(28.dp),
-        )
+        AnimatedContent(
+            targetState = status == AppPermissionStatus.GRANTED,
+            transitionSpec = {
+                (fadeIn() + scaleIn(initialScale = 0.4f)) togetherWith (fadeOut() + scaleOut(targetScale = 0.4f))
+            },
+            label = "fade_scale_transition",
+        ) { isGranted ->
+            Icon(
+                painter = if (isGranted) permission.grantedPainter else permission.notGrantedPainter,
+                contentDescription = if (isGranted) "Granted: $permission" else "Restricted: $permission",
+                tint = colorAnimation,
+                modifier = Modifier.size(24.dp),
+            )
+        }
         Text(
-            text = permissions.title,
+            text = permission.title,
             style = MaterialTheme.typography.bodySmallEmphasized,
             color = MaterialTheme.colorScheme.onSurface,
         )

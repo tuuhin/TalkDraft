@@ -8,5 +8,4 @@ internal enum class OnboardingScene(val index: Int) {
     PERMISSIONS(4),
     VOICE_MODEL_SETUP(5),
     FIRST_RECORDING_SCREEN(6),
-    FIRST_TRANSCRIPT_SCREEN(7),
 }

@@ -3,17 +3,20 @@ package com.sam.talkdraft.onboarding.composables
 import androidx.compose.animation.core.EaseInOutCubic
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -21,10 +24,14 @@ internal fun OnboardingIndicator(
     currentPage: Int,
     pageCount: Int,
     modifier: Modifier = Modifier,
+    onChangePage: (Int) -> Unit,
+    tapToChangePageEnable: Boolean = false,
     trackColor: Color = MaterialTheme.colorScheme.secondary,
 ) {
     require(pageCount > 0) { "Cannot work with empty pages" }
     require(currentPage < pageCount) { "Current page cannot exceed total pages" }
+
+    val currentOnChangePage by rememberUpdatedState(onChangePage)
 
     val animatedProgress by animateFloatAsState(
         targetValue = currentPage.toFloat(),
@@ -35,10 +42,22 @@ internal fun OnboardingIndicator(
     Spacer(
         modifier = modifier
             .defaultMinSize(minWidth = 320.dp, minHeight = 12.dp)
+            .pointerInput(tapToChangePageEnable) {
+                val basicX = size.width.toFloat() / pageCount
+                detectTapGestures { tapPos ->
+                    if (!tapToChangePageEnable) return@detectTapGestures
+                    repeat(pageCount) { page ->
+                        val startOffset = basicX * page
+                        val endOffset = basicX * (page + 1)
+                        if (tapPos.x in startOffset..endOffset)
+                            currentOnChangePage(page)
+                    }
+                }
+            }
             .drawWithCache {
 
-                val thickness = minOf(size.height, 4.dp.toPx())
-                val pathSpace = 12.dp.toPx()
+                val thickness = minOf(size.height, 8.dp.toPx())
+                val pathSpace = 6.dp.toPx()
                 val gapCount = maxOf(0, pageCount - 1)
 
                 val yOffset = (size.height - thickness) / 2f

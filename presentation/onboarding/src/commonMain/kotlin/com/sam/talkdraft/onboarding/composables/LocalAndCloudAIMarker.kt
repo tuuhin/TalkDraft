@@ -26,7 +26,7 @@ import talkdraft.presentation.onboarding.generated.resources.ic_cloud_ai
 import talkdraft.presentation.onboarding.generated.resources.ic_local_ai
 
 @Composable
-internal fun ProcessingMarkers(
+internal fun LocalAndCloudAIMarker(
     show: Boolean,
     modifier: Modifier = Modifier,
 ) {

@@ -20,6 +20,7 @@ internal fun LocalTranscriptionModel.toDomainModel(): TranscriptionModel = Trans
     checksum = metadata.checksum,
     status = metadata.remoteStatus,
     cachedAt = metadata.cachedAt,
+    modelPath = modelPath,
 )
 
 internal fun TranscriptionModel.toLocal() = LocalTranscriptionModel(

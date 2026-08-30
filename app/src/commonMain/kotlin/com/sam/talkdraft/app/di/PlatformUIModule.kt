@@ -2,6 +2,7 @@ package com.sam.talkdraft.app.di
 
 import com.sam.talkdraft.designsystem.di.UIDesignModule
 import com.sam.talkdraft.home.di.HomeUIModule
+import com.sam.talkdraft.model_management.di.ModelManagementUIModule
 import com.sam.talkdraft.onboarding.di.OnboardingUIModule
 import kotlin.native.HiddenFromObjC
 import org.koin.core.annotation.ComponentScan
@@ -12,6 +13,7 @@ import org.koin.core.annotation.Module
         UIDesignModule::class,
         OnboardingUIModule::class,
         HomeUIModule::class,
+        ModelManagementUIModule::class,
     ],
 )
 @HiddenFromObjC

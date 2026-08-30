@@ -38,7 +38,7 @@ internal fun WelcomeContainer(
             CompositionLocalProvider(
                 LocalTextStyle provides titleStyle.copy(
                     letterSpacing = 1.8.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Bold, lineHeight = 10.sp,
                     color = MaterialTheme.colorScheme.secondary,
                 ),
             ) {
@@ -49,7 +49,7 @@ internal fun WelcomeContainer(
         }
         Text(
             text = "Turn your thoughts into text, simply by speaking",
-            style = MaterialTheme.typography.titleMediumEmphasized,
+            style = MaterialTheme.typography.bodyLargeEmphasized,
             letterSpacing = 1.1.sp,
             fontWeight = FontWeight.SemiBold,
         )

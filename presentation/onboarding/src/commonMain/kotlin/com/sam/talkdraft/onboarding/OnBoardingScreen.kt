@@ -1,5 +1,6 @@
 package com.sam.talkdraft.onboarding
 
+import androidx.compose.animation.core.EaseIn
 import androidx.compose.animation.core.EaseInBack
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -29,31 +30,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.dp
-import com.sam.talkdraft.common.model.PlatformTarget
-import com.sam.talkdraft.designsystem.annotations.PreviewAppTheme
 import com.sam.talkdraft.designsystem.utils.Dimensions
 import com.sam.talkdraft.designsystem.utils.LocalSnackBarState
+import com.sam.talkdraft.onboarding.composables.LocalAndCloudAIMarker
+import com.sam.talkdraft.onboarding.composables.OnBoardingScenes
 import com.sam.talkdraft.onboarding.composables.OnBoardingScreenTopBar
-import com.sam.talkdraft.onboarding.composables.OnBoardingScreens
 import com.sam.talkdraft.onboarding.composables.OnboardingIndicator
-import com.sam.talkdraft.onboarding.composables.ProcessingMarkers
 import com.sam.talkdraft.onboarding.composables.WaveFormDraw
-import com.sam.talkdraft.onboarding.models.CaptureIdeaOption
 import com.sam.talkdraft.onboarding.models.OnboardingEvents
 import com.sam.talkdraft.onboarding.models.OnboardingScene
-import kotlinx.collections.immutable.ImmutableSet
-import kotlinx.collections.immutable.persistentSetOf
+import com.sam.talkdraft.onboarding.models.OnboardingScreenState
 import kotlinx.coroutines.launch
 
 @Composable
 internal fun OnBoardingScreen(
+    state: OnboardingScreenState,
     onEvent: (OnboardingEvents) -> Unit,
+    onNavigateToModelDownload: () -> Unit,
     modifier: Modifier = Modifier,
-    platform: PlatformTarget = PlatformTarget.UNKNOWN,
-    capturedIdeas: ImmutableSet<CaptureIdeaOption> = persistentSetOf<CaptureIdeaOption>(),
 ) {
 
     val snackBarHostState = LocalSnackBarState.current
@@ -63,8 +58,12 @@ internal fun OnBoardingScreen(
     val pager = rememberPagerState { OnboardingScene.entries.size }
     val scope = rememberCoroutineScope()
 
-    val canShowPrev by remember(pager) {
+    val isFirstPage by remember(pager) {
         derivedStateOf { pager.currentPage != 0 }
+    }
+
+    val isLastPage by remember(pager) {
+        derivedStateOf { pager.currentPage + 1 != pager.pageCount }
     }
 
     val currentScene by remember(pager.currentPage) {
@@ -77,14 +76,15 @@ internal fun OnBoardingScreen(
     Scaffold(
         topBar = {
             OnBoardingScreenTopBar(
-                onSkipFullTour = { onEvent(OnboardingEvents.OnSkipOnboarding) },
+                onSkipFullTour = { onEvent(OnboardingEvents.OnSkipOnboarding(currentScene)) },
                 onPreviousScreen = {
                     scope.launch {
                         val current = pager.currentPage
                         if (current > 0) pager.animateScrollToPage(current - 1)
                     }
                 },
-                showPrevious = canShowPrev,
+                showPrevious = isFirstPage,
+                showSkipTourButton = isLastPage,
                 scrollBehaviour = scrollBehavior,
             )
         },
@@ -104,9 +104,16 @@ internal fun OnBoardingScreen(
             OnboardingIndicator(
                 pageCount = pager.pageCount,
                 currentPage = pager.currentPage,
+                onChangePage = { page ->
+                    val animation = tween<Float>(durationMillis = 120, easing = EaseIn)
+                    scope.launch {
+                        pager.animateScrollToPage(page, animationSpec = animation)
+                    }
+                },
+                tapToChangePageEnable = true,
                 modifier = Modifier.height(12.dp)
                     .widthIn(max = 320.dp)
-                    .fillMaxWidth(.8f),
+                    .fillMaxWidth(.6f),
             )
             Box(
                 modifier = Modifier.weight(1f),
@@ -116,7 +123,7 @@ internal fun OnBoardingScreen(
                     screen = currentScene,
                     modifier = Modifier.fillMaxSize(),
                 )
-                ProcessingMarkers(
+                LocalAndCloudAIMarker(
                     show = currentScene == OnboardingScene.LOCAL_FIRST_AND_PRIVACY,
                     modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
                 )
@@ -128,20 +135,23 @@ internal fun OnBoardingScreen(
                         snapPositionalThreshold = .2f,
                         snapAnimationSpec = MaterialTheme.motionScheme.slowEffectsSpec(),
                     ),
+                    modifier = Modifier.fillMaxSize(),
                 ) { idx ->
-                    OnBoardingScreens(
+                    OnBoardingScenes(
                         page = idx,
-                        capturedIdeas = capturedIdeas,
+                        capturedIdeas = state.capturedIdeas,
+                        recommendModel = state.recommended,
+                        platform = state.platform,
+                        onNavigateToModelDownload = onNavigateToModelDownload,
                         onUpdateCaptureIdea = { onEvent(OnboardingEvents.OnAddToCaptureItems(it)) },
                         onOpenAppSettings = { onEvent(OnboardingEvents.RequestOpenAppSettings) },
-                        platform = platform,
                         onAction = {
+                            val current = pager.currentPage
+                            val max = pager.pageCount
+                            val animation = tween<Float>(easing = EaseInBack)
                             scope.launch {
-                                val current = pager.currentPage
-                                val max = pager.pageCount
                                 if (current < max) {
-                                    val animtion = tween<Float>(easing = EaseInBack)
-                                    pager.animateScrollToPage(current + 1, animationSpec = animtion)
+                                    pager.animateScrollToPage(current + 1, animationSpec = animation)
                                 }
                             }
                         },
@@ -155,12 +165,4 @@ internal fun OnBoardingScreen(
             }
         }
     }
-}
-
-
-@Preview
-@Composable
-@PreviewWrapper(PreviewAppTheme::class)
-private fun OnBoardingScreenPreview() {
-    OnBoardingScreen(onEvent = {})
 }
