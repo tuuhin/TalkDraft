@@ -39,20 +39,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
-import com.mohamedrejeb.calf.permissions.ExperimentalPermissionsApi
-import com.mohamedrejeb.calf.permissions.Notification
-import com.mohamedrejeb.calf.permissions.Permission
-import com.mohamedrejeb.calf.permissions.PermissionStatus
-import com.mohamedrejeb.calf.permissions.RecordAudio
-import com.mohamedrejeb.calf.permissions.isDenied
-import com.mohamedrejeb.calf.permissions.isGranted
-import com.mohamedrejeb.calf.permissions.rememberMultiplePermissionsState
-import com.mohamedrejeb.calf.permissions.shouldShowRationale
 import com.sam.talkdraft.common.model.PlatformTarget
 import com.sam.talkdraft.designs.CommonResources
 import com.sam.talkdraft.designs.app_name
 import com.sam.talkdraft.designs.ic_settings
 import com.sam.talkdraft.onboarding.composables.OnboardingContextAction
+import com.sam.talkdraft.permissions.model.IosPermissionStatus
+import com.sam.talkdraft.permissions.model.PermissionState
+import com.sam.talkdraft.permissions.model.Permissions
+import kotlinx.collections.immutable.ImmutableMap
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import talkdraft.presentation.onboarding.generated.resources.Res
@@ -63,47 +58,44 @@ import talkdraft.presentation.onboarding.generated.resources.ic_notification_bel
 import talkdraft.presentation.onboarding.generated.resources.permission_notificaiton_text
 import talkdraft.presentation.onboarding.generated.resources.permission_record_audio_text
 
-@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 internal fun PermissionsScene(
+    permissions: ImmutableMap<Permissions, PermissionState>,
     onAction: () -> Unit,
+    onRequestPermissions: () -> Unit,
     openAppSettings: () -> Unit,
     modifier: Modifier = Modifier,
     titleStyle: TextStyle = MaterialTheme.typography.displaySmallEmphasized,
     contentPadding: PaddingValues = PaddingValues.Zero,
     platform: PlatformTarget = PlatformTarget.UNKNOWN,
 ) {
-    val permissions = rememberMultiplePermissionsState(
-        listOf(Permission.Notification, Permission.RecordAudio),
-    )
-
-    val isPermanentlyDenied by remember {
+    val allPermissionsGranted by remember(permissions) {
         derivedStateOf {
-            if (permissions.allPermissionsGranted) return@derivedStateOf false
-            when (platform) {
-                PlatformTarget.IOS -> permissions.revokedPermissions
-                    .any { permissionState -> permissionState.status is PermissionStatus.Denied }
-
-                PlatformTarget.ANDROID -> permissions.revokedPermissions.isNotEmpty() && permissions.revokedPermissions.any { state ->
-                    state.status.isDenied && state.status.shouldShowRationale
+            permissions.values.all { state ->
+                when (state) {
+                    is PermissionState.AndroidPermissionState -> state.isGranted
+                    is PermissionState.IosPermissionState -> state.status == IosPermissionStatus.GRANTED
                 }
+            }
+        }
+    }
+
+    val isPermanentlyDenied by remember(permissions, platform) {
+        derivedStateOf {
+            if (allPermissionsGranted) return@derivedStateOf false
+            println(permissions.values)
+
+            when (platform) {
+                PlatformTarget.IOS -> permissions.values.filterIsInstance<PermissionState.IosPermissionState>()
+                    .any { state -> state.status == IosPermissionStatus.DENIED }
+
+                PlatformTarget.ANDROID -> permissions.values.filterIsInstance<PermissionState.AndroidPermissionState>()
+                    .any { state -> !state.isGranted && !state.isShowRational && state.isRequestedAtLeastOnce }
 
                 else -> true
             }
         }
     }
-    val recorderStatus =
-        if (permissions.permissions.any { it.permission == Permission.RecordAudio && it.status.isGranted })
-            AppPermissionStatus.GRANTED
-        else
-            AppPermissionStatus.DENIED
-
-
-    val notificationStatus =
-        if (permissions.permissions.any { it.permission == Permission.Notification && it.status.isGranted })
-            AppPermissionStatus.GRANTED
-        else AppPermissionStatus.DENIED
-
 
     Column(
         modifier = modifier.padding(contentPadding),
@@ -126,9 +118,13 @@ internal fun PermissionsScene(
         )
         Spacer(modifier = Modifier.height(2.dp))
         AppPermissions.entries.fastForEach { permission ->
+
+            val recorderStatus = permissions.getOrElse(Permissions.RECORD_AUDIO) { null }
+            val notificationStatus = permissions.getOrElse(Permissions.NOTIFICATION) { null }
+
             PermissionMarker(
                 permission = permission,
-                status = when (permission) {
+                state = when (permission) {
                     AppPermissions.RECORD_AUDIO -> recorderStatus
                     AppPermissions.NOTIFICATIONS -> notificationStatus
                 },
@@ -142,20 +138,17 @@ internal fun PermissionsScene(
             modifier = Modifier.height(IntrinsicSize.Max),
         ) {
             val buttonTitle = when {
-                permissions.allPermissionsGranted -> "Permissions Granted"
+                allPermissionsGranted -> "Permissions Granted"
                 isPermanentlyDenied -> "Permission Denied"
                 else -> "Grant Permissions"
             }
             OnboardingContextAction(
                 title = buttonTitle,
                 onClick = {
-                    if (isPermanentlyDenied) {
-                        openAppSettings()
-                    } else {
-                        permissions.launchMultiplePermissionRequest()
-                    }
+                    if (isPermanentlyDenied) openAppSettings()
+                    else onRequestPermissions()
                 },
-                enabled = !permissions.allPermissionsGranted,
+                enabled = !allPermissionsGranted,
                 modifier = Modifier
                     .weight(1f)
                     .animateContentSize(MaterialTheme.motionScheme.defaultEffectsSpec()),
@@ -183,7 +176,7 @@ internal fun PermissionsScene(
         }
 
         OnboardingContextAction(
-            title = if (!permissions.allPermissionsGranted) "Skip for Now" else "Continue",
+            title = if (!allPermissionsGranted) "Skip for Now" else "Continue",
             onClick = onAction,
         )
     }
@@ -222,9 +215,15 @@ private enum class AppPermissionStatus {
 @Composable
 private fun PermissionMarker(
     permission: AppPermissions,
+    state: PermissionState?,
     modifier: Modifier = Modifier,
-    status: AppPermissionStatus = AppPermissionStatus.DENIED,
 ) {
+    val status = when (state) {
+        is PermissionState.AndroidPermissionState -> if (state.isGranted) AppPermissionStatus.GRANTED else AppPermissionStatus.DENIED
+        is PermissionState.IosPermissionState -> if (state.status == IosPermissionStatus.GRANTED) AppPermissionStatus.GRANTED else AppPermissionStatus.DENIED
+        else -> AppPermissionStatus.DENIED
+    }
+
     val colorAnimation by animateColorAsState(
         targetValue = if (status == AppPermissionStatus.GRANTED) {
             MaterialTheme.colorScheme.primary

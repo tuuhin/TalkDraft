@@ -18,7 +18,11 @@ import com.sam.talkdraft.onboarding.composables.scenes.WelcomeContainer
 import com.sam.talkdraft.onboarding.composables.scenes.WhatWillYouCaptureScene
 import com.sam.talkdraft.onboarding.models.CaptureIdeaOption
 import com.sam.talkdraft.onboarding.models.OnboardingScene
+import com.sam.talkdraft.permissions.model.PermissionState
+import com.sam.talkdraft.permissions.model.Permissions
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 
 @Composable
@@ -29,7 +33,9 @@ internal fun OnBoardingScenes(
     modifier: Modifier = Modifier,
     onUpdateCaptureIdea: (CaptureIdeaOption) -> Unit = {},
     onOpenAppSettings: () -> Unit = {},
+    onRequestPermissions: () -> Unit = {},
     recommendModel: TranscriptionModel? = null,
+    permissions: ImmutableMap<Permissions, PermissionState> = persistentMapOf(),
     capturedIdeas: ImmutableSet<CaptureIdeaOption> = persistentSetOf(),
     contentPadding: PaddingValues = PaddingValues.Zero,
     platform: PlatformTarget = PlatformTarget.UNKNOWN,
@@ -60,10 +66,11 @@ internal fun OnBoardingScenes(
             OnboardingScene.LOCAL_FIRST_AND_PRIVACY.index -> LocalAndPrivacyScene(onAction = onAction)
 
             OnboardingScene.PERMISSIONS.index -> PermissionsScene(
-                onAction = onAction,
-
-                openAppSettings = onOpenAppSettings,
                 platform = platform,
+                permissions = permissions,
+                onAction = onAction,
+                openAppSettings = onOpenAppSettings,
+                onRequestPermissions = onRequestPermissions,
             )
 
             else -> {}

@@ -55,15 +55,18 @@ include(":core:background-jobs")
 include(":core:transcription-core")
 include(":core:transcription-android")
 include(":core:transcription-ios")
+include(":core:permissions")
 // feature modules
 include(":feature:model-manager")
 include(":feature:model-downloader")
 include(":feature:onboarding")
+include(":feature:recorder")
 // ui layers
 include(":presentation:design-system")
 include(":presentation:onboarding")
 include(":presentation:navigation")
 include(":presentation:home")
 include(":presentation:model-management")
+include(":presentation:recorder")
 // app layer to hold platform
 include(":app")

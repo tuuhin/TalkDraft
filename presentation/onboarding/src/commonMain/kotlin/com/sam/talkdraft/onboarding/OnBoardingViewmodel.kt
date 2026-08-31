@@ -13,7 +13,11 @@ import com.sam.talkdraft.model_manager.domain.repository.ITranscriptionModelsRep
 import com.sam.talkdraft.onboarding.models.CaptureIdeaOption
 import com.sam.talkdraft.onboarding.models.OnboardingEvents
 import com.sam.talkdraft.onboarding.models.OnboardingScreenState
-import com.sam.talkdraft.onboarding.util.IAppSettingsProvider
+import com.sam.talkdraft.permissions.IAppSettingsProvider
+import com.sam.talkdraft.permissions.IPermissionsRequester
+import com.sam.talkdraft.permissions.model.PermissionState
+import com.sam.talkdraft.permissions.model.Permissions
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,10 +33,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 
-
 @KoinViewModel
 internal class OnBoardingViewmodel(
     private val appSettings: IAppSettingsProvider,
+    private val appPermissions: IPermissionsRequester,
     private val recommendationProvider: IRecommendedModelProvider,
     private val transcriptionModelRepo: ITranscriptionModelsRepo,
     private val analytics: IAnalyticsProvider,
@@ -44,17 +48,21 @@ internal class OnBoardingViewmodel(
 
     private val _recommendedModel = MutableStateFlow<TranscriptionModel?>(null)
     private val _captureIdeas = MutableStateFlow(listOf(CaptureIdeaOption.BRAIN_STORMING))
+    private val _permissionsState = MutableStateFlow<Map<Permissions, PermissionState>>(emptyMap())
 
     val screenSate = combine(
         _recommendedModel,
         _captureIdeas,
-    ) { model, captureIdea ->
+        _permissionsState,
+    ) { model, captureIdea, permissions ->
         OnboardingScreenState(
             recommended = model,
             capturedIdeas = captureIdea.toImmutableSet(),
             platform = appTargetProvider.target(),
+            permissionsState = permissions.toImmutableMap(),
         )
     }.onStart {
+        loadPermissionsState()
         readAndObserveRecommendedModel()
     }.stateIn(
         scope = viewModelScope,
@@ -93,11 +101,32 @@ internal class OnBoardingViewmodel(
             }
 
             OnboardingEvents.RequestOpenAppSettings -> openAppSettings()
+            OnboardingEvents.RequestPermissions -> requestPermissions()
         }
+    }
+
+    private fun requestPermissions() = viewModelScope.launch {
+        val result = appPermissions.requestPermissions(Permissions.entries)
+        val currentState = _permissionsState.value.toMutableMap()
+
+        result.forEach { (permission, isGranted) ->
+            if (currentState.containsKey(permission))
+                currentState[permission] = isGranted
+        }
+        _permissionsState.update { currentState }
     }
 
     private fun openAppSettings() = viewModelScope.launch {
         appSettings.openSettings()
+    }
+
+    private fun loadPermissionsState() = viewModelScope.launch {
+        val permissions = buildMap {
+            Permissions.entries.forEach {
+                put(it, appPermissions.checkPermissionStatus(it))
+            }
+        }
+        _permissionsState.update { permissions }
     }
 
 

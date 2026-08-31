@@ -13,6 +13,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.sam.talkdraft.app.App
 import com.sam.talkdraft.feature_onboarding.IOnboardingPreferences
+import com.sam.talkdraft.permissions.controller.IPermissionController
 import com.sam.talkdraft.remote_config.IRemoteConfigProvider
 import com.sam.talkdraft.utils.animateOnExit
 import kotlinx.coroutines.flow.first
@@ -23,6 +24,7 @@ class MainActivity : ComponentActivity() {
 
     private val remoteConfig by inject<IRemoteConfigProvider>()
     private val onboardingProvider by inject<IOnboardingPreferences>()
+    private val permissionController by inject<IPermissionController>()
 
     private var _isRemoteConfigLoaded by mutableStateOf(false)
     private var _isOnboardingValueChecked by mutableStateOf(false)
@@ -40,6 +42,8 @@ class MainActivity : ComponentActivity() {
 
         // set activity transitions
         setTransitions()
+        // bind permission controller
+        permissionController.bindToActivity(this)
 
         // set fields
         lifecycleScope.launch { remoteConfig.loadFlags() }

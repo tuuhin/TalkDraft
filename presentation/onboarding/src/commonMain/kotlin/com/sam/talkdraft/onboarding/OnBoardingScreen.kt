@@ -142,9 +142,11 @@ internal fun OnBoardingScreen(
                         capturedIdeas = state.capturedIdeas,
                         recommendModel = state.recommended,
                         platform = state.platform,
+                        permissions = state.permissionsState,
                         onNavigateToModelDownload = onNavigateToModelDownload,
                         onUpdateCaptureIdea = { onEvent(OnboardingEvents.OnAddToCaptureItems(it)) },
                         onOpenAppSettings = { onEvent(OnboardingEvents.RequestOpenAppSettings) },
+                        onRequestPermissions = { onEvent(OnboardingEvents.RequestPermissions) },
                         onAction = {
                             val current = pager.currentPage
                             val max = pager.pageCount

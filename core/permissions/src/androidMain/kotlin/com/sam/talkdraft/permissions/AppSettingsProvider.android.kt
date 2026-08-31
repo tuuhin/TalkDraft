@@ -1,4 +1,4 @@
-package com.sam.talkdraft.onboarding.util
+package com.sam.talkdraft.permissions
 
 import android.content.Context
 import android.content.Intent

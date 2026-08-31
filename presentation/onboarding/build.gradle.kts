@@ -1,7 +1,3 @@
-@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
-
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
@@ -34,20 +30,15 @@ kotlin {
             // compose ui & navigation
             implementation(libs.bundles.compose.ui)
             implementation(libs.bundles.compose.navigation3)
-            implementation(libs.cmp.adaptive)
-            implementation(libs.cmp.ui.tooling.preview)
-            // logging & notifications
-            implementation(libs.kermit)
+            // kotlin
             implementation(libs.kotlinx.collections.immutable)
             // koin
             implementation(libs.bundles.koin.common)
             implementation(libs.bundles.koin.compose)
-            // permissions
-            implementation(libs.calf.permissions.microphone)
-            implementation(libs.calf.permissions.notifications)
             // local
             implementation(project(":core:common"))
             implementation(project(":core:analytics"))
+            implementation(project(":core:permissions"))
             implementation(project(":presentation:design-system"))
             implementation(project(":presentation:navigation"))
             implementation(project(":feature:onboarding"))

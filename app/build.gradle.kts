@@ -63,6 +63,7 @@ kotlin {
             api(project(":core:transcription-core"))
             api(project(":core:background-jobs"))
             api(project(":core:remote-config"))
+            api(project(":core:permissions"))
 
             // feature modules
             implementation(project(":feature:model-manager"))
