@@ -70,4 +70,5 @@ dependencies {
 	// local modules
 	implementation(project(":app"))
     implementation(project(":core:permissions"))
+    implementation(project(":feature:onboarding"))
 }

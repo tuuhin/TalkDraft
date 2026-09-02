@@ -69,7 +69,7 @@ actual class ModelDownloadRegistrar(private val context: Context) : IModelDownlo
             .distinctUntilChanged()
     }
 
-    override fun observerDownloadStatus(model: TranscriptionModel): Flow<Pair<Uuid, ModelDownloadStatus?>> {
+    actual override fun observerDownloadStatus(model: TranscriptionModel): Flow<Pair<Uuid, ModelDownloadStatus?>> {
         return workManager.getWorkInfosByTagFlow(DOWNLOAD_WORKER_TAG)
             .onStart { Logger.d(tag = TAG) { "OBSERVING WORKER WITH WORKER TAG" } }
             .onCompletion { Logger.d(tag = TAG) { "OBSERVATION FINISHED WORKER TAG" } }
