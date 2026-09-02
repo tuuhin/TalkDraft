@@ -14,6 +14,7 @@ import com.sam.talkdraft.player.di.PlayerModule
 import com.sam.talkdraft.recorder.di.RecorderModule
 import com.sam.talkdraft.remote_config.di.RemoteConfigModule
 import com.sam.talkdraft.supabase.di.SupabaseModule
+import com.sam.talkdraft.transcription.di.TranscriptionModule
 import kotlin.native.HiddenFromObjC
 import org.koin.core.annotation.Module
 
@@ -33,6 +34,7 @@ import org.koin.core.annotation.Module
         PlayerModule::class,
         BackgroundJobsModule::class,
         PermissionsModule::class,
+        TranscriptionModule::class,
     ],
 )
 @HiddenFromObjC

@@ -31,7 +31,7 @@ internal actual class AudioFormatDataExtractor : IAudioFormatDataExtractor {
 
     actual override fun getFileExtension(format: RecordingFormats): String {
         return when (format) {
-            RecordingFormats.FORMAT_M4A -> mimeMap.getExtensionFromMimeType(MimeTypes.AUDIO_MP4) ?: ".mp3"
+            RecordingFormats.FORMAT_M4A -> mimeMap.getExtensionFromMimeType(MimeTypes.AUDIO_MP4) ?: ".m4a"
         }
     }
 

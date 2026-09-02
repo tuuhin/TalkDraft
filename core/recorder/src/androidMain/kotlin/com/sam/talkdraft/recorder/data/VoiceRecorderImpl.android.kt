@@ -5,12 +5,13 @@ import android.media.MediaRecorder
 import android.os.Build
 import co.touchlab.kermit.Logger
 import com.sam.talkdraft.common.ext.tryWithLock
+import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.common.platform.IPlatformFilePathProvider
-import com.sam.talkdraft.recorder.domain.IAudioBytesDataProvider
+import com.sam.talkdraft.recorder.RecorderConstants
 import com.sam.talkdraft.recorder.domain.IAudioFormatDataExtractor
 import com.sam.talkdraft.recorder.domain.IAudioPCMReader
 import com.sam.talkdraft.recorder.domain.IRecordPermissionChecker
-import com.sam.talkdraft.recorder.domain.IVoiceRecorder
+import com.sam.talkdraft.recorder.domain.IVoiceRecorderWithByteReader
 import com.sam.talkdraft.recorder.domain.exception.RecorderInvalidConfigurationException
 import com.sam.talkdraft.recorder.domain.models.RecorderState
 import com.sam.talkdraft.recorder.domain.models.RecordingFormats
@@ -19,14 +20,18 @@ import com.sam.talkdraft.recorder.domain.utils.ReadOnlyShortBuffer
 import java.io.IOException
 import kotlin.time.Duration
 import kotlin.uuid.Uuid
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -35,17 +40,18 @@ import okio.Path
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.InjectedParam
 
-private const val TAG = "VOICE_RECORDER_SAVER"
+private const val TAG = "VOICE_RECORDER"
 
-@Factory(binds = [IVoiceRecorder::class, IAudioBytesDataProvider::class])
+@Factory(binds = [IVoiceRecorderWithByteReader::class])
 internal actual class VoiceRecorderImpl(
-    @InjectedParam private val stopWatch: RecorderStopWatch,
+    @InjectedParam private val scope: CoroutineScope,
     private val context: Context,
     private val files: IPlatformFilePathProvider,
     private val permissions: IRecordPermissionChecker,
     private val formatsReader: IAudioFormatDataExtractor,
     private val pcmReader: IAudioPCMReader,
-) : IVoiceRecorder, IAudioBytesDataProvider {
+    private val dispatchers: IPlatformCoroutineDispatchers,
+) : IVoiceRecorderWithByteReader {
 
     @Volatile
     private var _recorder: MediaRecorder? = null
@@ -53,21 +59,20 @@ internal actual class VoiceRecorderImpl(
     @Volatile
     private var _recordingPath: Path? = null
 
-    private val recordingCachePath by lazy { files.providesCachesDirPath() / "recording_caches" }
     private val _lock = Mutex()
     private val fs = FileSystem.SYSTEM
 
-    actual override val state: StateFlow<RecorderState>
-        get() = stopWatch.recorderState
+    private val _recordingCachePath by lazy { files.providesCachesDirPath() / "recordings" }
+    private val _stopWatch = RecorderStopWatch(scope = scope, delayTime = RecorderConstants.STOPWATCH_DELAY_RATE)
 
-    actual override val elapsedTime: StateFlow<Duration>
-        get() = stopWatch.elapsedTime
+    actual override val state: StateFlow<RecorderState> = _stopWatch.recorderState
+    actual override val elapsedTime: StateFlow<Duration> = _stopWatch.elapsedTime
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    actual override val stream: Flow<ReadOnlyShortBuffer>
-        get() = stopWatch.recorderState
-            .flatMapLatest(pcmReader::readRecorderRawBytes)
-            .distinctUntilChanged()
+    actual override val stream: Flow<ReadOnlyShortBuffer> = _stopWatch.recorderState
+        .flatMapLatest(pcmReader::readRecorderRawBytes)
+        .distinctUntilChanged()
+        .shareIn(scope, SharingStarted.Lazily, 0)
 
     actual override suspend fun start() {
         _lock.tryWithLock(this) {
@@ -78,9 +83,14 @@ internal actual class VoiceRecorderImpl(
             }
             Logger.d(tag = TAG) { "PREPARING FILES FOR RECORDING" }
             initRecorder(format = RecordingFormats.FORMAT_M4A)
+
+            Logger.d(tag = TAG) { "PREPARING RECORDER STOP WATCH" }
+            _stopWatch.prepare()
             // prepare the recorder
             _recorder?.prepare()
             Logger.d(tag = TAG) { "RECORDER READY" }
+            // initiate the amplitude reader
+            _stopWatch.startOrResume()
             pcmReader.start()
             _recorder?.start()
             Logger.d(tag = TAG) { "RECORDER STARTED" }
@@ -90,7 +100,8 @@ internal actual class VoiceRecorderImpl(
     actual override suspend fun resume() {
         _lock.tryWithLock(this) {
             try {
-                stopWatch.startOrResume()
+                Logger.d(tag = TAG) { "STOP WATCH RESUMED" }
+                _stopWatch.startOrResume()
                 //pause recorder
                 Logger.d(tag = TAG) { "RECORDER IS PAUSED" }
                 _recorder?.resume()
@@ -103,7 +114,8 @@ internal actual class VoiceRecorderImpl(
     actual override suspend fun pause() {
         _lock.tryWithLock(this) {
             try {
-                stopWatch.pause()
+                Logger.d(tag = TAG) { "STOP WATCH PAUSED" }
+                _stopWatch.pause()
                 //pause recorder
                 Logger.d(tag = TAG) { "RECORDER IS PAUSED" }
                 _recorder?.pause()
@@ -118,7 +130,7 @@ internal actual class VoiceRecorderImpl(
             val file = _recordingPath ?: return Result.failure(RecorderInvalidConfigurationException())
             // reset the timer
             Logger.d(tag = TAG) { "STOPWATCH STOPPED" }
-            stopWatch.stop()
+            _stopWatch.stop()
             //stop the ongoing recording
             try {
                 _recorder?.stop()
@@ -135,7 +147,7 @@ internal actual class VoiceRecorderImpl(
             try {
                 // cancel the timer watch
                 Logger.d(tag = TAG) { "STOPPING STOPWATCH" }
-                stopWatch.cancel()
+                _stopWatch.cancel()
                 try {
                     _recorder?.stop()
                     Logger.d(tag = TAG) { "RECORDER STOPPED" }
@@ -144,8 +156,7 @@ internal actual class VoiceRecorderImpl(
                 }
                 // delete the current recording
                 withContext(NonCancellable) {
-                    val path = _recordingPath ?: return@withContext
-                    fs.delete(path)
+                    deleteRecordingPath(checkSize = false)
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
@@ -159,7 +170,8 @@ internal actual class VoiceRecorderImpl(
         // clear the recorder resources
         Logger.d(tag = TAG) { "RELEASING THE RECORDER" }
         try {
-            _recorder?.stop()
+            if (_stopWatch.recorderState.value == RecorderState.RECORDING)
+                _recorder?.stop()
             Logger.d(tag = TAG) { "RECORDER STOPPED" }
         } catch (e: RuntimeException) {
             Logger.e(tag = TAG, throwable = e) { "FAILED TO STOP RECORDER" }
@@ -167,18 +179,18 @@ internal actual class VoiceRecorderImpl(
         _recorder?.release()
         _recorder = null
         // reset path
-        if (_recordingPath != null) {
-            val path = _recordingPath!!
-            val size = fs.metadataOrNull(path)?.size ?: 0L
-            if (size == 0L) {
-                fs.delete(path)
+        if (_recordingPath != null) runBlocking {
+            try {
+                withContext(NonCancellable) {
+                    deleteRecordingPath()
+                }
+            } finally {
+                _recordingPath = null
             }
         }
-        _recordingPath = null
-
         // resetting the stopwatch
         Logger.d(tag = TAG) { "RESETTING STOPWATCH" }
-        stopWatch.reset()
+        _stopWatch.reset()
     }
 
 
@@ -220,28 +232,38 @@ internal actual class VoiceRecorderImpl(
         val recorder = _recorder ?: return@coroutineScope
 
         // ensures the file is being created in a different coroutine
-        val fileDeferred = async {
-            val newPath = recordingCachePath / "${Uuid.random()}.$extension"
+        val fileDeferred = async(dispatchers.io) {
+            val newPath = _recordingCachePath / "${Uuid.random()}.$extension"
+            if (!fs.exists(_recordingCachePath)) {
+                Logger.d(tag = TAG) { "FILE PATH MISSING CREATED PATH" }
+                fs.createDirectory(_recordingCachePath)
+            }
+            Logger.d(tag = TAG) { "SAVING PATH :$newPath" }
             _recordingPath = newPath
             newPath.toFile()
         }
 
-        // initiate the amplitude reader
         pcmReader.initReader()
 
         recorder.apply {
             setOutputFile(fileDeferred.await())
             setAudioSource(MediaRecorder.AudioSource.MIC)
-            // recorder format
             setOutputFormat(outFormat)
-            // formater channel and sampling
             setAudioEncoder(encoder)
             setAudioChannels(channelCount)
-            // quality
             setAudioSamplingRate(44_100)
             setAudioEncodingBitRate(128_000)
         }
         recorder.logMetrics()
+    }
+
+    private suspend fun deleteRecordingPath(checkSize: Boolean = true) {
+        withContext(dispatchers.io) {
+            val path = _recordingPath ?: return@withContext
+            val size = fs.metadataOrNull(path)?.size ?: 0L
+            if (checkSize && size == 0L) fs.delete(path)
+            else if (!checkSize) fs.delete(path)
+        }
     }
 
     private fun MediaRecorder.logMetrics() {

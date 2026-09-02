@@ -68,7 +68,8 @@ kotlin {
             // feature modules
             implementation(project(":feature:model-manager"))
             implementation(project(":feature:model-downloader"))
-            api(project(":feature:onboarding"))
+            implementation(project(":feature:recorder"))
+            implementation(project(":feature:onboarding"))
 
             // presentation module
             implementation(project(":presentation:design-system"))
@@ -76,6 +77,7 @@ kotlin {
             implementation(project(":presentation:onboarding"))
             implementation(project(":presentation:home"))
             implementation(project(":presentation:model-management"))
+            implementation(project(":presentation:recorder"))
         }
 
         iosMain.dependencies {

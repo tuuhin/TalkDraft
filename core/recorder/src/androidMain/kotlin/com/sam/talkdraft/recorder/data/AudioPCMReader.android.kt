@@ -17,13 +17,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import org.koin.core.annotation.Factory
 
 private const val TAG = "AudioPCMReader"
 
 @SuppressLint("MissingPermission")
 @Factory(binds = [IAudioPCMReader::class])
-internal actual class AudioPCMReader(
+internal actual class AudioPCMReaderImpl(
     private val permissions: IRecordPermissionChecker,
     private val dispatchers: IPlatformCoroutineDispatchers,
 ) : IAudioPCMReader {
@@ -34,10 +35,7 @@ internal actual class AudioPCMReader(
     @Volatile
     private var _pcmBufferSize: Int = 0
 
-    private val errorCodes =
-        arrayOf(AudioRecord.ERROR_INVALID_OPERATION, AudioRecord.ERROR_BAD_VALUE, AudioRecord.ERROR)
-
-    actual override fun initReader() {
+    actual override suspend fun initReader() {
         if (!permissions.hasPermission()) {
             Logger.d(tag = TAG) { "RECORD AUDIO PERMISSION MISSING" }
             return
@@ -48,68 +46,76 @@ internal actual class AudioPCMReader(
             return
         }
 
-        val sampleRate = 16_000
-        val audioFormat = AudioFormat.ENCODING_PCM_16BIT
-        val channelConfig = AudioFormat.CHANNEL_IN_MONO
-        val channelCount = 1
-        val bytesPerSample = 2
+        withContext(dispatchers.io) {
+            try {
+                val bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
+                if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
+                    Logger.w(tag = TAG) { "CANNOT INITIATE BUFFER SIZE BUFFER SIZ" }
+                    return@withContext
+                }
 
-        try {
-            val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
-            if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
-                Logger.w(tag = TAG) { "CANNOT INITIATE BUFFER SIZE BUFFER SIZ" }
-                return
+                _pcmBufferSize = bufferSize / (BYTES_PER_SAMPLE * CHANNEL_COUNT)
+                Logger.d(tag = TAG) { "GRANTED A BUFFER SIZE OF :$_pcmBufferSize" }
+
+                _recorder = AudioRecord(
+                    MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                    SAMPLE_RATE,
+                    CHANNEL_CONFIG,
+                    AUDIO_FORMAT,
+                    bufferSize * 2,
+                )
+
+                Logger.d(tag = TAG) { "RECORDER READY" }
+
+                if (_recorder?.state != AudioRecord.STATE_INITIALIZED) {
+                    Logger.e(tag = TAG) { "AUDIO INIT FAILED RELEASING RECORDER" }
+                    releaseReader()
+                    return@withContext
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: IllegalArgumentException) {
+                Logger.e(tag = TAG) { "INVALID ARGUMENTS IN FOR RECORDER" }
             }
-
-            _pcmBufferSize = bufferSize / (bytesPerSample * channelCount)
-            Logger.d(tag = TAG) { "GRANTED A BUFFER SIZE OF :$_pcmBufferSize" }
-
-            _recorder = AudioRecord(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                sampleRate,
-                channelConfig,
-                audioFormat,
-                bufferSize * 2,
-            )
-
-            Logger.d(tag = TAG) { "RECORDER READY" }
-
-            if (_recorder?.state != AudioRecord.STATE_INITIALIZED) {
-                Logger.e(tag = TAG) { "AUDIO INIT FAILED RELEASING RECORDER" }
-                releaseReader()
-                return
-            }
-        } catch (_: IllegalArgumentException) {
-            Logger.e(tag = TAG) { "INVALID ARGUMENTS IN FOR RECORDER" }
-        }
-
-    }
-
-    actual override fun start() {
-        if (_recorder?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
-            Logger.w(tag = TAG) { "RECORDER STATE RECORDING CANNOT START AGAIN" }
-            return
-        }
-        if (_recorder == null) {
-            Logger.w(tag = TAG) { "AUDIO RECORDER CANNOT BE NULL FOR START" }
-            throw RecorderInitMissingException()
-        }
-        try {
-            _recorder?.startRecording()
-        } catch (e: IllegalStateException) {
-            Logger.e(tag = TAG, throwable = e) { "WRONG STATE TO START RECORDING" }
         }
     }
 
-    actual override fun stop() {
-        if (_recorder?.recordingState == AudioRecord.RECORDSTATE_STOPPED) {
-            Logger.w(tag = TAG) { "RECORDER STATE STOPPED RECORDING CANNOT STOP AGAIN" }
-            return
+    actual override suspend fun start() {
+        withContext(dispatchers.io) {
+            if (_recorder?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                Logger.w(tag = TAG) { "RECORDER STATE RECORDING CANNOT START AGAIN" }
+                return@withContext
+            }
+            if (_recorder == null) {
+                Logger.w(tag = TAG) { "AUDIO RECORDER CANNOT BE NULL FOR START" }
+                throw RecorderInitMissingException()
+            }
+            try {
+                Logger.i(tag = TAG) { "STARTING AUDIO RECORD" }
+                _recorder?.startRecording()
+                Logger.i(tag = TAG) { "AUDIO RECORD STARTED RECORDING" }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IllegalStateException) {
+                Logger.e(tag = TAG, throwable = e) { "WRONG STATE TO START RECORDING" }
+            }
         }
-        try {
-            _recorder?.stop()
-        } catch (e: IllegalStateException) {
-            Logger.e(tag = TAG, throwable = e) { "WRONG STATE TO STOP RECORDING" }
+    }
+
+    actual override suspend fun stop() {
+        withContext(dispatchers.io) {
+            if (_recorder?.recordingState == AudioRecord.RECORDSTATE_STOPPED) {
+                Logger.w(tag = TAG) { "RECORDER STATE STOPPED RECORDING CANNOT STOP AGAIN" }
+                return@withContext
+            }
+            try {
+                _recorder?.stop()
+                Logger.d(tag = TAG) { "AUDIO RECORD HAS BEEN STOPPED" }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IllegalStateException) {
+                Logger.e(tag = TAG, throwable = e) { "WRONG STATE TO STOP RECORDING" }
+            }
         }
     }
 
@@ -134,15 +140,14 @@ internal actual class AudioPCMReader(
 
                 while (state == RecorderState.RECORDING && currentCoroutineContext().isActive) {
                     // ensure the current coroutine is active otherwise
-                    shortsRead = _recorder?.read(pcmBuffer, 0, pcmBuffer.size) ?: break
+                    shortsRead = recorder.read(pcmBuffer, 0, pcmBuffer.size)
                     if (shortsRead in errorCodes || shortsRead == 0) break
                     val frameSnapshot = pcmBuffer.copyOf(shortsRead)
-
                     emit(ReadOnlyShortBuffer.wrap(frameSnapshot, shortsRead))
                 }
             } catch (e: Exception) {
                 if (e is CancellationException)
-                    Logger.d(tag = TAG) { "AMPLITIDE DATA COLLECTION HAS BEEN CANCELLED" }
+                    Logger.d(tag = TAG) { "AMPLITUDE DATA COLLECTION HAS BEEN CANCELLED" }
                 throw e
             }
         }.flowOn(dispatchers.io)
@@ -166,5 +171,20 @@ internal actual class AudioPCMReader(
         } catch (e: Exception) {
             Logger.w(tag = TAG, throwable = e) { "FAILED TO RELEASE THE RECORDER" }
         }
+    }
+
+    companion object {
+        private val errorCodes = arrayOf(
+            AudioRecord.ERROR_INVALID_OPERATION,
+            AudioRecord.ERROR_BAD_VALUE,
+            AudioRecord.ERROR,
+        )
+
+        // DO_NOT CHANGE SAMPLE RATE
+        private const val SAMPLE_RATE = 16_000
+        private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
+        private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
+        private const val CHANNEL_COUNT = 1
+        private const val BYTES_PER_SAMPLE = 2
     }
 }

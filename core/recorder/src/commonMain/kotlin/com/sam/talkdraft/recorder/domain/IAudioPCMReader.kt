@@ -6,9 +6,9 @@ import kotlinx.coroutines.flow.Flow
 
 internal interface IAudioPCMReader {
 
-    fun initReader()
-    fun start()
-    fun stop()
+    suspend fun initReader()
+    suspend fun start()
+    suspend fun stop()
     fun releaseReader()
 
     fun readRecorderRawBytes(state: RecorderState): Flow<ReadOnlyShortBuffer>

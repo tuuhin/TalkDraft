@@ -2,11 +2,11 @@ package com.sam.talkdraft.recorder.data
 
 import co.touchlab.kermit.Logger
 import com.sam.talkdraft.common.platform.IPlatformFilePathProvider
-import com.sam.talkdraft.recorder.domain.IAudioBytesDataProvider
+import com.sam.talkdraft.recorder.RecorderConstants
 import com.sam.talkdraft.recorder.domain.IAudioFormatDataExtractor
 import com.sam.talkdraft.recorder.domain.IAudioPCMReader
 import com.sam.talkdraft.recorder.domain.IRecordPermissionChecker
-import com.sam.talkdraft.recorder.domain.IVoiceRecorder
+import com.sam.talkdraft.recorder.domain.IVoiceRecorderWithByteReader
 import com.sam.talkdraft.recorder.domain.exception.RecorderInvalidConfigurationException
 import com.sam.talkdraft.recorder.domain.models.RecorderState
 import com.sam.talkdraft.recorder.domain.models.RecordingFormats
@@ -15,11 +15,21 @@ import com.sam.talkdraft.recorder.domain.utils.ReadOnlyShortBuffer
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.uuid.Uuid
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCObjectVar
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
+import kotlinx.cinterop.value
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -38,19 +48,24 @@ import platform.AVFAudio.AVFormatIDKey
 import platform.AVFAudio.AVNumberOfChannelsKey
 import platform.AVFAudio.AVSampleRateKey
 import platform.AVFAudio.setActive
+import platform.Foundation.NSError
+import platform.Foundation.NSNumber
 import platform.Foundation.NSURL
 
 private const val TAG = "IOS-VOICE_RECORDER"
 
-@OptIn(ExperimentalForeignApi::class)
-@Factory(binds = [IVoiceRecorder::class, IAudioBytesDataProvider::class])
+@OptIn(
+    ExperimentalForeignApi::class,
+    BetaInteropApi::class,
+)
+@Factory(binds = [IVoiceRecorderWithByteReader::class])
 internal actual class VoiceRecorderImpl(
-    @InjectedParam private val stopWatch: RecorderStopWatch,
+    @InjectedParam private val scope: CoroutineScope,
     private val files: IPlatformFilePathProvider,
     private val permissions: IRecordPermissionChecker,
     private val formatsReader: IAudioFormatDataExtractor,
     private val pcmReader: IAudioPCMReader,
-) : IVoiceRecorder, IAudioBytesDataProvider {
+) : IVoiceRecorderWithByteReader {
 
     private var recorder: AVAudioRecorder? = null
     private var recordingPath: Path? = null
@@ -59,15 +74,20 @@ internal actual class VoiceRecorderImpl(
     private val lock = Mutex()
     private val fs = FileSystem.SYSTEM
 
+    private val stopWatch = RecorderStopWatch(scope = scope, delayTime = RecorderConstants.STOPWATCH_DELAY_RATE)
+
     actual override val state: StateFlow<RecorderState>
         get() = stopWatch.recorderState
+
     actual override val elapsedTime: StateFlow<Duration>
         get() = stopWatch.elapsedTime
 
-    actual override val stream: Flow<ReadOnlyShortBuffer>
-        get() = stopWatch.recorderState.flatMapLatest(pcmReader::readRecorderRawBytes)
+    actual override val stream: Flow<ReadOnlyShortBuffer> = stopWatch.recorderState
+        .flatMapLatest(pcmReader::readRecorderRawBytes)
+        .distinctUntilChanged()
+        .shareIn(scope, SharingStarted.Lazily, 0)
 
-    actual override suspend fun start() {
+    actual override suspend fun start() = memScoped {
         lock.withLock(this) {
             if (!permissions.hasPermission()) {
                 Logger.w(tag = TAG) { "No permission to record audio." }
@@ -80,15 +100,28 @@ internal actual class VoiceRecorderImpl(
             }
 
             try {
+                if (!fs.exists(recordingCachePath)) {
+                    Logger.d(tag = TAG) { "FILE PATH WAS MISSING CREATING FILE PATH" }
+                    fs.createDirectories(recordingCachePath)
+                }
                 val session = AVAudioSession.sharedInstance()
+                val errorPtr = alloc<ObjCObjectVar<NSError?>>()
                 val options = AVAudioSessionCategoryOptionDefaultToSpeaker or AVAudioSessionCategoryOptionAllowBluetooth
-                session.setCategory(
+                val categorySuccess = session.setCategory(
                     category = AVAudioSessionCategoryPlayAndRecord,
                     mode = AVAudioSessionModeSpokenAudio,
                     options = options,
-                    error = null,
+                    error = errorPtr.ptr,
                 )
-                session.setActive(true, error = null)
+                if (!categorySuccess) {
+                    Logger.e(tag = TAG) { "FAILED TO SET CATEGORY: ${errorPtr.value?.localizedDescription}" }
+                    return@withLock
+                }
+                val activeSuccess = session.setActive(true, error = null)
+                if (!activeSuccess) {
+                    Logger.e(tag = TAG) { "Failed to activate AVAudioSession: ${errorPtr.value?.localizedDescription}" }
+                    return@withLock
+                }
 
                 val extension = formatsReader.getFileExtension(RecordingFormats.FORMAT_M4A)
                 val encoder = formatsReader.getEncoder(RecordingFormats.FORMAT_M4A)
@@ -98,10 +131,10 @@ internal actual class VoiceRecorderImpl(
 
                 val fileUrl = NSURL.fileURLWithPath(newPath.toString())
                 val settings: Map<Any?, Any> = mapOf(
-                    AVFormatIDKey to encoder,
-                    AVSampleRateKey to 44100.0,
-                    AVNumberOfChannelsKey to 1,
-                    AVEncoderBitRateKey to 128000,
+                    AVFormatIDKey to NSNumber(unsignedInt = encoder.toUInt()),
+                    AVSampleRateKey to NSNumber(double = 44100.0),
+                    AVNumberOfChannelsKey to NSNumber(int = 1),
+                    AVEncoderBitRateKey to NSNumber(int = 128000),
                 )
 
                 val audioRecorder = AVAudioRecorder(uRL = fileUrl, settings = settings, null)
@@ -113,6 +146,7 @@ internal actual class VoiceRecorderImpl(
                     return@withLock
                 }
                 recorder = audioRecorder
+                pcmReader.initReader()
                 pcmReader.start()
                 if (audioRecorder.record()) {
                     stopWatch.startOrResume()

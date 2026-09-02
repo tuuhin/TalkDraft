@@ -25,8 +25,8 @@ private const val TAG = "RecorderStopWatch"
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class RecorderStopWatch(
+    scope: CoroutineScope,
     private val delayTime: Duration = RecorderConstants.STOPWATCH_DELAY_RATE,
-    private val scope: CoroutineScope,
 ) {
     private val _state = MutableStateFlow(RecorderState.IDLE)
     val recorderState: StateFlow<RecorderState> = _state.asStateFlow()

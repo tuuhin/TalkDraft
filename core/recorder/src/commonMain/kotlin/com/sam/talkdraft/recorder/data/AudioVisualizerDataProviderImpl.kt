@@ -7,10 +7,9 @@ import com.sam.talkdraft.recorder.data.mapper.normalize
 import com.sam.talkdraft.recorder.data.mapper.padListWithExtra
 import com.sam.talkdraft.recorder.data.mapper.smoothen
 import com.sam.talkdraft.recorder.data.mapper.toProperSequence
-import com.sam.talkdraft.recorder.domain.IAudioBytesDataProvider
 import com.sam.talkdraft.recorder.domain.IAudioVisualizerProvider
+import com.sam.talkdraft.recorder.domain.IVoiceRecorderWithByteReader
 import com.sam.talkdraft.recorder.domain.models.RecorderPoint
-import com.sam.talkdraft.recorder.domain.stopwatch.RecorderStopWatch
 import com.sam.talkdraft.recorder.domain.utils.ReadOnlyShortBuffer
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.max
@@ -30,6 +29,8 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.scan
+import org.koin.core.annotation.Factory
+import org.koin.core.annotation.InjectedParam
 
 private const val TAG = "AudioVisualizerProvider"
 
@@ -37,11 +38,11 @@ private const val TAG = "AudioVisualizerProvider"
     ExperimentalAtomicApi::class,
     FlowPreview::class,
 )
+@Factory(binds = [IAudioVisualizerProvider::class])
 internal class AudioVisualizerDataProviderImpl(
-    private val source: IAudioBytesDataProvider,
+    @InjectedParam private val recorder: IVoiceRecorderWithByteReader,
     private val dispatchers: IPlatformCoroutineDispatchers,
-    private val stopWatch: RecorderStopWatch,
-    private val delayRate: Duration = RecorderConstants.STOPWATCH_DELAY_RATE,
+    delayRate: Duration = RecorderConstants.STOPWATCH_DELAY_RATE,
     private val bufferSize: Int = RecorderConstants.VISUALIZER_BUFFER_SIZE,
 ) : IAudioVisualizerProvider {
 
@@ -51,7 +52,7 @@ internal class AudioVisualizerDataProviderImpl(
         var rangeMax: Int = 100,
     )
 
-    private val slowedRmsPoints: Flow<Float> = source.stream
+    private val slowedRmsPoints: Flow<Float> = recorder.stream
         .buffer(Channel.CONFLATED)
         .onStart {
             emit(ReadOnlyShortBuffer.empty())
@@ -65,7 +66,7 @@ internal class AudioVisualizerDataProviderImpl(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override val dataPoints: Flow<Sequence<RecorderPoint>>
-        get() = combine(slowedRmsPoints, stopWatch.elapsedTime) { rms, t -> rms to t.inWholeMilliseconds }
+        get() = combine(slowedRmsPoints, recorder.elapsedTime) { rms, t -> rms to t.inWholeMilliseconds }
             .scan(VisualizerState()) { state, (newValue, stopWatchTime) ->
                 val entry = (stopWatchTime / bufferSize) * bufferSize
                 val newPoint = RecorderPoint(timeInMillis = entry, rmsValue = newValue)
