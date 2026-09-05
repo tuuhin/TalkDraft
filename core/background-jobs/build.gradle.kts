@@ -27,16 +27,16 @@ kotlin {
 
         commonMain.dependencies {
             // koin
-            implementation(libs.koin.core)
-            api(libs.koin.annotations)
             implementation(libs.bundles.koin.common)
-            implementation(libs.supabase.auth)
 
+            implementation(project(":core:common"))
             implementation(project(":feature:model-downloader"))
             implementation(project(":feature:model-manager"))
         }
 
         iosMain.dependencies {
+            // invoking background jobs directly from here so analytics
+            implementation(project(":core:analytics"))
         }
     }
 

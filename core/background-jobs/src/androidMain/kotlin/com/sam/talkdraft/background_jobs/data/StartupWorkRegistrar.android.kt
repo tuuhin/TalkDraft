@@ -8,7 +8,8 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import co.touchlab.kermit.Logger
-import com.sam.talkdraft.background_jobs.IStartupWorkerRegistrar
+import com.sam.talkdraft.background_jobs.IRemoteDbBackgroundSyncRegistrar
+import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.workers.workers.PeriodicRemoteDataSyncWorker
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -18,12 +19,13 @@ import org.koin.core.annotation.Singleton
 
 private const val TAG = "START_UP_WORKER_REGISTRAR"
 
-@Singleton(binds = [IStartupWorkerRegistrar::class])
-internal actual class StartupWorkRegistrar(private val context: Context) : IStartupWorkerRegistrar {
+@Singleton(binds = [IRemoteDbBackgroundSyncRegistrar::class])
+internal actual class RemoteDbBackgroundSyncRegistrar(
+    private val context: Context,
+    private val dispatchers: IPlatformCoroutineDispatchers,
+) : IRemoteDbBackgroundSyncRegistrar {
 
-    actual override fun enqueueWorkers() {
-        startPeriodicSyncWorker()
-    }
+    actual override fun setupBackgroundTask() = startPeriodicSyncWorker()
 
     private fun startPeriodicSyncWorker() {
         val constrains = Constraints.Builder()

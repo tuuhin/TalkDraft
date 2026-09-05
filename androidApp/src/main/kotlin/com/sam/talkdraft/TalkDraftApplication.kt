@@ -3,7 +3,7 @@ package com.sam.talkdraft
 import android.app.Application
 import com.sam.talkdraft.analytics.posthog.IPostHogInitManager
 import com.sam.talkdraft.app.KoinTalkDraftApp
-import com.sam.talkdraft.background_jobs.IStartupWorkerRegistrar
+import com.sam.talkdraft.background_jobs.IRemoteDbBackgroundSyncRegistrar
 import com.sam.talkdraft.crashlytics.MeasureSetupManager
 import com.sam.talkdraft.notifications.INotificationChannelRegistrar
 import org.koin.android.ext.android.inject
@@ -21,7 +21,7 @@ class TalkDraftApplication : Application(), KoinStartup {
     private val posthogInit by inject<IPostHogInitManager>()
     private val measure by inject<MeasureSetupManager>()
     private val notificationRegistrar by inject<INotificationChannelRegistrar>()
-    private val workerRegistrar by inject<IStartupWorkerRegistrar>()
+    private val workerRegistrar by inject<IRemoteDbBackgroundSyncRegistrar>()
 
     override fun onCreate() {
         super.onCreate()
@@ -30,7 +30,7 @@ class TalkDraftApplication : Application(), KoinStartup {
         measure.setup()
 
         notificationRegistrar.registerChannels()
-        workerRegistrar.enqueueWorkers()
+        workerRegistrar.setupBackgroundTask()
     }
 
     override fun onKoinStartup(): KoinConfiguration = koinConfiguration<KoinTalkDraftApp> {

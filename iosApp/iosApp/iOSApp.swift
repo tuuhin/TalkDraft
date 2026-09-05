@@ -4,18 +4,20 @@ import TalkDraftApp
 class AppDelegate: NSObject, UIApplicationDelegate {
 
     private let whisper = SwiftWhisperBridge()
-    private let vad = SwiftVoiceActivityDetector()
+    private let voiceActivity = SwiftVoiceActivityDetector()
 
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        // prepares the koin
+        KoinInitializer.shared.doInitKoin()
+        // sync db refresh task
+        RemoteDbSyncRegistrarBridge.shared.invoke()
         // set the whisper provider
         IosWhisperBridge.shared.setProtocol(protocol: whisper)
         // set up vad provider
-        IosVoiceActivityDetectorBridge.shared.setProtocol(protocol: vad)
-        // prepares the koin
-        KoinInitializer.shared.doInitKoin()
+        IosVoiceActivityDetectorBridge.shared.setProtocol(protocol: voiceActivity)
         return true
     }
 }
@@ -25,6 +27,7 @@ struct iOSApp: App {
 
     @UIApplicationDelegateAdaptor(AppDelegate.self)
     var appDelegate: AppDelegate
+
 
     var body: some Scene {
         WindowGroup {
