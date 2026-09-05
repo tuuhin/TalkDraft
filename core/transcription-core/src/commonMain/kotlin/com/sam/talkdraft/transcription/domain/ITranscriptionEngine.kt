@@ -5,9 +5,7 @@ import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 
 interface ITranscriptionEngine {
 
-    fun warmUp(request: TranscriptionRequestMetadata)
-
+    suspend fun warmUp(request: TranscriptionRequestMetadata)
     fun process(bytes: ShortArray): TranscriptionState
-
     fun cleanUp()
 }

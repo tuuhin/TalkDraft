@@ -4,6 +4,7 @@ import TalkDraftApp
 class AppDelegate: NSObject, UIApplicationDelegate {
 
     private let whisper = SwiftWhisperBridge()
+    private let vad = SwiftVoiceActivityDetector()
 
     func application(
         _ application: UIApplication,
@@ -11,6 +12,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         // set the whisper provider
         IosWhisperBridge.shared.setProtocol(protocol: whisper)
+        // set up vad provider
+        IosVoiceActivityDetectorBridge.shared.setProtocol(protocol: vad)
         // prepares the koin
         KoinInitializer.shared.doInitKoin()
         return true

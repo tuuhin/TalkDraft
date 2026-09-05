@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.koin.compiler)
 }
 
 android {
@@ -31,9 +32,21 @@ android {
             path = file("src/main/cpp/CMakeLists.txt")
         }
     }
+
+    packagingOptions {
+        jniLibs {
+            pickFirsts.add("**/libonnxruntime.so")
+        }
+    }
 }
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    // testing
+    androidTestImplementation(libs.koin.test)
+    androidTestImplementation(libs.koin.test.junit)
+    androidTestImplementation(libs.kotlin.test)
+    androidTestImplementation(libs.kotlin.testJunit)
+    androidTestImplementation(libs.asserrtk)
     androidTestImplementation(project(":core:testing"))
 }

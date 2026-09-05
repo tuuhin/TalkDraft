@@ -1,12 +1,33 @@
-# Add project specific R8 rules here.
-# AGP will combine all keep rule files in src/main/keepRules to pass to R8
-#
-# For more details, see
-#   https://d.android.com/r/tools/r8/keep-rules
+# ==============================================================================
+# 1. Keep Native Methods & JNI Bridge Classes
+# ==============================================================================
+# Retain all native method signatures across the entire application
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Preserve Native Engine Wrappers (VAD & Whisper)
+-keep class com.sam.talkdraft.transcription_android.NativeVoiceActivityDetector { *; }
+-keep class com.sam.talkdraft.transcription_android.NativeWhisper { *; }
+-keep class com.sam.talkdraft.transcription_android.** { native <methods>; }
+
+# Preserve Data Models instantiated reflectively via C++ JNI (e.g. env->FindClass / NewObject)
+-keep class com.sam.talkdraft.transcription_android.models.WhisperState { *; }
+-keep class com.sam.talkdraft.transcription_android.models.WhisperSegment { *; }
+-keep class com.sam.talkdraft.transcription_android.models.WhisperErrorCode { *; }
+
+# ==============================================================================
+# 2. Keep ONNX Runtime Native Dependencies
+# ==============================================================================
+# Preserve ONNX Runtime Java binding classes and suppress missing optional warnings
+-keep class ai.onnxruntime.** { *; }
+-dontwarn ai.onnxruntime.**
+
+# ==============================================================================
+# 3. Preserve Native Library Loading & Debugging Metadata
+# ==============================================================================
+# Retain method parameters, exceptions, and line numbers for demangled stack traces
+-keepattributes *Annotation*, Signature, InnerClasses, EnclosingMethod, Exceptions, LineNumberTable, SourceFile
+
+# Prevent R8/Proguard from obfuscating JNI entry point attributes
+-keepattributes RuntimeVisible*Annotations*

@@ -25,6 +25,8 @@ kotlin {
         }
 
         commonMain.dependencies {
+            // local
+            implementation(project(":core:common"))
             // koin
             implementation(libs.koin.core)
             api(libs.koin.annotations)

@@ -1,3 +1,15 @@
 package com.sam.talkdraft.transcription_android.models
 
-data class WhisperErrorCode(val code: Int)
+enum class WhisperErrorCode(val code: Int) {
+    NONE(0),
+    MODEL_LOAD_FAILED(1),
+    INFERENCE_FAILED(2),
+    INVALID_BUFFER(3),
+    UNKNOWN(-1);
+
+    companion object {
+        fun fromCode(code: Int): WhisperErrorCode {
+            return entries.find { it.code == code } ?: UNKNOWN
+        }
+    }
+}

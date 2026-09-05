@@ -35,8 +35,7 @@ struct AppVersionRequiredModifier<AppContent: View>: ViewModifier {
 }
 
 extension View {
-    func requireAppUpdate<AppContent: View>(@ViewBuilder content: @escaping (Bool) -> AppContent)
-        -> some View {
+    func requireAppUpdate<AppContent: View>(@ViewBuilder content: @escaping (Bool) -> AppContent) -> some View {
         self.modifier(AppVersionRequiredModifier(contentBuilder: content))
     }
 }

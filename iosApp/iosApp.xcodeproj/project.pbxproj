@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		A53B212B76B9D627CC18876A /* KotlinMultiplatformLinkedPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 32A3294B58E5FFBB91582DD6 /* KotlinMultiplatformLinkedPackage */; };
 		FC06AB1030379686003E398F /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = FC06AB0F30379686003E398F /* SwiftWhisper */; };
+		FCD7FFFB304C7FE400D12804 /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = FCD7FFFA304C7FE400D12804 /* onnxruntime */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +48,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FCD7FFFB304C7FE400D12804 /* onnxruntime in Frameworks */,
 				A53B212B76B9D627CC18876A /* KotlinMultiplatformLinkedPackage in Frameworks */,
 				FC06AB1030379686003E398F /* SwiftWhisper in Frameworks */,
 			);
@@ -96,6 +98,7 @@
 			packageProductDependencies = (
 				32A3294B58E5FFBB91582DD6 /* KotlinMultiplatformLinkedPackage */,
 				FC06AB0F30379686003E398F /* SwiftWhisper */,
+				FCD7FFFA304C7FE400D12804 /* onnxruntime */,
 			);
 			productName = iosApp;
 			productReference = 0C0CDE056B8435B9A0B6834C /* TalkDraft.app */;
@@ -128,6 +131,7 @@
 			packageReferences = (
 				4A7EED6C9B05A27AEFB68F24 /* XCLocalSwiftPackageReference "KotlinMultiplatformLinkedPackage" */,
 				FC06AB0E30379686003E398F /* XCRemoteSwiftPackageReference "SwiftWhisper" */,
+				FCD7FFF9304C7FE400D12804 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1D8554CA3D1E8A307AEF0CCB /* Products */;
@@ -414,6 +418,14 @@
 				minimumVersion = 1.2.0;
 			};
 		};
+		FCD7FFF9304C7FE400D12804 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.24.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -425,6 +437,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FC06AB0E30379686003E398F /* XCRemoteSwiftPackageReference "SwiftWhisper" */;
 			productName = SwiftWhisper;
+		};
+		FCD7FFFA304C7FE400D12804 /* onnxruntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FCD7FFF9304C7FE400D12804 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
+			productName = onnxruntime;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
