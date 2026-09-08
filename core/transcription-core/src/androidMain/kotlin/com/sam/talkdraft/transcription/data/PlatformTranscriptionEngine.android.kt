@@ -1,5 +1,6 @@
 package com.sam.talkdraft.transcription.data
 
+import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.transcription.domain.ITranscriptionEngine
 import com.sam.talkdraft.transcription.domain.model.TranscriptionError
 import com.sam.talkdraft.transcription.domain.model.TranscriptionRequestMetadata
@@ -8,23 +9,25 @@ import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
 import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import com.sam.talkdraft.transcription_android.NativeWhisper
 import com.sam.talkdraft.transcription_android.models.WhisperErrorCode
+import kotlinx.coroutines.withContext
 import org.koin.core.annotation.Factory
 
 @Factory(binds = [ITranscriptionEngine::class])
-internal actual class PlatformTranscriptionEngine : ITranscriptionEngine {
+internal actual class PlatformTranscriptionEngine(
+    private val dispatcher: IPlatformCoroutineDispatchers,
+) : ITranscriptionEngine {
 
     private val instance by lazy { NativeWhisper() }
 
-    actual override fun warmUp(request: TranscriptionRequestMetadata) {
+    actual override suspend fun warmUp(request: TranscriptionRequestMetadata) {
         val language = request.language ?: "*"
-        val success = instance.init(request.modelPath, language)
-        if (!success) {
+        val success = withContext(dispatcher.default) { instance.initialize(request.modelPath, language) }
+        if (!success)
             throw IllegalStateException("Failed to initialize NativeWhisper model at ${request.modelPath}")
-        }
     }
 
     actual override fun process(bytes: ShortArray): TranscriptionState {
-        val processSuccess = instance.processBytes(bytes, bytes.size)
+        val processSuccess = instance.processSamples(bytes)
         if (!processSuccess) {
             val errorCode = instance.readError()
             return TranscriptionState.Failed(errorCode?.toDomainError() ?: TranscriptionError.TranscriptionFailed)
@@ -41,8 +44,8 @@ internal actual class PlatformTranscriptionEngine : ITranscriptionEngine {
 
         return TranscriptionState.Completed(
             result = TranscriptionResultModel(
-                text = state.fullText,
-                segments = state.segment?.let { listOf(TranscriptionSegmentModel(text = it)) } ?: emptyList(),
+                text = state.text,
+                segments = state.segments.map { TranscriptionSegmentModel(text = it.text) },
             ),
         )
     }

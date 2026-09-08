@@ -1,7 +1,3 @@
-@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
-
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
@@ -46,15 +42,15 @@ kotlin {
             implementation(project(":core:common"))
             implementation(project(":core:transcription-core"))
             implementation(project(":core:analytics"))
+            implementation(project(":core:recorder"))
+            implementation(project(":core:permissions"))
+            implementation(project(":feature:recorder"))
             implementation(project(":presentation:design-system"))
             implementation(project(":presentation:navigation"))
-            implementation(project(":core:recorder"))
-            implementation(project(":feature:recorder"))
         }
     }
 
     compilerOptions {
-        freeCompilerArgs.add("-Xexpect-actual-classes")
         optIn.add("androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
     }
 

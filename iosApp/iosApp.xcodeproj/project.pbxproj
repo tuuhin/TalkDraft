@@ -13,12 +13,11 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0C0CDE056B8435B9A0B6834C /* TalkDraft.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TalkDraft.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC510CF430364A3500EBB074 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		637CDC832232661DB1E03488 /* Exceptions for "iosApp" folder in "iosApp" target */ = {
+		637CDC832232661DB1E03488 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -31,7 +30,7 @@
 		A69E320766AB743F4642CEA5 /* iosApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				637CDC832232661DB1E03488 /* Exceptions for "iosApp" folder in "iosApp" target */,
+				637CDC832232661DB1E03488 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -63,16 +62,7 @@
 				FC510CF430364A3500EBB074 /* Secrets.xcconfig */,
 				CCF66A9B0774BEB8F619B2D9 /* Configuration */,
 				A69E320766AB743F4642CEA5 /* iosApp */,
-				1D8554CA3D1E8A307AEF0CCB /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		1D8554CA3D1E8A307AEF0CCB /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				0C0CDE056B8435B9A0B6834C /* TalkDraft.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -101,7 +91,6 @@
 				FCD7FFFA304C7FE400D12804 /* onnxruntime */,
 			);
 			productName = iosApp;
-			productReference = 0C0CDE056B8435B9A0B6834C /* TalkDraft.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -134,7 +123,7 @@
 				FCD7FFF9304C7FE400D12804 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
 			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 1D8554CA3D1E8A307AEF0CCB /* Products */;
+			productRefGroup = 0E89C6BFD1CFF2E9BE0B576B;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -202,6 +191,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = TalkDraft;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "TalkDraft needs microphone access to record your voice notes for real-time\n      transcription.\n    ";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = TalkDraftLaunchScreen;
@@ -235,6 +225,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = TalkDraft;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "TalkDraft needs microphone access to record your voice notes for real-time\n      transcription.\n    ";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = TalkDraftLaunchScreen;

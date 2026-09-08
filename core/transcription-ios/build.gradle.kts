@@ -10,18 +10,12 @@ kotlin {
 
     applyDefaultHierarchyTemplate()
 
-
+    // only ios targets
     listOf(iosArm64(), iosSimulatorArm64())
 
     sourceSets {
-
         commonMain.dependencies {
-            // koin
-            implementation(libs.koin.core)
-            api(libs.koin.annotations)
-            implementation(libs.bundles.koin.common)
-            implementation(libs.supabase.auth)
+            implementation(libs.kermit)
         }
     }
-
 }

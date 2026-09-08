@@ -12,14 +12,13 @@ import org.koin.core.annotation.Factory
 
 @Factory(binds = [ITranscriptionEngine::class])
 internal actual class PlatformTranscriptionEngine : ITranscriptionEngine {
+
     private val instance by lazy { IosWhisperBridge.getProtocol() }
 
-    actual override fun warmUp(request: TranscriptionRequestMetadata) {
+    actual override suspend fun warmUp(request: TranscriptionRequestMetadata) {
         val language = request.language ?: "*"
         val success = instance.init(request.modelPath, language)
-        if (!success) {
-            throw IllegalStateException("Failed to initialize NativeWhisper model at ${request.modelPath}")
-        }
+        if (!success) throw IllegalStateException("Failed to initialize NativeWhisper model at ${request.modelPath}")
     }
 
     actual override fun process(bytes: ShortArray): TranscriptionState {

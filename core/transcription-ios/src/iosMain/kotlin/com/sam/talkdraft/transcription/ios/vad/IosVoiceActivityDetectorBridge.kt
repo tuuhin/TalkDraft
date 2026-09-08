@@ -7,7 +7,7 @@ object IosVoiceActivityDetectorBridge {
         _protocol = protocol
     }
 
-    internal fun getProtocol(): IosVoiceActivityDetectorProtocol {
+    fun getProtocol(): IosVoiceActivityDetectorProtocol {
         if (_protocol == null) throw IllegalStateException("IosVadBridge protocol is not initialized! Call IosVadBridge.setProtocol() in Swift during app startup.")
         return _protocol!!
     }

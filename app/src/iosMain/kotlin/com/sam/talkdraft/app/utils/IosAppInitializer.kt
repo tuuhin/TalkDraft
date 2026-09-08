@@ -1,5 +1,8 @@
 package com.sam.talkdraft.app.utils
 
+import co.touchlab.kermit.Logger
+import co.touchlab.kermit.Severity
+import co.touchlab.kermit.XcodeSeverityWriter
 import com.sam.talkdraft.analytics.posthog.IPostHogInitManager
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.crashlytics.MeasureSetupManager
@@ -27,5 +30,10 @@ object IosAppInitializer : KoinComponent {
             val op1 = async(dispatchers.main) { measure.setup() }
             awaitAll(op0, op1)
         }
+    }
+
+    fun setupLogging() {
+        Logger.setLogWriters(XcodeSeverityWriter())
+        Logger.setMinSeverity(Severity.Verbose)
     }
 }

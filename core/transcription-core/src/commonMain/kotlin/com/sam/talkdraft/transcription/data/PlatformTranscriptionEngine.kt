@@ -7,7 +7,7 @@ import org.koin.core.annotation.Factory
 
 @Factory(binds = [ITranscriptionEngine::class])
 internal expect class PlatformTranscriptionEngine : ITranscriptionEngine {
-    override fun warmUp(request: TranscriptionRequestMetadata)
+    override suspend fun warmUp(request: TranscriptionRequestMetadata)
     override fun process(bytes: ShortArray): TranscriptionState
-    override fun cleanUp(): Unit
+    override fun cleanUp()
 }

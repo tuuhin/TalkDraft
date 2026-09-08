@@ -3,13 +3,13 @@
     "lineLength": 100,
     "tabWidth": 8,
     "indentation": {
-        "spaces": 2
+        "spaces": 4
     },
     "maximumBlankLines": 1,
     "respectsExistingLineBreaks": true,
-    "lineBreakBeforeControlFlowKeywords": false,
-    "lineBreakBeforeEachArgument": true,
-    "lineBreakBeforeEachGenericRequirement": true,
+    "lineBreakBeforeControlFlowKeywords": true,
+    "lineBreakBeforeEachArgument": false,
+    "lineBreakBeforeEachGenericRequirement": false,
     "spacesBeforeEndOfLineComments": 2,
     "indentSwitchCaseLabels": false,
     "indentBlankLines": false,
@@ -47,7 +47,7 @@
         "NoVoidReturnOnFunctionSignature": true,
         "OmitExplicitReturns": true,
         "OrderedImports": true,
-        "OrganizeDeclarations": false,
+        "OrganizeDeclarations": true,
         "UseEarlyExits": true,
         "UseShorthandTypeNames": true,
         "UseSynthesizedInitializer": true,
