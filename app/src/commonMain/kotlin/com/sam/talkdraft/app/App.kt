@@ -29,6 +29,7 @@ fun App(
     modifier: Modifier = Modifier,
     showOnboarding: Boolean = true,
     showContentForIos: Boolean = true,
+    deeplinkURL: () -> String? = { null },
 ) {
     val viewmodel = koinViewModel<AppCommonViewmodel>()
 

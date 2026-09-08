@@ -20,6 +20,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         IosWhisperBridge.shared.setProtocol(protocol: whisper)
         // set up vad provider
         IosVoiceActivityDetectorBridge.shared.setProtocol(protocol: voiceActivity)
+        Task {
+            // sets up analytics and crashlytics
+            try? await IosAppInitializer.shared.setup()
+        }
         return true
     }
 }
@@ -28,18 +32,19 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct iOSApp: App {
 
     @UIApplicationDelegateAdaptor(AppDelegate.self)
-    var appDelegate: AppDelegate
+    private var appDelegate: AppDelegate
 
+    private let linkRouter: IosDeepLinkRouter = IosDeepLinkRouter()
 
     var body: some Scene {
         WindowGroup {
             Color.clear.requireAppUpdate { showContent in
-                ComposeView(showContentForIos: showContent)
+                ComposeView(showContentForIos: showContent, linkRouter: linkRouter)
                     .ignoresSafeArea()
             }
-            .task {
-                try? await IosAppInitializer.shared.setup()
+            .onOpenURL { url in
+                linkRouter.handleLink(url: url.absoluteString)
             }
-    }
+        }
     }
 }

@@ -1,5 +1,8 @@
 package com.sam.talkdraft
 
+import android.app.ComponentCaller
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.Window
@@ -26,14 +29,22 @@ class MainActivity : ComponentActivity() {
     private val onboardingProvider by inject<IOnboardingPreferences>()
     private val permissionController by inject<IPermissionController>()
 
+    // remote config and onboarding
     private var _isRemoteConfigLoaded by mutableStateOf(false)
     private var _isOnboardingValueChecked by mutableStateOf(false)
     private var _showOnboardingScreen by mutableStateOf(true)
+
+    // deep links
+    private var deepLinkUri by mutableStateOf<Uri?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        // cold launch
+        deepLinkUri = intent?.data
+
         // enable edge to edge
         enableEdgeToEdge()
         // on splash complete again enable edge to edge
@@ -53,8 +64,16 @@ class MainActivity : ComponentActivity() {
             .invokeOnCompletion { _isOnboardingValueChecked = true }
 
         setContent {
-            App(showOnboarding = _showOnboardingScreen)
+            App(
+                showOnboarding = _showOnboardingScreen,
+                deeplinkURL = { deepLinkUri?.toString() },
+            )
         }
+    }
+
+    override fun onNewIntent(intent: Intent, caller: ComponentCaller) {
+        super.onNewIntent(intent, caller)
+        deepLinkUri = intent.data
     }
 
     @Suppress("DEPRECATION")
