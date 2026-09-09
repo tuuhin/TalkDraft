@@ -12,24 +12,20 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
     android {
-        namespace = "com.sam.talkdraft.feature_recorder"
+        namespace = "com.sam.talkdraft.recorder_visualizer"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+
     }
 
     listOf(iosArm64(), iosSimulatorArm64())
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.bundles.kotlinx.common)
             implementation(libs.bundles.koin.common)
-            implementation(libs.okio)
-            // local
-            implementation(project(":core:transcription-core"))
-            implementation(project(":core:recorder"))
-            implementation(project(":core:recorder-visualizer"))
+            implementation(libs.kotlinx.coroutines.core)
             implementation(project(":core:common"))
-            implementation(project(":feature:model-manager"))
+            implementation(project(":core:recorder"))
         }
     }
 

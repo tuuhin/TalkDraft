@@ -1,8 +1,8 @@
 package com.sam.talkdraft.recorder.data
 
+import com.sam.talkdraft.common.model.ReadOnlyShortBuffer
 import com.sam.talkdraft.recorder.domain.IAudioPCMReader
 import com.sam.talkdraft.recorder.domain.models.RecorderState
-import com.sam.talkdraft.recorder.domain.utils.ReadOnlyShortBuffer
 import kotlinx.coroutines.flow.Flow
 
 internal expect class AudioPCMReaderImpl : IAudioPCMReader {

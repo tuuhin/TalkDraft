@@ -1,6 +1,7 @@
 package com.sam.talkdraft.recorder.data
 
 import co.touchlab.kermit.Logger
+import com.sam.talkdraft.common.model.ReadOnlyShortBuffer
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.common.platform.IPlatformFilePathProvider
 import com.sam.talkdraft.recorder.RecorderConstants
@@ -12,7 +13,6 @@ import com.sam.talkdraft.recorder.domain.exception.RecorderInvalidConfigurationE
 import com.sam.talkdraft.recorder.domain.models.RecorderState
 import com.sam.talkdraft.recorder.domain.models.RecordingFormats
 import com.sam.talkdraft.recorder.domain.stopwatch.RecorderStopWatch
-import com.sam.talkdraft.recorder.domain.utils.ReadOnlyShortBuffer
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.uuid.Uuid

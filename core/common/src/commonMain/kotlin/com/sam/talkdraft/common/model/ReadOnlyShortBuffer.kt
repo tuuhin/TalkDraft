@@ -1,4 +1,4 @@
-package com.sam.talkdraft.recorder.domain.utils
+package com.sam.talkdraft.common.model
 
 class ReadOnlyShortBuffer private constructor(
     private val array: ShortArray,
@@ -14,10 +14,10 @@ class ReadOnlyShortBuffer private constructor(
     fun toShortArray(): ShortArray = array.copyOf(size)
 
     companion object {
-        internal fun wrap(array: ShortArray, readSize: Int): ReadOnlyShortBuffer {
+        fun wrap(array: ShortArray, readSize: Int): ReadOnlyShortBuffer {
             return ReadOnlyShortBuffer(array, readSize.coerceAtLeast(0))
         }
 
-        internal fun empty(): ReadOnlyShortBuffer = ReadOnlyShortBuffer(shortArrayOf(), 0)
+        fun empty(): ReadOnlyShortBuffer = ReadOnlyShortBuffer(shortArrayOf(), 0)
     }
 }

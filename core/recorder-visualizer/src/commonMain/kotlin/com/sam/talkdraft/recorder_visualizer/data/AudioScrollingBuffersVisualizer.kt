@@ -1,16 +1,14 @@
-package com.sam.talkdraft.recorder.data
+@file:OptIn(ExperimentalAtomicApi::class, FlowPreview::class)
+
+package com.sam.talkdraft.recorder_visualizer.data
 
 import co.touchlab.kermit.Logger
+import com.sam.talkdraft.common.model.ReadOnlyShortBuffer
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.recorder.RecorderConstants
-import com.sam.talkdraft.recorder.data.mapper.normalize
-import com.sam.talkdraft.recorder.data.mapper.padListWithExtra
-import com.sam.talkdraft.recorder.data.mapper.smoothen
-import com.sam.talkdraft.recorder.data.mapper.toProperSequence
-import com.sam.talkdraft.recorder.domain.IAudioVisualizerProvider
 import com.sam.talkdraft.recorder.domain.IVoiceRecorderWithByteReader
-import com.sam.talkdraft.recorder.domain.models.RecorderPoint
-import com.sam.talkdraft.recorder.domain.utils.ReadOnlyShortBuffer
+import com.sam.talkdraft.recorder.domain.models.BufferedAudioBlock
+import com.sam.talkdraft.recorder_visualizer.domain.IAudioBufferedVisualizer
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.max
 import kotlin.math.min
@@ -32,22 +30,16 @@ import kotlinx.coroutines.flow.scan
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.InjectedParam
 
-private const val TAG = "AudioVisualizerProvider"
-
-@OptIn(
-    ExperimentalAtomicApi::class,
-    FlowPreview::class,
-)
-@Factory(binds = [IAudioVisualizerProvider::class])
-internal class AudioVisualizerDataProviderImpl(
+@Factory(binds = [IAudioBufferedVisualizer::class])
+internal class AudioScrollingBuffersVisualizer(
     @InjectedParam private val recorder: IVoiceRecorderWithByteReader,
     private val dispatchers: IPlatformCoroutineDispatchers,
     delayRate: Duration = RecorderConstants.STOPWATCH_DELAY_RATE,
     private val bufferSize: Int = RecorderConstants.VISUALIZER_BUFFER_SIZE,
-) : IAudioVisualizerProvider {
+) : IAudioBufferedVisualizer {
 
     private data class VisualizerState(
-        val buffer: ArrayDeque<RecorderPoint> = ArrayDeque(),
+        val buffer: ArrayDeque<BufferedAudioBlock> = ArrayDeque(),
         var rangeMin: Int = 0,
         var rangeMax: Int = 100,
     )
@@ -65,11 +57,11 @@ internal class AudioVisualizerDataProviderImpl(
 
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val dataPoints: Flow<Sequence<RecorderPoint>>
+    override val dataPoints: Flow<Sequence<BufferedAudioBlock>>
         get() = combine(slowedRmsPoints, recorder.elapsedTime) { rms, t -> rms to t.inWholeMilliseconds }
             .scan(VisualizerState()) { state, (newValue, stopWatchTime) ->
                 val entry = (stopWatchTime / bufferSize) * bufferSize
-                val newPoint = RecorderPoint(timeInMillis = entry, rmsValue = newValue)
+                val newPoint = BufferedAudioBlock(timeInMillis = entry, rmsValue = newValue)
 
                 if (state.buffer.lastOrNull()?.timeInMillis != newPoint.timeInMillis) {
                     state.buffer.addLast(newPoint)
@@ -87,7 +79,8 @@ internal class AudioVisualizerDataProviderImpl(
                 state
             }
             .mapLatest { state ->
-                state.buffer.asSequence().normalizedAndPadded(state.rangeMin, state.rangeMax)
+                state.buffer.asSequence()
+                    .normalizedAndPadded(state.rangeMin, state.rangeMax)
             }
             .flowOn(dispatchers.io)
             .onCompletion {
@@ -104,10 +97,14 @@ internal class AudioVisualizerDataProviderImpl(
         return sqrt(sum / size).toFloat()
     }
 
-    private fun Sequence<RecorderPoint>.normalizedAndPadded(min: Int, max: Int) =
+    private fun Sequence<BufferedAudioBlock>.normalizedAndPadded(min: Int, max: Int) =
         smoothen(factor = .3f)
             .normalize(max = max, min = min)
             .padListWithExtra(bufferSize * 2)
             .toProperSequence(bufferSize)
             .distinctBy { it.timeInMillis }
+
+    companion object {
+        private const val TAG = "AUDIO_VISUALS_PROVIDER"
+    }
 }

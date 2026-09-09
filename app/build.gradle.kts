@@ -59,6 +59,7 @@ kotlin {
             api(project(":core:connectivity"))
             api(project(":core:datastore"))
             api(project(":core:recorder"))
+            api(project(":core:recorder-visualizer"))
             api(project(":core:player"))
             api(project(":core:transcription-core"))
             api(project(":core:background-jobs"))

@@ -5,12 +5,12 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import co.touchlab.kermit.Logger
+import com.sam.talkdraft.common.model.ReadOnlyShortBuffer
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.recorder.domain.IAudioPCMReader
 import com.sam.talkdraft.recorder.domain.IRecordPermissionChecker
 import com.sam.talkdraft.recorder.domain.exception.RecorderInitMissingException
 import com.sam.talkdraft.recorder.domain.models.RecorderState
-import com.sam.talkdraft.recorder.domain.utils.ReadOnlyShortBuffer
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow

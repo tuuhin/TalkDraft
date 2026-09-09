@@ -12,6 +12,7 @@ import com.sam.talkdraft.permissions.di.PermissionsModule
 import com.sam.talkdraft.platform_capability.di.PlatformCapabilityModule
 import com.sam.talkdraft.player.di.PlayerModule
 import com.sam.talkdraft.recorder.di.RecorderModule
+import com.sam.talkdraft.recorder_visualizer.di.RecorderVisualizerModule
 import com.sam.talkdraft.remote_config.di.RemoteConfigModule
 import com.sam.talkdraft.supabase.di.SupabaseModule
 import com.sam.talkdraft.transcription.di.TranscriptionModule
@@ -31,6 +32,7 @@ import org.koin.core.annotation.Module
         PlatformCapabilityModule::class,
         DataStoreModule::class,
         RecorderModule::class,
+        RecorderVisualizerModule::class,
         PlayerModule::class,
         BackgroundJobsModule::class,
         PermissionsModule::class,

@@ -1,8 +1,8 @@
-package com.sam.talkdraft.recorder.data.mapper
+package com.sam.talkdraft.recorder_visualizer.data
 
-import com.sam.talkdraft.recorder.domain.models.RecorderPoint
+import com.sam.talkdraft.recorder.domain.models.BufferedAudioBlock
 
-internal fun Sequence<RecorderPoint>.normalize(max: Int, min: Int): Sequence<RecorderPoint> {
+internal fun Sequence<BufferedAudioBlock>.normalize(max: Int, min: Int): Sequence<BufferedAudioBlock> {
     val range = (max - min).let { diff -> if (diff <= 0) 1f else diff.toFloat() }
     val minFloat = min.toFloat()
 
@@ -12,7 +12,7 @@ internal fun Sequence<RecorderPoint>.normalize(max: Int, min: Int): Sequence<Rec
     }
 }
 
-internal fun Sequence<RecorderPoint>.smoothen(factor: Float = 0.3f): Sequence<RecorderPoint> {
+internal fun Sequence<BufferedAudioBlock>.smoothen(factor: Float = 0.3f): Sequence<BufferedAudioBlock> {
     var prev = 0f
     return map { point ->
         prev = lerp(prev, point.rmsValue, factor)
@@ -20,10 +20,10 @@ internal fun Sequence<RecorderPoint>.smoothen(factor: Float = 0.3f): Sequence<Re
     }
 }
 
-internal fun Sequence<RecorderPoint>.padListWithExtra(
+internal fun Sequence<BufferedAudioBlock>.padListWithExtra(
     bufferSize: Int,
     extra: Int = 10,
-): Sequence<RecorderPoint> = sequence {
+): Sequence<BufferedAudioBlock> = sequence {
 
     val seen = mutableSetOf<Long>()
     var size = 0
@@ -47,7 +47,7 @@ internal fun Sequence<RecorderPoint>.padListWithExtra(
         val timeInMillis = lastTime + (i * bufferSize)
         if (seen.add(timeInMillis)) {
             yield(
-                RecorderPoint(
+                BufferedAudioBlock(
                     timeInMillis = timeInMillis,
                     rmsValue = 0f,
                     isPaddingPoint = true,
@@ -57,7 +57,7 @@ internal fun Sequence<RecorderPoint>.padListWithExtra(
     }
 }
 
-internal fun Sequence<RecorderPoint>.toProperSequence(eachBlockSize: Int): Sequence<RecorderPoint> {
+internal fun Sequence<BufferedAudioBlock>.toProperSequence(eachBlockSize: Int): Sequence<BufferedAudioBlock> {
     return sequence {
         val iterator = this@toProperSequence.iterator()
         if (!iterator.hasNext()) return@sequence
