@@ -12,5 +12,8 @@ object Dimensions {
     val DIALOG_CONTENT_PADDING = 24.dp
     val DIALOG_ACTIONS_SPACING = 8.dp
     val DIALOG_SECTIONS_PADDING = 16.dp
+
+    // modal sheet
     val MODAL_BOTTOM_SHEET_CONTENT_PADDING = 20.dp
+    val MODAL_SHEET_MIN_HEIGHT = 200.dp
 }

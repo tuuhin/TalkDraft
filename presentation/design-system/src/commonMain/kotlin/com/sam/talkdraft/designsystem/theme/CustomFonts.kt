@@ -12,3 +12,6 @@ expect fun ibmPlexMono(settings: FontVariation.Settings = FontVariation.Settings
 
 @Composable
 expect fun manrope(settings: FontVariation.Settings = FontVariation.Settings()): FontFamily
+
+@Composable
+expect fun spaceGrotesk(settings: FontVariation.Settings = FontVariation.Settings()): FontFamily

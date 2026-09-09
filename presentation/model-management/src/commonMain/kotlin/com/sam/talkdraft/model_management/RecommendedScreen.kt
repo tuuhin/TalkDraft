@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sam.talkdraft.designsystem.components.SheetTitleBar
+import com.sam.talkdraft.designsystem.utils.Dimensions
 import com.sam.talkdraft.model_management.composable.ModelDownloadActions
 import com.sam.talkdraft.model_management.composable.ModelDownloadStatusContainer
 import com.sam.talkdraft.model_management.composable.RecommendModelCard
@@ -61,7 +62,8 @@ internal fun RecommendedModelDownloadSheet(
                     )
             },
             label = "recommended_model_found_suggestions",
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
+                .heightIn(min = Dimensions.MODAL_SHEET_MIN_HEIGHT),
         ) { isReady ->
             if (isReady && state.model != null) {
                 Column(
@@ -104,7 +106,7 @@ internal fun RecommendedModelDownloadSheet(
             visible = !state.isModelPresent,
             enter = slideInVertically(),
             exit = slideOutVertically(),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.align(Alignment.End),
         ) {
             ModelDownloadActions(
                 isDownloadEnabled = !state.isModelSetupRunning,

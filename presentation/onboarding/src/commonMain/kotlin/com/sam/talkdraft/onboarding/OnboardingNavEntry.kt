@@ -25,8 +25,10 @@ internal class OnboardingNavEntry : NavDestinationBuilder {
 
         OnBoardingScreen(
             state = screenState,
-            onNavigateToModelDownload = { backStack.add(NavDestinations.RecommendedDownloadModelScreen) },
             onEvent = viewmodel::onEvent,
+            onNavigateToModelDownload = { backStack.add(NavDestinations.RecommendedDownloadModelScreen) },
+            onNavigateToRecorder = { backStack.add(NavDestinations.CaptureFirstRecording) },
+            onNavigateToHome = { backStack.add(NavDestinations.HomeScreen) },
         )
     }
 }

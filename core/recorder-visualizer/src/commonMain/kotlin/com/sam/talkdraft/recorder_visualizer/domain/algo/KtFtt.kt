@@ -8,7 +8,6 @@ import org.koin.core.annotation.Singleton
 @Singleton
 internal class KtFtt {
 
-    // Precomputed Sine and Cosine lookup tables for phase angles
     private val cosTable = FloatArray(MAX_FFT_SIZE)
     private val sinTable = FloatArray(MAX_FFT_SIZE)
 
@@ -20,31 +19,29 @@ internal class KtFtt {
         }
     }
 
-    /**
-     * Performs forward Radix-2 Cooley-Tukey FFT using precomputed lookup tables.
-     *
-     * @param input Raw 16-bit PCM samples or time-domain short array (must be power of 2, max 4096).
-     * @param n Number of samples to process (must be power of 2).
-     * @return ShortArray of size n * 2 (interleaved Real and Imaginary values).
-     */
-    fun fft(input: ShortArray, n: Int): ShortArray {
+    fun fft(input: ShortArray, n: Int): FloatArray {
         require(n > 0 && (n and (n - 1)) == 0) { "FFT size n must be a power of 2" }
         require(n <= MAX_FFT_SIZE) { "FFT size n ($n) exceeds precomputed limit ($MAX_FFT_SIZE)" }
 
-        val real = FloatArray(n) { if (it < input.size) input[it].toFloat() else 0f }
+        val real = FloatArray(n)
         val imag = FloatArray(n)
+
+        for (i in 0 until n)
+            real[i] = if (i < input.size) input[i].toFloat() else 0f
 
         // Bit-reversal permutation
         var j = 0
-        for (i in 0 until n - 1) {
-            if (i < j) {
-                val tempR = real[i]
-                real[i] = real[j]
-                real[j] = tempR
 
-                val tempI = imag[i]
+        for (i in 0 until n - 1) {
+
+            if (i < j) {
+                val tempReal = real[i]
+                real[i] = real[j]
+                real[j] = tempReal
+
+                val tempImag = imag[i]
                 imag[i] = imag[j]
-                imag[j] = tempI
+                imag[j] = tempImag
             }
             var k = n shr 1
             while (k <= j) {
@@ -54,7 +51,7 @@ internal class KtFtt {
             j += k
         }
 
-        // Cooley-Tukey iterative FFT computation using precomputed tables
+        // Cooley-Tukey
         var len = 2
         while (len <= n) {
             val halfLen = len shr 1
@@ -63,35 +60,34 @@ internal class KtFtt {
             var i = 0
             while (i < n) {
                 for (k in 0 until halfLen) {
-                    val tableIdx = k * tableStep
-                    val wR = cosTable[tableIdx]
-                    val wI = sinTable[tableIdx]
+                    val tableIndex = k * tableStep
+                    val wReal = cosTable[tableIndex]
+                    val wImag = sinTable[tableIndex]
 
                     val pos = i + k
                     val match = pos + halfLen
 
-                    val uR = real[pos]
-                    val uI = imag[pos]
+                    val uReal = real[pos]
+                    val uImag = imag[pos]
 
-                    val vR = real[match] * wR - imag[match] * wI
-                    val vI = real[match] * wI + imag[match] * wR
+                    val vReal = real[match] * wReal - imag[match] * wImag
+                    val vImag = real[match] * wImag + imag[match] * wReal
 
-                    real[pos] = uR + vR
-                    imag[pos] = uI + vI
-
-                    real[match] = uR - vR
-                    imag[match] = uI - vI
+                    real[pos] = uReal + vReal
+                    imag[pos] = uImag + vImag
+                    real[match] = uReal - vReal
+                    imag[match] = uImag - vImag
                 }
                 i += len
             }
             len = len shl 1
         }
 
-        // Interleave Real and Imaginary values into ShortArray output
-        val output = ShortArray(n * 2)
-        for (idx in 0 until n) {
-            output[idx * 2] = real[idx].toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
-            output[idx * 2 + 1] = imag[idx].toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        // Interleaved Float output.
+        val output = FloatArray(n * 2)
+        for (i in 0 until n) {
+            output[i * 2] = real[i]
+            output[i * 2 + 1] = imag[i]
         }
 
         return output

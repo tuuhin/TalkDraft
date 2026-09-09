@@ -16,4 +16,7 @@ sealed interface NavDestinations : NavKey {
 
     @Serializable
     data object RecommendedDownloadModelScreen : NavDestinations
+
+    @Serializable
+    data object CaptureFirstRecording : NavDestinations
 }

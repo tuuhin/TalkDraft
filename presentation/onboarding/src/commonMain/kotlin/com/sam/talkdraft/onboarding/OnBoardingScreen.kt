@@ -48,6 +48,8 @@ internal fun OnBoardingScreen(
     state: OnboardingScreenState,
     onEvent: (OnboardingEvents) -> Unit,
     onNavigateToModelDownload: () -> Unit,
+    onNavigateToRecorder: () -> Unit,
+    onNavigateToHome: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
 
@@ -76,7 +78,10 @@ internal fun OnBoardingScreen(
     Scaffold(
         topBar = {
             OnBoardingScreenTopBar(
-                onSkipFullTour = { onEvent(OnboardingEvents.OnSkipOnboarding(currentScene)) },
+                onSkipFullTour = {
+                    onEvent(OnboardingEvents.OnSkipOnboarding(currentScene))
+                    onNavigateToHome()
+                },
                 onPreviousScreen = {
                     scope.launch {
                         val current = pager.currentPage
@@ -144,6 +149,11 @@ internal fun OnBoardingScreen(
                         platform = state.platform,
                         permissions = state.permissionsState,
                         onNavigateToModelDownload = onNavigateToModelDownload,
+                        onNavigateToRecorder = onNavigateToRecorder,
+                        onNavigateToHome = {
+                            onEvent(OnboardingEvents.OnOnboardingCompleted)
+                            onNavigateToHome()
+                        },
                         onUpdateCaptureIdea = { onEvent(OnboardingEvents.OnAddToCaptureItems(it)) },
                         onOpenAppSettings = { onEvent(OnboardingEvents.RequestOpenAppSettings) },
                         onRequestPermissions = { onEvent(OnboardingEvents.RequestPermissions) },

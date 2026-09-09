@@ -18,17 +18,19 @@ import com.sam.talkdraft.onboarding.composables.OnboardingContextAction
 
 @Composable
 internal fun FirstRecordingScene(
-    onAction: () -> Unit,
+    onTryRecording: () -> Unit,
+    onContinueToHome: () -> Unit,
     modifier: Modifier = Modifier,
     titleStyle: TextStyle = MaterialTheme.typography.displaySmallEmphasized,
     contentPadding: PaddingValues = PaddingValues.Zero,
+    isRecordingEnabled: Boolean = false,
 ) {
     Column(
         modifier = modifier.padding(contentPadding),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text(
-            text = "2. Get your offline voice model",
+            text = "Capture your first thought",
             style = titleStyle,
             letterSpacing = 1.8.sp,
             fontWeight = FontWeight.Bold,
@@ -36,22 +38,21 @@ internal fun FirstRecordingScene(
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "Download the model once to transcribe your recordings on your device, even without internet",
+            text = "See how your voice becomes text in real time",
             style = MaterialTheme.typography.titleSmallEmphasized,
             letterSpacing = 1.1.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         OnboardingContextAction(
-            title = "Try y",
-            onClick = {
-
-            },
+            title = "Try it now",
+            enabled = isRecordingEnabled,
+            onClick = onTryRecording,
             containerColor = MaterialTheme.colorScheme.primaryContainer,
         )
         OnboardingContextAction(
             title = "Continue to Home",
-            onClick = onAction,
+            onClick = onContinueToHome,
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
         )
     }

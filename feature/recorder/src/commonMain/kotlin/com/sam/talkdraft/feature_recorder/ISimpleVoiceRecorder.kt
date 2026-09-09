@@ -1,27 +1,46 @@
 package com.sam.talkdraft.feature_recorder
 
-import com.sam.talkdraft.recorder.domain.models.RecorderPoint
+import com.sam.talkdraft.common.model.ReadOnlyFloatBuffer
 import com.sam.talkdraft.recorder.domain.models.RecorderState
 import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
 
+/**
+ * Manages voice recording sessions, live audio visualizer data, and speech transcription.
+ */
 interface ISimpleVoiceRecorder : AutoCloseable {
 
-    val state: StateFlow<RecorderState>
-    val elapsedTime: StateFlow<Duration>
+    /** Current state of the recorder (e.g., idle, recording, paused). */
+    val recorderState: Flow<RecorderState>
 
-    val timeLine: Flow<Sequence<RecorderPoint>>
+    /** Total duration of the current recording session. */
+    val elapsedTime: Flow<Duration>
+
+    /** Real-time amplitude values for drawing waveform graphics. Emits `null` when not recording. */
+    val waveform: Flow<ReadOnlyFloatBuffer?>
+
+    /** Current transcription status and output text. */
     val transcription: Flow<TranscriptionState>
 
+    /** Stream of non-fatal errors during recording or transcription. */
     val errors: Flow<Exception>
 
-    suspend fun setup()
+    /** Prepares the mic and resources. Call this before [start]. */
+    suspend fun setup(): Result<Unit>
 
-    suspend fun start()
-    suspend fun stop()
-    suspend fun pause()
-    suspend fun resume()
-    suspend fun cancel()
+    /** Starts capturing audio. */
+    suspend fun start(): Result<Unit>
+
+    /** Stops recording and saves the audio file. */
+    suspend fun stop(): Result<Unit>
+
+    /** Temporarily pauses the active recording. */
+    suspend fun pause(): Result<Unit>
+
+    /** Resumes a paused recording. */
+    suspend fun resume(): Result<Unit>
+
+    /** Cancels the recording and deletes any temporary files. */
+    suspend fun cancel(): Result<Unit>
 }

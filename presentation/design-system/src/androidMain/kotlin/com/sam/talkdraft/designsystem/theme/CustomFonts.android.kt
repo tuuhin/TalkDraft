@@ -16,6 +16,7 @@ private val provider = GoogleFont.Provider(
 private val googleSansFlex = GoogleFont("Google Sans Flex")
 private val ibmPlexMono = GoogleFont("IBMPlexMono")
 private val manrope = GoogleFont("Manrope")
+private val spaceGrotesk = GoogleFont("Space Grotesk")
 
 @Composable
 actual fun googleSansFlexFont(
@@ -45,6 +46,17 @@ actual fun manrope(settings: FontVariation.Settings): FontFamily {
     return FontFamily(
         Font(
             manrope,
+            fontProvider = provider,
+            variationSettings = settings,
+        ),
+    )
+}
+
+@Composable
+actual fun spaceGrotesk(settings: FontVariation.Settings): FontFamily {
+    return FontFamily(
+        Font(
+            spaceGrotesk,
             fontProvider = provider,
             variationSettings = settings,
         ),

@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.sam.talkdraft.common.model.PlatformTarget
@@ -18,6 +21,7 @@ import com.sam.talkdraft.onboarding.composables.scenes.WelcomeContainer
 import com.sam.talkdraft.onboarding.composables.scenes.WhatWillYouCaptureScene
 import com.sam.talkdraft.onboarding.models.CaptureIdeaOption
 import com.sam.talkdraft.onboarding.models.OnboardingScene
+import com.sam.talkdraft.permissions.model.IosPermissionStatus
 import com.sam.talkdraft.permissions.model.PermissionState
 import com.sam.talkdraft.permissions.model.Permissions
 import kotlinx.collections.immutable.ImmutableMap
@@ -30,6 +34,8 @@ internal fun OnBoardingScenes(
     page: Int,
     onAction: () -> Unit,
     onNavigateToModelDownload: () -> Unit,
+    onNavigateToRecorder: () -> Unit,
+    onNavigateToHome: () -> Unit,
     modifier: Modifier = Modifier,
     onUpdateCaptureIdea: (CaptureIdeaOption) -> Unit = {},
     onOpenAppSettings: () -> Unit = {},
@@ -41,6 +47,17 @@ internal fun OnBoardingScenes(
     platform: PlatformTarget = PlatformTarget.UNKNOWN,
 ) {
 
+    val hasAudioRecordPermission by remember(permissions) {
+        derivedStateOf {
+            if (permissions.isEmpty()) return@derivedStateOf false
+            val per = permissions.getOrElse(Permissions.RECORD_AUDIO) { return@derivedStateOf false }
+            when (per) {
+                is PermissionState.AndroidPermissionState -> per.isGranted
+                is PermissionState.IosPermissionState -> per.status == IosPermissionStatus.GRANTED
+            }
+        }
+    }
+
     Box(
         modifier = modifier
             .animateContentSize()
@@ -50,7 +67,12 @@ internal fun OnBoardingScenes(
         when (page) {
             OnboardingScene.WELCOME_SCREEN.index -> WelcomeContainer(onAction = onAction)
             OnboardingScene.HOW_DOES_IT_WORK_SCREEN.index -> HowDoesItWorkContainer(onAction = onAction)
-            OnboardingScene.FIRST_RECORDING_SCREEN.index -> FirstRecordingScene(onAction = onAction)
+            OnboardingScene.FIRST_RECORDING_SCREEN.index -> FirstRecordingScene(
+                onContinueToHome = onNavigateToHome,
+                isRecordingEnabled = hasAudioRecordPermission,
+                onTryRecording = onNavigateToRecorder,
+            )
+
             OnboardingScene.VOICE_MODEL_SETUP.index -> LocalTranscriptionModelScene(
                 onAction = onAction,
                 recommendModel = recommendModel,
