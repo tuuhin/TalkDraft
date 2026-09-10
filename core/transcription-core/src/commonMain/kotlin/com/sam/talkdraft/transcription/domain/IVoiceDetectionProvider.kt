@@ -2,7 +2,7 @@ package com.sam.talkdraft.transcription.domain
 
 import com.sam.talkdraft.transcription.domain.model.VoiceDetectionResult
 
-interface IVoiceDetectionProvider {
+internal interface IVoiceDetectionProvider {
 
     suspend fun setup(sampleRate: Int = 16_000)
 

@@ -22,21 +22,21 @@ class NativeVoiceActivityDetector : AutoCloseable {
     private val frameBuffer: ByteBuffer = ByteBuffer
         .allocateDirect(SILERO_SAMPLE_COUNT * Float.SIZE_BYTES)
         .order(ByteOrder.nativeOrder())
-
     private val floatBuffer: FloatBuffer = frameBuffer.asFloatBuffer()
+
+    private val pendingSamples = ShortArray(MAX_PENDING_SAMPLE_COUNT)
+    private var pendingSampleCount = 0
 
     fun initialize(
         assets: AssetManager,
         assetName: String = MODEL_NAME,
         sampleRate: Int = 16000,
-        threshold: Float = 0.5f,
     ): Boolean {
         require(sampleRate == 16000 || sampleRate == 8000) { "VAD requires 8kHz or 16kHz sample rate." }
 
-        val isInit = _isInitialized.load()
-        if (isInit) throw IllegalStateException("Voice detector is already initialized close it to continue")
+        if (_isInitialized.load()) throw IllegalStateException("Voice detector is already initialized close it to continue")
 
-        val handle = initializeNativeFromAssets(assets, assetName, sampleRate, threshold)
+        val handle = initializeNativeFromAssets(assets, assetName, sampleRate)
         if (handle == 0L) return false
 
         if (!_isInitialized.compareAndSet(expectedValue = false, newValue = true)) {
@@ -47,16 +47,12 @@ class NativeVoiceActivityDetector : AutoCloseable {
         return true
     }
 
-    /**
-     * Initializes the native VAD model using a file path.
-     */
-    fun initialize(modelPath: String, sampleRate: Int = 16000, threshold: Float = 0.5f): Boolean {
+    fun initialize(modelPath: String, sampleRate: Int = 16000): Boolean {
         require(sampleRate == 16000 || sampleRate == 8000) { "VAD requires 8kHz or 16kHz sample rate." }
 
-        val isInit = _isInitialized.load()
-        if (isInit) throw IllegalStateException("Voice detector is already initialized close it to continue")
+        if (_isInitialized.load()) throw IllegalStateException("Voice detector is already initialized close it to continue")
 
-        val handle = initializeNative(modelPath, sampleRate, threshold)
+        val handle = initializeNative(modelPath, sampleRate)
         if (handle == 0L) return false
 
         if (!_isInitialized.compareAndSet(expectedValue = false, newValue = true)) {
@@ -68,55 +64,98 @@ class NativeVoiceActivityDetector : AutoCloseable {
         return true
     }
 
-    /**
-     * Processes raw 16-bit PCM audio samples.
-     */
-    fun processFrame(audioFrame: ShortArray): VoiceDetectionProbability {
-        val isInit = _isInitialized.load()
-        if (!isInit) throw IllegalStateException("Voice recorder is not initialized make sure its done first")
 
-        // Copy short samples into direct byte buffe    r to prevent JNI allocation overhead
-        floatBuffer.clear()
-        for (i in audioFrame.indices)
-            floatBuffer.put(audioFrame[i] * FLOAT_MULTIPLIER)
+    fun processFrame(audioFrame: ShortArray): VoiceDetectionProbability {
+        if (!_isInitialized.load()) throw IllegalStateException("Voice recorder is not initialized make sure its done first")
+        if (audioFrame.isEmpty()) return VoiceDetectionProbability(0f)
 
         val handle = _nativeHandle.load()
+        check(handle != 0L) { "Voice detector native handle is invalid." }
 
-        val probability = processNativeDirectBuffer(handle, frameBuffer, audioFrame.size)
-        return VoiceDetectionProbability(probability)
+        appendSamples(audioFrame)
+
+        var maxProbability = 0f
+        while (pendingSampleCount >= SILERO_SAMPLE_COUNT) {
+            val probability = runNativeInference(handle)
+            if (probability > maxProbability) maxProbability = probability
+        }
+
+        return VoiceDetectionProbability(maxProbability)
     }
 
-    /**
-     * Resets the internal RNN/LSTM state buffers without destroying the ONNX session.
-     */
+    private fun appendSamples(audioFrame: ShortArray) {
+        var sourceIndex = 0
+        while (sourceIndex < audioFrame.size) {
+            val spaceAvailable = pendingSamples.size - pendingSampleCount
+            if (spaceAvailable == 0)
+                throw IllegalStateException(
+                    "Pending sample buffer is full. pendingSampleCount=$pendingSampleCount, incoming=${audioFrame.size}",
+                )
+            val samplesToCopy = minOf(spaceAvailable, audioFrame.size - sourceIndex)
+            audioFrame.copyInto(
+                destination = pendingSamples,
+                destinationOffset = pendingSampleCount,
+                startIndex = sourceIndex,
+                endIndex = sourceIndex + samplesToCopy,
+            )
+            pendingSampleCount += samplesToCopy
+            sourceIndex += samplesToCopy
+        }
+    }
+
+    private fun runNativeInference(handle: Long): Float {
+        floatBuffer.clear()
+        for (i in 0 until SILERO_SAMPLE_COUNT) {
+            val buf = pendingSamples[i] * FLOAT_MULTIPLIER
+            floatBuffer.put(buf)
+        }
+        frameBuffer.position(0)
+        frameBuffer.limit(SILERO_SAMPLE_COUNT * Float.SIZE_BYTES)
+
+        val probability = processNativeDirectBuffer(handle, frameBuffer, SILERO_SAMPLE_COUNT)
+
+        // Shift remaining samples to the front.
+        val remaining = pendingSampleCount - SILERO_SAMPLE_COUNT
+        if (remaining > 0) {
+            pendingSamples.copyInto(
+                destination = pendingSamples,
+                destinationOffset = 0,
+                startIndex = SILERO_SAMPLE_COUNT,
+                endIndex = pendingSampleCount,
+            )
+        }
+        pendingSampleCount = remaining.coerceAtLeast(0)
+
+        return probability
+    }
+
     fun resetState() {
         if (!_isInitialized.load()) {
             Log.w(TAG, "VOICE DETECTOR WAS NOT INITIALIZED")
             return
         }
-        val nativeHandle = _nativeHandle.load()
-        resetStatesNative(nativeHandle)
+        resetStatesNative(_nativeHandle.load())
+        pendingSampleCount = 0   // also drop any partial PCM carry-over on reset
     }
 
     override fun close() {
-        if (!_isInitialized.load()) {
+        if (!_isInitialized.compareAndSet(expectedValue = true, newValue = false)) {
             Log.w(TAG, "VOICE DETECTOR WAS NOT INITIALIZED")
             return
         }
-        val nativeHandle = _nativeHandle.fetchAndUpdate { 0L }
-        destroyNative(nativeHandle)
-        _isInitialized.compareAndSet(expectedValue = true, newValue = false)
+        val handle = _nativeHandle.fetchAndUpdate { 0L }
+        if (handle != 0L) destroyNative(handle)
+        pendingSampleCount = 0
     }
 
     internal val isInitialized: Boolean
         get() = _isInitialized.load()
 
-    private external fun initializeNative(modelPath: String, sampleRate: Int, threshold: Float): Long
+    private external fun initializeNative(modelPath: String, sampleRate: Int): Long
     private external fun initializeNativeFromAssets(
         assetsManager: AssetManager,
         assetName: String,
         sampleRate: Int,
-        threshold: Float,
     ): Long
 
     private external fun processNativeDirectBuffer(handle: Long, buffer: ByteBuffer, length: Int): Float
@@ -124,15 +163,22 @@ class NativeVoiceActivityDetector : AutoCloseable {
     private external fun destroyNative(handle: Long)
 
     companion object {
+        private const val TAG = "NativeVAD"
 
         init {
             System.loadLibrary("native_transcriptions")
         }
 
-        private const val FLOAT_MULTIPLIER = 0.00003051757f
-        private const val SILERO_SAMPLE_COUNT = 1536
+        private const val FLOAT_MULTIPLIER = 1.0f / Short.MAX_VALUE
+
+        // The model's actual required window size — this is what worked for you
+        // at 640 samples/call. Confirm against your model export if unsure.
+        private const val SILERO_SAMPLE_COUNT = 640
+
+        // Generous headroom so large caller chunks (e.g. 16000 samples = 1s @16kHz)
+        // never overflow the carry-over buffer between calls.
+        private const val MAX_PENDING_SAMPLE_COUNT = 32_000
 
         const val MODEL_NAME = "silero_vad.onnx"
-
     }
 }

@@ -1,11 +1,11 @@
 package com.sam.talkdraft.transcription.domain
 
-import com.sam.talkdraft.transcription.domain.model.TranscriptionRequestMetadata
+import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
 import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 
-interface ITranscriptionEngine {
+internal interface ITranscriptionEngine {
 
-    suspend fun warmUp(request: TranscriptionRequestMetadata)
+    suspend fun warmUp(request: TranscriberConfig)
     fun process(bytes: ShortArray): TranscriptionState
     fun cleanUp()
 }

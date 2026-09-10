@@ -48,13 +48,19 @@ internal actual class AudioPCMReaderImpl(
 
         withContext(dispatchers.io) {
             try {
-                val bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
-                if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
-                    Logger.w(tag = TAG) { "CANNOT INITIATE BUFFER SIZE BUFFER SIZ" }
+                val minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
+                if (minBufferSize == AudioRecord.ERROR || minBufferSize == AudioRecord.ERROR_BAD_VALUE) {
                     return@withContext
                 }
 
-                _pcmBufferSize = bufferSize / (BYTES_PER_SAMPLE * CHANNEL_COUNT)
+                // we are doing 4 times of the buffer size provided
+                // a larger buffers help to accumulate the n amount of data points
+                // required for transcription data
+                val internalBufferSize = (minBufferSize * 4)
+                    .coerceAtLeast(16000 * BYTES_PER_SAMPLE)
+
+                // but the preferable chunk sample size is 1600
+                _pcmBufferSize = CHUNK_SAMPLE_COUNT
                 Logger.d(tag = TAG) { "GRANTED A BUFFER SIZE OF :$_pcmBufferSize" }
 
                 _recorder = AudioRecord(
@@ -62,7 +68,7 @@ internal actual class AudioPCMReaderImpl(
                     SAMPLE_RATE,
                     CHANNEL_CONFIG,
                     AUDIO_FORMAT,
-                    bufferSize * 2,
+                    internalBufferSize,
                 )
 
                 Logger.d(tag = TAG) { "RECORDER READY" }
@@ -184,7 +190,7 @@ internal actual class AudioPCMReaderImpl(
         private const val SAMPLE_RATE = 16_000
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
         private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
-        private const val CHANNEL_COUNT = 1
         private const val BYTES_PER_SAMPLE = 2
+        private const val CHUNK_SAMPLE_COUNT = 1600
     }
 }

@@ -1,62 +1,94 @@
+@file:OptIn(ExperimentalAtomicApi::class)
+
 package com.sam.talkdraft.transcription.data
 
+import co.touchlab.kermit.Logger
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.transcription.domain.ITranscriptionEngine
+import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
 import com.sam.talkdraft.transcription.domain.model.TranscriptionError
-import com.sam.talkdraft.transcription.domain.model.TranscriptionRequestMetadata
-import com.sam.talkdraft.transcription.domain.model.TranscriptionResultModel
 import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
 import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import com.sam.talkdraft.transcription_android.NativeWhisper
+import com.sam.talkdraft.transcription_android.models.ProcessingState
 import com.sam.talkdraft.transcription_android.models.WhisperErrorCode
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.koin.core.annotation.Factory
+import org.koin.core.annotation.Named
 
 @Factory(binds = [ITranscriptionEngine::class])
-internal actual class PlatformTranscriptionEngine(
+@Named(value = "whisper_engine")
+internal actual class PlatformWhisperTranscriptionEngine(
     private val dispatcher: IPlatformCoroutineDispatchers,
 ) : ITranscriptionEngine {
 
     private val instance by lazy { NativeWhisper() }
+    private val _isSetupDone = AtomicBoolean(false)
+    private val _lock = Mutex()
 
-    actual override suspend fun warmUp(request: TranscriptionRequestMetadata) {
-        val language = request.language ?: "*"
-        val success = withContext(dispatcher.default) { instance.initialize(request.modelPath, language) }
-        if (!success)
-            throw IllegalStateException("Failed to initialize NativeWhisper model at ${request.modelPath}")
+    actual override suspend fun warmUp(request: TranscriberConfig) {
+        _lock.withLock {
+            if (_isSetupDone.load()) {
+                Logger.w(tag = TAG) { "WARMUP IS ALREADY COMPLETED" }
+                return
+            }
+            val language = request.language ?: "auto"
+            val success = withContext(dispatcher.default) {
+                instance.initialize(request.modelPath, "en")
+            }
+            _isSetupDone.compareAndSet(expectedValue = false, success)
+            Logger.d(tag = TAG) { "AUDIO TRANSCRIPTION SETUP COMPLETED :$success" }
+        }
     }
 
     actual override fun process(bytes: ShortArray): TranscriptionState {
-        val processSuccess = instance.processSamples(bytes)
-        if (!processSuccess) {
-            val errorCode = instance.readError()
-            return TranscriptionState.Failed(errorCode?.toDomainError() ?: TranscriptionError.TranscriptionFailed)
+
+        if (!_isSetupDone.load()) {
+            Logger.w(tag = TAG) { "SETUP IS MISSING FIRST SET IT UP" }
+            return TranscriptionState.NotRunning
         }
 
-        val errorCode = instance.readError()
-        if (errorCode != null && errorCode.code != 0) {
-            return TranscriptionState.Failed(errorCode.toDomainError())
+        return when (val result = instance.processSamples(bytes)) {
+            is ProcessingState.Buffering -> {
+                Logger.d(tag = TAG) { "BUFFERING" }
+                TranscriptionState.RunningOrProcessing
+            }
+
+            is ProcessingState.Error -> {
+                Logger.d(tag = TAG) { "FAILED TO PROCESS THE SAMPLES ERROR CODE:${result.errorCode}" }
+                TranscriptionState.Failed(result.errorCode?.toDomainError() ?: TranscriptionError.TranscriptionFailed)
+            }
+
+            is ProcessingState.Success -> {
+                val state = instance.readState()
+                    ?: return TranscriptionState.Failed(TranscriptionError.TranscriptionFailed)
+                Logger.d(tag = TAG) { "GOT SOME SAMPLE RESULT :$state" }
+                TranscriptionState.Success(
+                    text = state.text,
+                    segments = state.segments.map { TranscriptionSegmentModel(text = it.text) },
+                )
+            }
         }
-
-        // 3. Extract updated state from native wrapper
-        val state = instance.readState()
-            ?: return TranscriptionState.Failed(TranscriptionError.TranscriptionFailed)
-
-        return TranscriptionState.Completed(
-            result = TranscriptionResultModel(
-                text = state.text,
-                segments = state.segments.map { TranscriptionSegmentModel(text = it.text) },
-            ),
-        )
     }
 
     actual override fun cleanUp() {
-        instance.close()
+        if (_isSetupDone.compareAndSet(expectedValue = true, newValue = false)) {
+            Logger.d(tag = TAG) { "AUDIO TRANSCRIPTION SETUP CLOSED" }
+            instance.close()
+        }
     }
 
     private fun WhisperErrorCode.toDomainError(): TranscriptionError = when (this.code) {
         101 -> TranscriptionError.UnsupportedAudioFormat
         102 -> TranscriptionError.TranscriptionFailed
         else -> TranscriptionError.TranscriptionFailed
+    }
+
+    companion object {
+        private const val TAG = "ANDROID_TRANSCRIPTION_ENGINE"
     }
 }

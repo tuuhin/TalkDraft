@@ -5,6 +5,7 @@ enum class WhisperErrorCode(val code: Int) {
     MODEL_LOAD_FAILED(1),
     INFERENCE_FAILED(2),
     INVALID_BUFFER(3),
+    BUFFER_FULL(4),
     UNKNOWN(-1);
 
     companion object {

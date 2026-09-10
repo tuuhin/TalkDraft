@@ -12,7 +12,7 @@ import org.koin.core.annotation.Factory
 private const val TAG = "AndroidVoiceDetector"
 
 @Factory(binds = [IVoiceDetectionProvider::class])
-actual class PlatformVoiceDetectionProvider(
+internal actual class PlatformVoiceDetectionProvider(
     private val context: Context,
     private val dispatchers: IPlatformCoroutineDispatchers,
 ) : IVoiceDetectionProvider {
@@ -23,14 +23,12 @@ actual class PlatformVoiceDetectionProvider(
         val modelName = NativeVoiceActivityDetector.MODEL_NAME
         Logger.d(tag = TAG) { "SETTING UP VOICE RECORDER WITH ASSETS WITH MODEL :$modelName" }
         withContext(dispatchers.io) {
-            instance.initialize(context.assets, assetName = modelName, sampleRate = sampleRate, threshold = .3f)
+            instance.initialize(context.assets, assetName = modelName, sampleRate = sampleRate)
         }
     }
 
     actual override fun processAudioBuffer(shorts: ShortArray): VoiceDetectionResult {
         val result = instance.processFrame(shorts)
-        if (result.probability > .7f)
-            Logger.d(tag = TAG) { "VOICE_PROBABILITY :${result.probability}" }
         return VoiceDetectionResult(result.probability, result.isSpeech)
     }
 

@@ -1,21 +1,22 @@
 package com.sam.talkdraft.transcription.data
 
 import com.sam.talkdraft.transcription.domain.ITranscriptionEngine
+import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
 import com.sam.talkdraft.transcription.domain.model.TranscriptionError
-import com.sam.talkdraft.transcription.domain.model.TranscriptionRequestMetadata
-import com.sam.talkdraft.transcription.domain.model.TranscriptionResultModel
 import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
 import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import com.sam.talkdraft.transcription.ios.IosWhisperBridge
 import com.sam.talkdraft.transcription.ios.models.IosBridgeWhisperCodeError
 import org.koin.core.annotation.Factory
+import org.koin.core.annotation.Named
 
 @Factory(binds = [ITranscriptionEngine::class])
-internal actual class PlatformTranscriptionEngine : ITranscriptionEngine {
+@Named(value = "whisper_engine")
+internal actual class PlatformWhisperTranscriptionEngine : ITranscriptionEngine {
 
     private val instance by lazy { IosWhisperBridge.getProtocol() }
 
-    actual override suspend fun warmUp(request: TranscriptionRequestMetadata) {
+    actual override suspend fun warmUp(request: TranscriberConfig) {
         val language = request.language ?: "*"
         val success = instance.init(request.modelPath, language)
         if (!success) throw IllegalStateException("Failed to initialize NativeWhisper model at ${request.modelPath}")
@@ -36,11 +37,9 @@ internal actual class PlatformTranscriptionEngine : ITranscriptionEngine {
         val state = instance.readState()
             ?: return TranscriptionState.Failed(TranscriptionError.TranscriptionFailed)
 
-        return TranscriptionState.Completed(
-            result = TranscriptionResultModel(
-                text = state.fullText,
-                segments = state.segment.map { TranscriptionSegmentModel(text = it.text) },
-            ),
+        return TranscriptionState.Success(
+            text = state.fullText,
+            segments = state.segment.map { TranscriptionSegmentModel(text = it.text) },
         )
     }
 

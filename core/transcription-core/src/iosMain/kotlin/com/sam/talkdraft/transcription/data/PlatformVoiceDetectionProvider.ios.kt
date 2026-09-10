@@ -12,14 +12,14 @@ import platform.Foundation.NSBundle
 
 private const val TAG = "IOSVoiceDetector"
 
+@OptIn(BetaInteropApi::class)
 @Factory(binds = [IVoiceDetectionProvider::class])
-actual class PlatformVoiceDetectionProvider(
+internal actual class PlatformVoiceDetectionProvider(
     private val dispatchers: IPlatformCoroutineDispatchers,
 ) : IVoiceDetectionProvider {
 
     private val protocol by lazy { IosVoiceActivityDetectorBridge.getProtocol() }
 
-    @OptIn(BetaInteropApi::class)
     actual override suspend fun setup(sampleRate: Int) {
 
         val path = NSBundle.mainBundle.pathForResource("silero_vad", "onnx")
