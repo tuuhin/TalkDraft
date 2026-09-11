@@ -108,7 +108,7 @@ class NativeWhisper : AutoCloseable {
         private const val MIN_INFERENCE_SAMPLES = 16_000
 
         init {
-            System.loadLibrary("native_transcriptions")
+            System.loadLibrary("native_whisper")
         }
     }
 }

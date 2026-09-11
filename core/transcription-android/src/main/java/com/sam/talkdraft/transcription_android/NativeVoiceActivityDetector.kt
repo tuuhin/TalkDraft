@@ -11,8 +11,6 @@ import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.fetchAndUpdate
 
-private const val TAG = "NATIVE_VOICE_ACTIVITY_DETECTOR"
-
 @OptIn(ExperimentalAtomicApi::class)
 class NativeVoiceActivityDetector : AutoCloseable {
 
@@ -166,7 +164,7 @@ class NativeVoiceActivityDetector : AutoCloseable {
         private const val TAG = "NativeVAD"
 
         init {
-            System.loadLibrary("native_transcriptions")
+	        System.loadLibrary("native_vad")
         }
 
         private const val FLOAT_MULTIPLIER = 1.0f / Short.MAX_VALUE

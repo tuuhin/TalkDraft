@@ -1,17 +1,8 @@
 cmake_minimum_required(VERSION 3.22.1)
-project(native_transcriptions)
+project(talkdraft_native_modules)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-include(FetchContent)
-
-# Disable OpenMP & Tests
-set(WHISPER_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(WHISPER_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(WHISPER_BUILD_SERVER OFF CACHE BOOL "" FORCE)
-set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
-set(WHISPER_OPENMP OFF CACHE BOOL "" FORCE)
 
 if (${ANDROID_ABI} STREQUAL "arm64-v8a")
     add_compile_options(-O3 -march=armv8-a+fp16+dotprod)
@@ -19,60 +10,6 @@ elseif (${ANDROID_ABI} STREQUAL "armeabi-v7a")
     add_compile_options(-O3 -mfpu=neon-vfpv4 -mfloat-abi=softfp)
 endif ()
 
-FetchContent_Declare(
-        whisper
-        GIT_REPOSITORY https://github.com/ggml-org/whisper.cpp.git
-        GIT_TAG v1.9.3
-)
-FetchContent_MakeAvailable(whisper)
-
-# ==============================================================================
-# 2. Fetch & Configure ONNX Runtime (Prebuilt Android AAR)
-# ==============================================================================
-FetchContent_Declare(
-        onnxruntime_android
-        URL "https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/1.29.0/onnxruntime-android-1.29.0.aar"
-)
-FetchContent_MakeAvailable(onnxruntime_android)
-
-# Set path targets to the extracted headers and shared libraries
-set(ORT_EXTRACTED_DIR ${onnxruntime_android_SOURCE_DIR})
-
-add_library(onnxruntime SHARED IMPORTED)
-set_target_properties(onnxruntime PROPERTIES
-        IMPORTED_LOCATION ${ORT_EXTRACTED_DIR}/jni/${ANDROID_ABI}/libonnxruntime.so
-        INTERFACE_INCLUDE_DIRECTORIES ${ORT_EXTRACTED_DIR}/headers
-)
-
-# ==============================================================================
-# 3. Native Application Library Target
-# ==============================================================================
-add_library(
-        native_transcriptions
-        SHARED
-        src/transcription_jni.cpp
-        src/vad_onnx.cpp
-        src/vad_onnx_jni.cpp
-)
-
-target_include_directories(
-        native_transcriptions
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${whisper_SOURCE_DIR}/include
-        ${whisper_SOURCE_DIR}/ggml/include
-)
-
-# Find system libraries
-find_library(log-lib log)
-
-# Link dependencies
-target_link_libraries(
-        native_transcriptions
-        PRIVATE
-        whisper
-        onnxruntime
-        ${log-lib}
-        android
-)
+add_subdirectory(native_whisper)
+add_subdirectory(native_zipformer)
+add_subdirectory(native_vad)
