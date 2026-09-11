@@ -11,16 +11,27 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         testInstrumentationRunner = "com.sam.talkdraft.testing.InstrumentTestRunner"
 
-        ndk {
-            abiFilters += listOf("arm64-v8a", "x86_64")
-        }
-
         externalNativeBuild {
             cmake {
                 cppFlags += listOf("-std=c++20")
             }
         }
     }
+
+    buildTypes {
+        release {
+            ndk {
+                //noinspection ChromeOsAbiSupport
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+            }
+        }
+        debug {
+            ndk {
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")
+            }
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -33,9 +44,10 @@ android {
         }
     }
 
-    packagingOptions {
+    packaging {
         jniLibs {
             pickFirsts.add("**/libonnxruntime.so")
+            excludes += listOf("**/libparakeet.so")
         }
     }
 }
