@@ -1,3 +1,5 @@
+#include <android/asset_manager_jni.h>
+#include <cstring>
 #include <jni.h>
 #include <string>
 
@@ -5,7 +7,7 @@
 
 extern "C" {
 
-JNIEXPORT jlong JNICALL Java_com_example_transcription_NativeZipformer_initializeNative(
+JNIEXPORT jlong JNICALL Java_com_sam_talkdraft_transcription_1android_NativeZipFormer_initializeNative(
     JNIEnv* env, jobject, jstring encoder_path, jstring decoder_path, jstring joiner_path, jstring tokens_path) {
     const char* c_encoder = env->GetStringUTFChars(encoder_path, nullptr);
     const char* c_decoder = env->GetStringUTFChars(decoder_path, nullptr);
@@ -28,7 +30,7 @@ JNIEXPORT jlong JNICALL Java_com_example_transcription_NativeZipformer_initializ
     return reinterpret_cast<jlong>(instance);
 }
 
-JNIEXPORT jstring JNICALL Java_com_example_transcription_NativeZipformer_processNativeDirectBuffer(
+JNIEXPORT jstring JNICALL Java_com_sam_talkdraft_transcription_1android_NativeZipFormer_processNativeDirectBuffer(
     JNIEnv* env, jobject, jlong handle, jobject direct_buffer, jint length) {
     auto* instance = reinterpret_cast<zip_former*>(handle);
     if (!instance) return env->NewStringUTF("");
@@ -39,13 +41,14 @@ JNIEXPORT jstring JNICALL Java_com_example_transcription_NativeZipformer_process
     return env->NewStringUTF(text.c_str());
 }
 
-JNIEXPORT void JNICALL Java_com_example_transcription_NativeZipformer_resetNative(JNIEnv* env, jobject, jlong handle) {
+JNIEXPORT void JNICALL Java_com_sam_talkdraft_transcription_1android_NativeZipFormer_resetNative(JNIEnv* env, jobject,
+                                                                                                 jlong handle) {
     auto* instance = reinterpret_cast<zip_former*>(handle);
     if (instance) instance->Reset();
 }
 
-JNIEXPORT void JNICALL Java_com_example_transcription_NativeZipformer_destroyNative(JNIEnv* env, jobject,
-                                                                                    jlong handle) {
+JNIEXPORT void JNICALL Java_com_sam_talkdraft_transcription_1android_NativeZipFormer_destroyNative(JNIEnv* env, jobject,
+                                                                                                   jlong handle) {
     auto* instance = reinterpret_cast<zip_former*>(handle);
     delete instance;
 }

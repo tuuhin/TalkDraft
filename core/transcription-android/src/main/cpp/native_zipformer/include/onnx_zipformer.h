@@ -1,10 +1,9 @@
 #pragma once
 
-#include "onnxruntime_cxx_api.h"
+#include "sherpa-c-api.h"
+#include <android/asset_manager.h>
 #include <memory>
 #include <string>
-#include <unordered_map>
-#include <vector>
 
 class zip_former {
 public:
@@ -18,16 +17,14 @@ public:
     void Reset();
 
 private:
-    void load_tokens(const std::string& tokens_path);
+    void cleanup();
 
-    Ort::Env _env{ORT_LOGGING_LEVEL_WARNING, "zip_former"};
-    Ort::SessionOptions _session_options;
+    const SherpaOnnxOnlineRecognizer* _online_recognizer   = nullptr;
+    const SherpaOnnxOnlineStream* _online_stream           = nullptr;
+    const SherpaOnnxOfflineRecognizer* _offline_recognizer = nullptr;
 
-    std::unique_ptr<Ort::Session> _encoder_session;
-    std::unique_ptr<Ort::Session> _decoder_session;
-    std::unique_ptr<Ort::Session> _joiner_session;
-
-    std::unordered_map<int, std::string> _token_map;
     std::string _acc_transcript;
-    bool _isReady = false;
+    std::string _current_segment;
+    bool _is_online = false;
+    bool _isReady   = false;
 };

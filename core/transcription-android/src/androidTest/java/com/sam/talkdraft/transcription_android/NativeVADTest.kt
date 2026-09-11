@@ -19,7 +19,7 @@ import org.koin.test.KoinTestRule
 import org.koin.test.inject
 
 @RunWithPlatform
-class NativeVoiceActivityDetectorTest : KoinTest {
+class NativeVADTest : KoinTest {
 
     private lateinit var vad: NativeVoiceActivityDetector
     private lateinit var assertsManager: AssetManager

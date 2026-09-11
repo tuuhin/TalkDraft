@@ -69,9 +69,6 @@ class NativeWhisper : AutoCloseable {
         return if (nativeSuccess) ProcessingState.Success else ProcessingState.Error(readError())
     }
 
-    fun reset() = synchronized(lock) {
-        accumulatedSampleCount = 0
-    }
 
     fun readState(): WhisperState? = synchronized(lock) {
         if (!_isInitialized.load()) return null

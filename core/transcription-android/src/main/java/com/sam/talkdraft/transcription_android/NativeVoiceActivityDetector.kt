@@ -161,10 +161,10 @@ class NativeVoiceActivityDetector : AutoCloseable {
     private external fun destroyNative(handle: Long)
 
     companion object {
-        private const val TAG = "NativeVAD"
+        private const val TAG = "ANDROID_NATIVE_VAD"
 
         init {
-	        System.loadLibrary("native_vad")
+            System.loadLibrary("native_vad")
         }
 
         private const val FLOAT_MULTIPLIER = 1.0f / Short.MAX_VALUE
