@@ -8,9 +8,11 @@ import assertk.assertions.isLessThan
 import assertk.assertions.isTrue
 import com.sam.talkdraft.testing.annotations.RunWithPlatform
 import com.sam.talkdraft.testing.di.TestPlatformModule
+import com.sam.talkdraft.transcription_android.assets.AssetsToFileConvertor
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import org.koin.plugin.module.dsl.module
@@ -23,6 +25,7 @@ class NativeVADTest : KoinTest {
 
     private lateinit var vad: NativeVoiceActivityDetector
     private lateinit var assertsManager: AssetManager
+    private lateinit var fileProvider: AssetsToFileConvertor
 
     private val context by inject<Context>()
 
@@ -38,11 +41,12 @@ class NativeVADTest : KoinTest {
     fun setup() {
         vad = NativeVoiceActivityDetector()
         assertsManager = context.assets
+        fileProvider = AssetsToFileConvertor(assertsManager)
     }
 
     @AfterTest
     fun tearDown() {
-        vad.close()
+        if (::vad.isInitialized) vad.close()
         tempDirectory.delete()
     }
 
@@ -60,12 +64,11 @@ class NativeVADTest : KoinTest {
     }
 
     @Test
-    fun test_vad_init_with_model_path() {
-        val file = tempDirectory.newFile("model_file")
-        assertsManager.open(NativeVoiceActivityDetector.MODEL_NAME)
-            .use { stream -> file.outputStream().use { stream.copyTo(it) } }
+    fun test_vad_init_with_model_path() = runTest {
+        val tempFile = tempDirectory.newFolder()
+        val finalPath = fileProvider.convertToFile(NativeVoiceActivityDetector.MODEL_NAME, tempFile)
 
-        val isOke = vad.initialize(file.absolutePath)
+        val isOke = vad.initialize(finalPath.absolutePath)
         assertThat(isOke).isTrue()
         assertThat(vad.isInitialized).isTrue()
     }
