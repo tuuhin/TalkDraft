@@ -25,7 +25,7 @@ kotlin {
 		packageResolvedSynchronization = noSynchronization()
 		swiftPackage(
             url = url("https://github.com/measure-sh/measure.git"),
-            version = revision("ios-v0.13.0"),
+            version = revision("ios-v0.13.2"),
             products = listOf(product("Measure")),
             packageName = "measure",
         )

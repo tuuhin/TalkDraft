@@ -3,8 +3,8 @@ package com.sam.talkdraft.analytics.posthog
 import com.posthog.kmp.PostHogContext
 import org.koin.core.annotation.Singleton
 
-@Singleton
-internal actual class PostHogContextProvider {
+@Singleton(binds = [IPostHogContext::class])
+internal actual class PostHogContextProvider : IPostHogContext {
 
-    actual fun readContext(): PostHogContext = PostHogContext()
+    actual override fun readContext(): PostHogContext = PostHogContext()
 }

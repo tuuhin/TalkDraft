@@ -45,7 +45,7 @@ class AudioPCMReaderTest : KoinComponent {
     }
 
     @Test
-    fun test_start_without_init_throws_exception() {
+    fun test_start_without_init_throws_exception() = runTest {
         assertFailsWith<RecorderInitMissingException> { pcmReader.start() }
     }
 
@@ -58,7 +58,7 @@ class AudioPCMReaderTest : KoinComponent {
     }
 
     @Test
-    fun test_multiple_init_calls_are_handled_safely() {
+    fun test_multiple_init_calls_are_handled_safely() = runTest {
         pcmReader.initReader()
         pcmReader.initReader()
         pcmReader.start()
@@ -86,7 +86,7 @@ class AudioPCMReaderTest : KoinComponent {
 
 
     @Test
-    fun test_double_start_is_safe_noop() {
+    fun test_double_start_is_safe_noop() = runTest {
         pcmReader.initReader()
         pcmReader.start()
         pcmReader.start()
@@ -94,7 +94,7 @@ class AudioPCMReaderTest : KoinComponent {
     }
 
     @Test
-    fun test_double_stop_is_safe_noop() {
+    fun test_double_stop_is_safe_noop() = runTest {
         pcmReader.initReader()
         pcmReader.start()
         pcmReader.stop()

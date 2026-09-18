@@ -24,13 +24,12 @@ kotlin {
 	swiftPMDependencies {
 		packageResolvedSynchronization = noSynchronization()
 		iosMinimumDeploymentTarget = "16"
+
 		swiftPackage(
 			url = url("https://github.com/google/GoogleSignIn-iOS"),
 			version = from("9.2.0"),
-			products = listOf(
-				product("GoogleSignIn"),
-				product("GoogleSignInSwift")
-			),
+            products = listOf(product("GoogleSignIn", platforms = setOf(iOS()))),
+            importedClangModules = listOf("GoogleSignIn"),
 		)
 	}
 

@@ -108,11 +108,11 @@ composeCompiler {
 
 koinCompiler {
     userLogs = true
-    strictSafety = true
     debugLogs = true
 }
 
 skie {
+    isEnabled = false
     build {
         enableSwiftLibraryEvolution.set(true)
     }

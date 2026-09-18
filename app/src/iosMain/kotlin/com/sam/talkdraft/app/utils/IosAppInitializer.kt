@@ -6,11 +6,9 @@ import co.touchlab.kermit.XcodeSeverityWriter
 import com.sam.talkdraft.analytics.posthog.IPostHogInitManager
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.crashlytics.MeasureSetupManager
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.coroutineScope
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -20,16 +18,14 @@ object IosAppInitializer : KoinComponent {
     private val posthogInit by inject<IPostHogInitManager>()
     private val measure by inject<MeasureSetupManager>()
 
-    suspend fun setup() {
-        withContext(Dispatchers.IO) {
-            val op0 = async(dispatchers.io) {
-                posthogInit.setup()
-                posthogInit.turnOffDataCollection()
-
-            }
-            val op1 = async(dispatchers.main) { measure.setup() }
-            awaitAll(op0, op1)
+    suspend fun setup() = coroutineScope {
+        val op0 = async(dispatchers.io) {
+            posthogInit.setup()
+            posthogInit.turnOffDataCollection()
         }
+        val op1 = async(dispatchers.io) { measure.setup() }
+        awaitAll(op0, op1)
+        Unit
     }
 
     fun setupLogging() {
