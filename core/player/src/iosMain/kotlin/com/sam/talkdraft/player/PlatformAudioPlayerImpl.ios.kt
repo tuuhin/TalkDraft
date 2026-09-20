@@ -3,16 +3,15 @@ package com.sam.talkdraft.player
 import co.touchlab.kermit.Logger
 import com.sam.talkdraft.common.ext.tryWithLock
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
-import com.sam.talkdraft.platform.extras.NSKeyValueObservingProtocol
 import com.sam.talkdraft.player.model.AudioSource
 import com.sam.talkdraft.player.model.PlayerPlayBackSpeed
 import com.sam.talkdraft.player.model.PlayerPlayItemMetadata
 import com.sam.talkdraft.player.model.PlayerPlaybackState
 import com.sam.talkdraft.player.model.PlayerTimeline
+import com.sam.talkdraft.player.utils.PlayerKVOObserver
 import io.ktor.utils.io.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.cValue
@@ -55,7 +54,6 @@ import platform.Foundation.NSKeyValueObservingOptionNew
 import platform.Foundation.NSURL
 import platform.Foundation.addObserver
 import platform.Foundation.removeObserver
-import platform.darwin.NSObject
 
 private const val TAG = "IOS_AUDIO_PLAYER"
 
@@ -66,6 +64,10 @@ internal actual class PlatformAudioPlayerImpl(
     val dispatchers: IPlatformCoroutineDispatchers,
 ) : IAudioPlayer {
 
+    private var _looper: AVPlayerLooper? = null
+    private var _playItem: AVPlayerItem? = null
+    private val _lock = Mutex()
+
     actual override val playerState: Flow<PlayerPlayItemMetadata>
         get() = callbackFlow {
 
@@ -74,17 +76,11 @@ internal actual class PlatformAudioPlayerImpl(
                 trySend(metadata)
             }
 
-            val observers = object : NSObject(), NSKeyValueObservingProtocol {
-                override fun observeValueForKeyPath(
-                    keyPath: String?,
-                    ofObject: Any?,
-                    change: Map<Any?, *>?,
-                    context: COpaquePointer?,
-                ) {
-                    val metadata = readMetadata()
-                    trySend(metadata)
-                }
+            val observers = PlayerKVOObserver {
+                val metadata = readMetadata()
+                trySend(metadata)
             }
+
             val keyPaths = listOf("timeControlStatus", "rate", "muted", "currentItem.status")
 
             keyPaths.forEach { keyPath ->
@@ -94,14 +90,13 @@ internal actual class PlatformAudioPlayerImpl(
                     options = NSKeyValueObservingOptionNew,
                     context = null,
                 )
+                Logger.i(tag = TAG) { "ADDING OBSERVER FOR KEY :$keyPath" }
             }
 
             awaitClose {
                 keyPaths.forEach { keyPath ->
-                    player.removeObserver(
-                        observer = observers,
-                        forKeyPath = keyPath,
-                    )
+                    Logger.i(tag = TAG) { "REMOVING OBSERVER FOR KEY :$keyPath" }
+                    player.removeObserver(observer = observers, forKeyPath = keyPath)
                 }
             }
         }
@@ -128,8 +123,10 @@ internal actual class PlatformAudioPlayerImpl(
 
             val interval = CMTimeMakeWithSeconds(seconds = .1, preferredTimescale = 1000)
             val observer = player.addPeriodicTimeObserverForInterval(interval, queue = null, usingBlock = block)
+            Logger.i(tag = TAG) { "ADDING A PERIODIC TIME OBSERVER FOR INTERVAL 100 MILLISECONDS" }
 
             awaitClose {
+                Logger.i(tag = TAG) { "REMOVING TIMED OBSERVER" }
                 player.removeTimeObserver(observer)
             }
         }
@@ -137,22 +134,14 @@ internal actual class PlatformAudioPlayerImpl(
     actual override val errorFlow: Flow<Throwable>
         get() = callbackFlow {
 
-            val observer = object : NSObject(), NSKeyValueObservingProtocol {
-                override fun observeValueForKeyPath(
-                    keyPath: String?,
-                    ofObject: Any?,
-                    change: Map<Any?, *>?,
-                    context: COpaquePointer?,
-                ) {
-                    val currentItem = player.currentItem ?: return
-                    val allGood = currentItem.status != AVPlayerStatusFailed
-                    if (allGood) return
-                    val nsError = currentItem.error
-                    val errorMessage = nsError?.localizedDescription ?: "Unknown AVPlayerItem playback error"
-                    val errorCode = nsError?.code ?: -1
-                    trySend(IllegalStateException("AVPlayer Error ($errorCode): $errorMessage"))
-                }
-
+            val observer = PlayerKVOObserver {
+                val currentItem = player.currentItem ?: return@PlayerKVOObserver
+                val allGood = currentItem.status != AVPlayerStatusFailed
+                if (allGood) return@PlayerKVOObserver
+                val nsError = currentItem.error
+                val errorMessage = nsError?.localizedDescription ?: "Unknown AVPlayerItem playback error"
+                val errorCode = nsError?.code ?: -1
+                trySend(IllegalStateException("AVPlayer Error ($errorCode): $errorMessage"))
             }
 
             player.addObserver(
@@ -168,14 +157,10 @@ internal actual class PlatformAudioPlayerImpl(
         }
 
 
-    private var _looper: AVPlayerLooper? = null
-    private var _playItem: AVPlayerItem? = null
-    private val _lock = Mutex()
-
-    actual override suspend fun prepare(source: AudioSource): Result<Boolean> {
+    actual override suspend fun prepare(source: AudioSource): Result<Boolean> = withContext(dispatchers.main) {
         try {
             val nsUrl = NSURL.URLWithString(source.source)
-                ?: return Result.failure(IllegalArgumentException())
+                ?: return@withContext Result.failure(IllegalArgumentException("Invalid URL: ${source.source}"))
 
             _looper?.disableLooping()
             _looper = null
@@ -184,16 +169,16 @@ internal actual class PlatformAudioPlayerImpl(
             player.replaceCurrentItemWithPlayerItem(playerItem)
             _playItem = playerItem
 
-            return Result.success(true)
+            Result.success(true)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             Logger.e(tag = TAG) { "UNABLE TO PREPARE PLAYER" }
-            return Result.failure(e)
+            Result.failure(e)
         }
     }
 
     actual override suspend fun play() = withContext(dispatchers.main) {
-        _lock.tryWithLock(this) {
+        _lock.withLock(this) {
             try {
                 player.play()
                 Logger.i(tag = TAG) { "PLAYER PLAYING" }
@@ -202,32 +187,38 @@ internal actual class PlatformAudioPlayerImpl(
                 Logger.w(tag = TAG, throwable = e) { "CANNOT PLAY THE PLAYER TRY AGAIN" }
             }
         }
-        Unit
     }
 
-    actual override suspend fun pause() = withContext(dispatchers.main) {
-        _lock.withLock {
-            try {
-                player.pause()
-                Logger.i(tag = TAG) { "PLAYER PAUSED" }
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-                Logger.w(tag = TAG, throwable = e) { "CANNOT PAUSE THE PLAYER TRY AGAIN" }
+    actual override suspend fun pause() {
+        withContext(dispatchers.main) {
+            _lock.tryWithLock(this) {
+                try {
+                    player.pause()
+                    Logger.i(tag = TAG) { "PLAYER PAUSED" }
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    Logger.w(tag = TAG, throwable = e) { "CANNOT PAUSE THE PLAYER TRY AGAIN" }
+                }
             }
         }
     }
 
     actual override suspend fun stop() {
-        _lock.withLock {
-            try {
-                player.pause()
-                val cValue = cValue<CMTime> {
-                    value = kCMTimeZero.value
+        withContext(dispatchers.main) {
+            _lock.tryWithLock(this) {
+                try {
+                    player.pause()
+                    val zeroTime = cValue<CMTime> {
+                        value = kCMTimeZero.value
+                        timescale = kCMTimeZero.timescale
+                        flags = kCMTimeZero.flags
+                        epoch = kCMTimeZero.epoch
+                    }
+                    player.seekToTime(zeroTime)
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    Logger.w(tag = TAG, throwable = e) { "CANNOT STOP THE PLAYER TRY AGAIN" }
                 }
-                player.seekToTime(cValue)
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-                Logger.w(tag = TAG, throwable = e) { "CANNOT STOP THE PLAYER TRY AGAIN" }
             }
         }
     }
@@ -241,17 +232,15 @@ internal actual class PlatformAudioPlayerImpl(
         val currentTimeSeconds = CMTimeGetSeconds(player.currentTime())
         val totalDurationSeconds = CMTimeGetSeconds(currentItem.duration)
 
-        // need seconds value in double
         val deltaSeconds = delta.inWholeMilliseconds / 1000.0
         val offset = if (rewind) -deltaSeconds else deltaSeconds
         val targetTimeSeconds = if (totalDurationSeconds.isFinite() && totalDurationSeconds > 0) {
             (currentTimeSeconds + offset).coerceIn(0.0, totalDurationSeconds)
         } else (currentTimeSeconds + offset).coerceAtLeast(0.0)
 
-
         val targetCMTime = CMTimeMakeWithSeconds(targetTimeSeconds, preferredTimescale = 1000)
         player.seekToTime(targetCMTime)
-        Logger.d(tag = TAG) { "SEEKED BY ${if (rewind) "-" else "+"}$delta. NEW TIME: $targetTimeSeconds" }
+        Logger.d(tag = TAG) { "SEEK-ED BY ${if (rewind) "-" else "+"}$delta. NEW TIME: $targetTimeSeconds" }
     }
 
     actual override suspend fun onMuteDevice() = withContext(dispatchers.main) {
@@ -264,8 +253,9 @@ internal actual class PlatformAudioPlayerImpl(
     actual override suspend fun setPlayBackSpeed(playBackSpeed: PlayerPlayBackSpeed) = withContext(dispatchers.main) {
         Logger.d(tag = TAG) { "PLAYER RATE  :${player.defaultRate()}" }
         player.setDefaultRate(playBackSpeed.speed)
-        if (player.rate != 0.0f)
+        if (player.rate != 0.0f) {
             player.setRate(playBackSpeed.speed)
+        }
         Logger.d(tag = TAG) { "PLAYER RATE UPDATED :${player.defaultRate()}" }
     }
 
@@ -286,7 +276,7 @@ internal actual class PlatformAudioPlayerImpl(
         }
     }
 
-    actual override suspend fun release() {
+    actual override suspend fun release() = withContext(dispatchers.main) {
         try {
             player.pause()
             _looper?.disableLooping()
@@ -305,11 +295,11 @@ internal actual class PlatformAudioPlayerImpl(
         if (player.currentItem == null || player.status == AVPlayerStatusFailed)
             state = PlayerPlaybackState.IDLE
 
-        when (player.timeControlStatus) {
-            AVPlayerTimeControlStatusPlaying -> state = PlayerPlaybackState.PLAYER_READY
+        state = when (player.timeControlStatus) {
+            AVPlayerTimeControlStatusPlaying -> PlayerPlaybackState.PLAYER_READY
             AVPlayerTimeControlStatusPaused -> PlayerPlaybackState.PLAYER_READY
             AVPlayerTimeControlStatusWaitingToPlayAtSpecifiedRate -> PlayerPlaybackState.BUFFERING
-            else -> PlayerPlaybackState.IDLE
+            else -> state ?: PlayerPlaybackState.IDLE
         }
 
         val isPlaying = player.timeControlStatus == AVPlayerTimeControlStatusPlaying
@@ -318,7 +308,7 @@ internal actual class PlatformAudioPlayerImpl(
         val isRepeating = _looper != null
 
         return PlayerPlayItemMetadata(
-            playerState = state ?: PlayerPlaybackState.IDLE,
+            playerState = state,
             playBackSpeed = speed,
             isRepeating = isRepeating,
             isMuted = isMuted,

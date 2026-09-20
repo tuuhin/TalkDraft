@@ -35,7 +35,7 @@ kotlin {
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
         target.compilations.getByName("main").cinterops.create("nsExtras") {
             definitionFile = project.file("src/nativeInterop/cinterop/NSkeyObserver.def")
-            packageName = "com.sam.talkdraft.platform.extras"
+            packageName = "com.sam.talkdraft.platform.kvo"
         }
     }
 
