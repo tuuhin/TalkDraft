@@ -9,6 +9,6 @@ import kotlinx.coroutines.flow.Flow
 internal expect class ModelDownloadRegistrar : IModelDownloadRegistrar {
     override fun startModelDownload(model: TranscriptionModel): Uuid
     override fun observerDownloadStatus(uuid: Uuid): Flow<ModelDownloadStatus>
-    override fun observerDownloadStatus(model: TranscriptionModel): Flow<Pair<Uuid, ModelDownloadStatus?>>
+    override fun observerDownloadStatus(model: TranscriptionModel): Flow<Pair<Uuid, ModelDownloadStatus>>
     override fun cancelDownload(uuid: Uuid)
 }

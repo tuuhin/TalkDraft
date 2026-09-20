@@ -1,24 +1,40 @@
 package com.sam.talkdraft.model_manager.data.mapper
 
 import com.sam.talkdraft.model_manager.data.remote.dto.RemoteModelArtifactDTO
+import com.sam.talkdraft.model_manager.data.remote.dto.RemoteModelArtifactTypeDto
+import com.sam.talkdraft.model_manager.data.remote.dto.RemoteModelFamilyDto
 import com.sam.talkdraft.model_manager.data.remote.dto.RemoteModelMetadataDTO
 import com.sam.talkdraft.model_manager.data.remote.dto.RemoteModelStatusDto
+import com.sam.talkdraft.model_manager.data.remote.dto.RemoteTranscriptionTypeDto
 import com.sam.talkdraft.model_manager.domain.model.RemoteModelStatus
+import com.sam.talkdraft.model_manager.domain.model.TranscriberFamily
+import com.sam.talkdraft.model_manager.domain.model.TranscriptionMode
 import com.sam.talkdraft.model_manager.domain.remote.RemoteTranscriptionModel
 
-internal fun List<RemoteModelMetadataDTO>.toDomainModels(artifacts: List<RemoteModelArtifactDTO>)
-    : List<RemoteTranscriptionModel> {
+internal fun List<RemoteModelMetadataDTO>.toDomainModels(
+    artifacts: List<RemoteModelArtifactDTO>,
+): List<RemoteTranscriptionModel> {
     val artifactMap = artifacts.associateBy { it.catalogId }
     return mapNotNull { metadata ->
         val artifact = artifactMap[metadata.id] ?: return@mapNotNull null
 
         RemoteTranscriptionModel(
             id = metadata.id,
-            modelFamily = metadata.modelFamily,
+            modelFamily = when (metadata.modelFamily) {
+                RemoteModelFamilyDto.WHISPER -> TranscriberFamily.WHISPER
+                RemoteModelFamilyDto.ZIP_FORMER -> TranscriberFamily.ZIP_FORMER
+            },
             variant = metadata.variant,
-            version = metadata.version,
-
+            version = metadata.localVersion,
             displayName = metadata.displayName,
+            description = metadata.description,
+            createdAt = metadata.createdAt,
+            updatedAt = metadata.updatedAt,
+            isDefault = metadata.isDefault,
+            transcriptionType = when (metadata.transcriptionType) {
+                RemoteTranscriptionTypeDto.BATCHED -> TranscriptionMode.BATCHED
+                RemoteTranscriptionTypeDto.STREAMING -> TranscriptionMode.STREAMING
+            },
             remoteStatus = when (metadata.status) {
                 RemoteModelStatusDto.ACTIVE -> RemoteModelStatus.ACTIVE
                 RemoteModelStatusDto.DEPRECATED -> RemoteModelStatus.DEPRECATED
@@ -26,6 +42,7 @@ internal fun List<RemoteModelMetadataDTO>.toDomainModels(artifacts: List<RemoteM
             },
             artifact = RemoteTranscriptionModel.Artifact(
                 artifactId = artifact.id,
+                // mapped to url source
                 source = artifact.source.providerURL,
                 repository = artifact.repository,
                 artifactPath = artifact.artifactPath,
@@ -33,6 +50,7 @@ internal fun List<RemoteModelMetadataDTO>.toDomainModels(artifacts: List<RemoteM
                 sizeBytes = artifact.sizeBytes,
                 commitHash = artifact.revision,
                 artifactHash = artifact.sha256,
+                isPackaged = artifact.artifact != RemoteModelArtifactTypeDto.BINARY,
             ),
         )
     }

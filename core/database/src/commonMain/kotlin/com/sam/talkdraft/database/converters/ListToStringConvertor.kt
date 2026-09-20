@@ -4,7 +4,7 @@ import androidx.room3.ColumnTypeConverter
 import androidx.room3.ProvidedColumnTypeConverter
 
 @ProvidedColumnTypeConverter
-class ListToStringConvertor {
+internal class ListToStringConvertor {
 
     @ColumnTypeConverter
     fun fromListOfStringToCSV(values: List<String>): String = values.joinToString(",")

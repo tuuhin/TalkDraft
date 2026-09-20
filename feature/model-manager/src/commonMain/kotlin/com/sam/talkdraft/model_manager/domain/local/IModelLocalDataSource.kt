@@ -1,6 +1,6 @@
 package com.sam.talkdraft.model_manager.domain.local
 
-import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
+import com.sam.talkdraft.model_manager.domain.model.ModelInstallStatus
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.flow.Flow
 
@@ -14,7 +14,7 @@ internal interface IModelLocalDataSource {
 
     suspend fun hasLocalData(): Boolean
 
-    suspend fun updateModelStatus(modelId: Uuid, status: LocalModelStatus = LocalModelStatus.NOT_INSTALLED)
+    suspend fun updateModelStatus(modelId: Uuid, status: ModelInstallStatus = ModelInstallStatus.NOT_INSTALLED)
         : LocalTranscriptionModel?
 
     suspend fun updateModelPath(modelId: Uuid, path: String?): LocalTranscriptionModel?

@@ -5,7 +5,7 @@ import androidx.room3.Entity
 import androidx.room3.ForeignKey
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
-import com.sam.talkdraft.database.enums.ModelDownloadStatus
+import com.sam.talkdraft.database.enums.DBModelDownloadStatus
 import com.sam.talkdraft.database.utils.DBConstants
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -35,7 +35,7 @@ data class DownloadedTranscriptionModelEntity(
     val modelPath: String? = null,
 
     @ColumnInfo(name = "status")
-    val modelStatus: ModelDownloadStatus = ModelDownloadStatus.UNKNOWN,
+    val modelStatus: DBModelDownloadStatus = DBModelDownloadStatus.UNKNOWN,
 
     @ColumnInfo(name = "downloaded_at")
     val downloadedAt: Instant? = null,

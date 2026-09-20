@@ -6,11 +6,15 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal enum class RemoteModelProviderDto {
     @SerialName("HUGGING_FACE")
-    HUGGING_FACE;
+    HUGGING_FACE,
+
+    @SerialName("GITHUB")
+    GITHUB;
 
     val providerURL: String
         get() = when (this) {
             HUGGING_FACE -> "https://huggingface.co"
+            GITHUB -> "https://github.com"
         }
 
 }

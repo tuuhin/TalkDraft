@@ -5,12 +5,14 @@ import com.sam.talkdraft.model_downloader.domain.IDownloadTempFileManager
 import com.sam.talkdraft.model_downloader.domain.IModelDownloadManager
 import com.sam.talkdraft.model_downloader.domain.IModelDownloadVerifier
 import com.sam.talkdraft.model_downloader.domain.IModelFileManager
+import com.sam.talkdraft.model_downloader.domain.IUnzipModelProvider
 import com.sam.talkdraft.model_downloader.domain.exceptions.ModelDownloadFailedException
 import com.sam.talkdraft.model_downloader.domain.exceptions.ModelVerificationFailedException
 import com.sam.talkdraft.model_downloader.domain.models.DownloadState
 import com.sam.talkdraft.model_downloader.domain.models.ModelDownloadStatus
-import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
+import com.sam.talkdraft.model_manager.domain.model.ModelInstallStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
+import com.sam.talkdraft.model_manager.domain.repository.ISelectedTranscriptionModelStore
 import com.sam.talkdraft.model_manager.domain.repository.ITranscriptionModelsRepo
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.onDownload
@@ -23,6 +25,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.io.okio.asOkioSource
 import okio.Path
+import okio.Path.Companion.toPath
 import org.koin.core.annotation.Factory
 
 private const val TAG = "MODEL_DOWNLOAD_MANAGER"
@@ -34,6 +37,8 @@ internal class ModelDownloadManagerImpl(
     private val verifier: IModelDownloadVerifier,
     private val httpclient: HttpClient,
     private val repository: ITranscriptionModelsRepo,
+    private val selectedModelStore: ISelectedTranscriptionModelStore,
+    private val unZipModelManager: IUnzipModelProvider,
 ) : IModelDownloadManager {
 
 
@@ -49,7 +54,7 @@ internal class ModelDownloadManagerImpl(
         }
 
         val transcriptionModel = modelResult.getOrThrow()
-        val downloadURI = transcriptionModel.getToURL()
+        val downloadURI = transcriptionModel.downloadURL ?: return Result.failure(Exception("Invalid download url"))
 
         // Helper to emit states concisely
         suspend fun emitState(state: DownloadState) {
@@ -57,7 +62,7 @@ internal class ModelDownloadManagerImpl(
         }
 
         // Update model state to downloading
-        repository.updateModelStatus(transcriptionModel.id, LocalModelStatus.DOWNLOADING)
+        repository.updateModelStatus(transcriptionModel.id, ModelInstallStatus.DOWNLOADING)
         emitState(DownloadState.Initiated)
 
         var tempFilePath: Path? = null
@@ -80,7 +85,7 @@ internal class ModelDownloadManagerImpl(
                 Logger.d(tag = TAG) { "FAILED TO DOWNLOAD THE MODEL" }
                 withContext(NonCancellable) {
                     // update model state to not installed as it's a failed download
-                    repository.updateModelStatus(transcriptionModel.id, LocalModelStatus.NOT_INSTALLED)
+                    repository.updateModelStatus(transcriptionModel.id, ModelInstallStatus.NOT_INSTALLED)
                 }
                 emitState(DownloadState.Failed(exc.message))
                 return Result.failure(exc)
@@ -96,7 +101,7 @@ internal class ModelDownloadManagerImpl(
                 Logger.e(tag = TAG) { "MODEL HASH VERIFICATION FAILED" }
                 withContext(NonCancellable) {
                     // update model state to not installed as it's a failed download
-                    repository.updateModelStatus(transcriptionModel.id, LocalModelStatus.NOT_INSTALLED)
+                    repository.updateModelStatus(transcriptionModel.id, ModelInstallStatus.NOT_INSTALLED)
                     // delete the temporary downloaded model
                     tempFileManage.clearCache(tempFilePath)
                 }
@@ -105,22 +110,26 @@ internal class ModelDownloadManagerImpl(
             }
 
             // 3. Save model from temp location to permanent storage
+            selectedModelStore.setSelectedModel(transcriptionModel)
             val saveResult = modelFileManager.saveModel(transcriptionModel, tempFilePath)
 
-            saveResult.fold(
-                onSuccess = {
-                    emitState(DownloadState.Success)
-                    Result.success(true)
-                },
-                onFailure = { error ->
-                    Logger.e(tag = TAG, throwable = error) { "FAILED TO SAVE MODEL FILE" }
-                    withContext(NonCancellable) {
-                        tempFileManage.clearCache(tempFilePath)
-                    }
-                    emitState(DownloadState.Failed(error.message))
-                    Result.failure(error)
-                },
-            )
+            if (saveResult.isFailure) {
+                val error = saveResult.exceptionOrNull()!!
+                Logger.e(tag = TAG, throwable = error) { "FAILED TO SAVE MODEL FILE" }
+                withContext(NonCancellable) {
+                    tempFileManage.clearCache(tempFilePath)
+                }
+                emitState(DownloadState.Failed(error.message))
+                return Result.failure(error)
+            }
+            // now check if we have  zip file
+            val path = transcriptionModel.modelPath?.toPath()
+            if (transcriptionModel.isUnzipRequired && path != null) {
+                // unzip the file in same path
+                unZipModelManager.unzipFilePath(path)
+            }
+            emitState(DownloadState.Success)
+            Result.success(true)
 
         } catch (e: CancellationException) {
             Logger.w(tag = TAG) { "OPERATION CANCELLED" }
@@ -132,9 +141,9 @@ internal class ModelDownloadManagerImpl(
         } finally {
             withContext(NonCancellable) {
                 val currentModel = repository.readModel(modelId).getOrNull()
-                if (currentModel?.modelStatus != LocalModelStatus.INSTALLED) {
+                if (currentModel?.status != ModelInstallStatus.INSTALLED) {
                     Logger.d(tag = TAG) { "RESETTING THE MODEL AS STATUS IS NOT INSTALLED" }
-                    repository.updateModelStatus(transcriptionModel.id, LocalModelStatus.NOT_INSTALLED)
+                    repository.updateModelStatus(transcriptionModel.id, ModelInstallStatus.NOT_INSTALLED)
                 }
                 tempFilePath?.let { path -> tempFileManage.clearCache(path) }
             }
@@ -173,6 +182,4 @@ internal class ModelDownloadManagerImpl(
         Result.failure(e)
     }
 
-    private fun TranscriptionModel.getToURL(): String =
-        "${source}/${repository}/resolve/${revision}/${artifactPath}"
 }

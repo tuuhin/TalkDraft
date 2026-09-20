@@ -5,7 +5,12 @@ import com.sam.talkdraft.database.dao.RecordingDao
 import com.sam.talkdraft.database.dao.TranscriptModelDownloadEntityDao
 import com.sam.talkdraft.database.dao.TranscriptSegmentsDao
 import com.sam.talkdraft.database.dao.TranscriptsDao
+import com.sam.talkdraft.database.entities.DownloadedTranscriptionModelEntity
 import com.sam.talkdraft.database.entities.RecordingEntity
+import com.sam.talkdraft.database.entities.TranscriptionModelEntity
+import com.sam.talkdraft.database.enums.DBModelDownloadStatus
+import com.sam.talkdraft.database.enums.DBModelFamilyOption
+import com.sam.talkdraft.database.enums.DBRemoteModelStatus
 import com.sam.talkdraft.database.utils.AppDBBuilder
 import com.sam.talkdraft.testing.annotations.RunWithPlatform
 import kotlin.test.AfterTest
@@ -55,7 +60,6 @@ class LocalDatabaseTest : KoinTest {
         database.close()
     }
 
-
     @Test
     fun recording_crud_works() = runTest {
         val recording = RecordingEntity(
@@ -78,7 +82,6 @@ class LocalDatabaseTest : KoinTest {
         assertNotNull(result)
         assertEquals(recording, result)
 
-
         recordingDao.setFavourite(
             id = recording.id,
             isFavourite = true,
@@ -92,5 +95,42 @@ class LocalDatabaseTest : KoinTest {
 
         recordingDao.deleteById(recording.id)
         assertNull(recordingDao.getById(recording.id))
+    }
+
+    @Test
+    fun enum_type_converters_and_storage_work() = runTest {
+        val modelId = Uuid.random()
+        val transcriptionModel = TranscriptionModelEntity(
+            id = modelId,
+            modelFamily = DBModelFamilyOption.WHISPER,
+            variant = "tiny",
+            version = "1.0",
+            displayName = "Whisper Tiny",
+            source = "local",
+            repository = "repo",
+            revision = "rev",
+            artifactPath = "path",
+            languages = listOf("en"),
+            sizeInBytes = 100L,
+            checksum = null,
+            status = DBRemoteModelStatus.ACTIVE,
+            cachedAt = Clock.System.now(),
+            lastSync = Clock.System.now(),
+        )
+        database.transcriptionModelDao().upsertTranscriptionModels(listOf(transcriptionModel))
+        advanceUntilIdle()
+
+        val downloadEntity = DownloadedTranscriptionModelEntity(
+            remoteId = modelId,
+            modelStatus = DBModelDownloadStatus.DOWNLOADED,
+            modelPath = "local/path",
+            downloadedAt = Clock.System.now(),
+        )
+        transcriptModelDao.upsert(downloadEntity)
+        advanceUntilIdle()
+
+        val fetched = transcriptModelDao.getById(modelId)
+        assertNotNull(fetched)
+        assertEquals(DBModelDownloadStatus.DOWNLOADED, fetched.modelStatus)
     }
 }

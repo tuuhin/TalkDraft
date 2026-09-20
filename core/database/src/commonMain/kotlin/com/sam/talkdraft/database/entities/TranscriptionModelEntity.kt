@@ -3,7 +3,10 @@ package com.sam.talkdraft.database.entities
 import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.PrimaryKey
-import com.sam.talkdraft.database.enums.RemoteModelStatus
+import com.sam.talkdraft.database.enums.DBModelArtifactType
+import com.sam.talkdraft.database.enums.DBModelFamilyOption
+import com.sam.talkdraft.database.enums.DBModelTranscriptionType
+import com.sam.talkdraft.database.enums.DBRemoteModelStatus
 import com.sam.talkdraft.database.utils.DBConstants
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -16,7 +19,7 @@ data class TranscriptionModelEntity(
     val id: Uuid,
 
     @ColumnInfo(name = "model_family")
-    val modelFamily: String,
+    val modelFamily: DBModelFamilyOption,
 
     @ColumnInfo(name = "remote_variant")
     val variant: String,
@@ -46,14 +49,26 @@ data class TranscriptionModelEntity(
     val sizeInBytes: Long,
 
     @ColumnInfo(name = "model_checksum")
-    val checksum: String,
+    val checksum: String?,
 
     @ColumnInfo(name = "model_status")
-    val status: RemoteModelStatus,
+    val status: DBRemoteModelStatus,
 
     @ColumnInfo(name = "cached_at")
     val cachedAt: Instant,
 
     @ColumnInfo(name = "last_sync")
     val lastSync: Instant,
+
+    @ColumnInfo(name = "transcription_type", defaultValue = "BATCHED")
+    val transcriptionType: DBModelTranscriptionType = DBModelTranscriptionType.BATCHED,
+
+    @ColumnInfo(name = "is_default", defaultValue = "false")
+    val isDefault: Boolean = false,
+
+    @ColumnInfo(name = "artifact_type", defaultValue = "BIN")
+    val artifactType: DBModelArtifactType = DBModelArtifactType.BINARY,
+
+    @ColumnInfo(name = "description")
+    val description: String? = null,
 )

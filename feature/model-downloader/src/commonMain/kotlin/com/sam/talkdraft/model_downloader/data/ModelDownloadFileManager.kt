@@ -5,7 +5,7 @@ import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.common.platform.IPlatformFilePathProvider
 import com.sam.talkdraft.model_downloader.domain.IModelFileManager
 import com.sam.talkdraft.model_downloader.domain.exceptions.ModelFileAlreadyExistsException
-import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
+import com.sam.talkdraft.model_manager.domain.model.ModelInstallStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 import com.sam.talkdraft.model_manager.domain.repository.ITranscriptionModelsRepo
 import kotlinx.coroutines.CancellationException
@@ -31,8 +31,8 @@ internal class ModelDownloadFileManager(
 
     override suspend fun deleteModelFile(model: TranscriptionModel): Result<Boolean> {
         return runCatching {
-            val path = model.modelPath?.toPath()
-                ?: (readModelPath / model.checksum / model.artifactPath)
+
+            val path = model.modelPath?.toPath() ?: (readModelPath / model.id.toHexString())
 
             withContext(dispatchers.io) {
                 if (fs.exists(path)) {
@@ -50,7 +50,7 @@ internal class ModelDownloadFileManager(
                     }
                 }
                 repo.updateModelPath(model.id, null)
-                repo.updateModelStatus(model.id, LocalModelStatus.NOT_INSTALLED)
+                repo.updateModelStatus(model.id, ModelInstallStatus.NOT_INSTALLED)
             }
             true
         }.onFailure { e ->
@@ -62,7 +62,7 @@ internal class ModelDownloadFileManager(
     override suspend fun saveModel(model: TranscriptionModel, cachedPath: Path, overwrite: Boolean): Result<Unit> {
         return runCatching {
             val oldPath = model.modelPath?.toPath()
-            val newModelPath = readModelPath / model.checksum / model.artifactPath
+            val newModelPath = readModelPath / model.id.toHexString()
 
             withContext(dispatchers.io) {
                 if (!fs.exists(cachedPath))
@@ -78,7 +78,7 @@ internal class ModelDownloadFileManager(
                 }
                 try {
                     fs.copy(cachedPath, newModelPath)
-                    repo.updateModelStatus(modelId = model.id, status = LocalModelStatus.INSTALLED)
+                    repo.updateModelStatus(modelId = model.id, status = ModelInstallStatus.INSTALLED)
                     repo.updateModelPath(modelId = model.id, path = newModelPath.toString())
                 } catch (e: CancellationException) {
                     Logger.d(tag = TAG) { "Operation cancelled, deleting partial file" }

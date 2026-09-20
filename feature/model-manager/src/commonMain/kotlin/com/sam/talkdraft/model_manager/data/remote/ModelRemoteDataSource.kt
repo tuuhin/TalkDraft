@@ -2,7 +2,6 @@ package com.sam.talkdraft.model_manager.data.remote
 
 import co.touchlab.kermit.Logger
 import com.sam.talkdraft.model_manager.data.mapper.toDomainModels
-import com.sam.talkdraft.model_manager.data.remote.dto.RemoteCatalogVersionDto
 import com.sam.talkdraft.model_manager.data.remote.dto.RemoteModelArtifactDTO
 import com.sam.talkdraft.model_manager.data.remote.dto.RemoteModelMetadataDTO
 import com.sam.talkdraft.model_manager.domain.exceptions.RemoteDatasourceException
@@ -15,7 +14,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.koin.core.annotation.Factory
 
-private const val TAG = "REMOTE_MODEL_DATASOURCE"
 
 @Factory(binds = [IModelRemoteDataSource::class])
 internal class ModelRemoteDataSource(val supabase: SupabaseProvider) : IModelRemoteDataSource {
@@ -34,22 +32,6 @@ internal class ModelRemoteDataSource(val supabase: SupabaseProvider) : IModelRem
         }
     }
 
-    override suspend fun getRemoteCatalogVersion(): Result<Int> {
-        return runCatching {
-            try {
-                val list = supabaseClient
-                    .from(SupabaseTableName.REMOTE_CATALOG_VERSION_TABLE)
-                    .select()
-                    .decodeList<RemoteCatalogVersionDto>()
-                list.firstOrNull()?.version
-                    ?: throw RemoteDatasourceException.MetadataFetchFailed(Exception("No catalog version found"))
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-                Logger.d(tag = TAG, throwable = e) { "FAILED TO READ CATELOG" }
-                throw RemoteDatasourceException.MetadataFetchFailed(e)
-            }
-        }
-    }
 
     private suspend fun fetchMetadata(): List<RemoteModelMetadataDTO> {
         return try {
@@ -75,5 +57,9 @@ internal class ModelRemoteDataSource(val supabase: SupabaseProvider) : IModelRem
             Logger.d(tag = TAG, throwable = e) { "FAILED TO READ ARTIFACTS" }
             throw RemoteDatasourceException.ArtifactFetchFailed(e)
         }
+    }
+
+    companion object {
+        private const val TAG = "REMOTE_MODEL_DATASOURCE"
     }
 }

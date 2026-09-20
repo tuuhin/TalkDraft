@@ -7,7 +7,7 @@ import androidx.room3.Transaction
 import androidx.room3.Upsert
 import com.sam.talkdraft.database.entities.DownloadedTranscriptionModelEntity
 import com.sam.talkdraft.database.entities.TranscriptionModelEntity
-import com.sam.talkdraft.database.enums.ModelDownloadStatus
+import com.sam.talkdraft.database.enums.DBModelDownloadStatus
 import com.sam.talkdraft.database.relations.LocalTranscriptionModelWithDownloadInfo
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -40,17 +40,17 @@ interface LocalTranscriptionEntityDao {
     suspend fun upsertTranscriptionModels(entities: List<TranscriptionModelEntity>)
 
     @Transaction
-    suspend fun updateDownloadModelStatus(modelId: Uuid, status: ModelDownloadStatus) {
+    suspend fun updateDownloadModelStatus(modelId: Uuid, status: DBModelDownloadStatus) {
         val existing = readDownloadEntryWithRemoteId(modelId)
         val now = Clock.System.now()
 
         val entryToSave = existing?.copy(
             modelStatus = status,
-            downloadedAt = if (status == ModelDownloadStatus.DOWNLOADED) now else existing.downloadedAt,
+            downloadedAt = if (status == DBModelDownloadStatus.DOWNLOADED) now else existing.downloadedAt,
         ) ?: DownloadedTranscriptionModelEntity(
             remoteId = modelId,
             modelStatus = status,
-            downloadedAt = if (status == ModelDownloadStatus.DOWNLOADED) now else null,
+            downloadedAt = if (status == DBModelDownloadStatus.DOWNLOADED) now else null,
         )
 
         updateORInsetDownloadEntry(entryToSave)
@@ -62,11 +62,11 @@ interface LocalTranscriptionEntityDao {
 
         val entryToSave = existing?.copy(
             modelPath = modelPath,
-            modelStatus = if (modelPath == null) ModelDownloadStatus.UNKNOWN else existing.modelStatus,
+            modelStatus = if (modelPath == null) DBModelDownloadStatus.UNKNOWN else existing.modelStatus,
         ) ?: DownloadedTranscriptionModelEntity(
             remoteId = modelId,
             modelPath = modelPath,
-            modelStatus = ModelDownloadStatus.UNKNOWN,
+            modelStatus = DBModelDownloadStatus.UNKNOWN,
         )
 
         updateORInsetDownloadEntry(entryToSave)

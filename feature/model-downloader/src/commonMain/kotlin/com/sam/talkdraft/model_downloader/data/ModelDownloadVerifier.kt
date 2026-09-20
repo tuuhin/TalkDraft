@@ -26,6 +26,8 @@ internal class ModelDownloadVerifier(
 
     override suspend fun validateModelHash(modelPath: Path, model: TranscriptionModel): Boolean {
         return withContext(dispatchers.io) {
+            // if checksum is not provided then it's a pass
+            if (model.checksum == null) return@withContext true
             try {
                 val isPresent = fs.exists(modelPath)
                 if (!isPresent) return@withContext false

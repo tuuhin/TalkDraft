@@ -29,6 +29,7 @@ dependencies {
     implementation(project(":feature:model-manager"))
     implementation(project(":feature:model-downloader"))
     implementation(project(":core:analytics"))
+    implementation(project(":core:common"))
     implementation(project(":core:notification-android"))
 
     androidTestImplementation(libs.bundles.testing.android)

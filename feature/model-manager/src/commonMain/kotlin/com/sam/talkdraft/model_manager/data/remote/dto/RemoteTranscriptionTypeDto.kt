@@ -4,10 +4,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal enum class RemoteModelFormatDto {
-    @SerialName("GGML")
-    GGML,
+internal enum class RemoteTranscriptionTypeDto {
 
-    @SerialName("ONNX")
-    ONNX,
+    @SerialName("BATCHED")
+    BATCHED,
+
+    @SerialName("STREAMING")
+    STREAMING,
 }

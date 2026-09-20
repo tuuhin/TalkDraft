@@ -14,9 +14,10 @@ internal data class RemoteModelArtifactDTO(
     @SerialName("revision") val revision: String,
     @SerialName("artifact_path") val artifactPath: String,
     @SerialName("format") val format: RemoteModelFormatDto,
+    @SerialName("artifact_type") val artifact: RemoteModelArtifactTypeDto? = null,
     @SerialName("languages") val languages: List<String> = emptyList(),
-    @SerialName("size_bytes") val sizeBytes: Long,
-    @SerialName("sha256") val sha256: String,
+    @SerialName("size_bytes") val sizeBytes: Long = 0L,
+    @SerialName("sha256") val sha256: String? = null,
     @SerialName("created_at") val createdAt: Instant,
     @SerialName("updated_at") val updatedAt: Instant,
 )

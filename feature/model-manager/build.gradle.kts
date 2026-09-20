@@ -28,15 +28,16 @@ kotlin {
             implementation(libs.bundles.koin.common)
             // supabase
             implementation(libs.supabase.postgrest)
+            implementation(libs.androidx.datastore.preferences)
             // okio
             implementation(libs.okio)
             // local
             implementation(project(":core:platform-capability"))
+            implementation(project(":core:datastore"))
             implementation(project(":core:database"))
             implementation(project(":core:common"))
             implementation(project(":core:supabase"))
         }
-
     }
 
     compilerOptions {

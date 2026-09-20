@@ -17,8 +17,6 @@ import com.sam.talkdraft.notifications.NotificationConstants
 import com.sam.talkdraft.workers.R
 import org.koin.android.annotation.KoinWorker
 
-private const val TAG = "PERIODIC_SYNC_MODEL_WORKER"
-
 @KoinWorker
 class PeriodicRemoteDataSyncWorker internal constructor(
     workParams: WorkerParameters,
@@ -70,6 +68,7 @@ class PeriodicRemoteDataSyncWorker internal constructor(
             val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
                 ForegroundInfo(notificationID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
             else ForegroundInfo(notificationID, notification)
+            // set foreground
             setForegroundAsync(info)
         } catch (e: Exception) {
             Logger.w(tag = TAG, throwable = e) { "FAILED TO SHOW FOREGROUND INFO" }
@@ -86,6 +85,10 @@ class PeriodicRemoteDataSyncWorker internal constructor(
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
+    }
+
+    companion object {
+        private const val TAG = "PERIODIC_SYNC_MODEL_WORKER"
     }
 
 }

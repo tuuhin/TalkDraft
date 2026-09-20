@@ -4,6 +4,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class RemoteCatalogVersionDto(
-    @SerialName("version") val version: Int,
-)
+internal enum class RemoteModelFamilyDto {
+
+    @SerialName("WHISPER")
+    WHISPER,
+
+    @SerialName("ZIPFORMER")
+    ZIP_FORMER,
+}

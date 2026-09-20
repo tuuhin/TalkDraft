@@ -1,46 +1,61 @@
 package com.sam.talkdraft.model_manager.data.mapper
 
 import com.sam.talkdraft.model_manager.domain.local.LocalTranscriptionModel
+import com.sam.talkdraft.model_manager.domain.model.ModelArtifactType
+import com.sam.talkdraft.model_manager.domain.model.TranscriptionMode
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 
-internal fun LocalTranscriptionModel.toDomainModel(): TranscriptionModel = TranscriptionModel(
-    id = id,
-    downloadedAt = downloadedAt,
-    modelStatus = status,
-    modelFamily = metadata.modelFamily,
-    variant = metadata.variant,
-    version = metadata.version,
-    displayName = metadata.displayName,
-    source = metadata.source,
-    repository = metadata.repository,
-    revision = metadata.revision,
-    artifactPath = metadata.artifactPath,
-    languages = metadata.languages,
-    sizeInBytes = metadata.sizeInBytes,
-    checksum = metadata.checksum,
-    status = metadata.remoteStatus,
-    cachedAt = metadata.cachedAt,
-    modelPath = modelPath,
-)
+internal fun LocalTranscriptionModel.toDomainModel(): TranscriptionModel {
+    val model = TranscriptionModel(
+        id = id,
+        version = metadata.version,
+        displayName = metadata.displayName,
+        modelFamily = metadata.modelFamily,
+        description = metadata.description,
+        sizeInBytes = metadata.sizeInBytes,
+        checksum = metadata.checksum,
+        modelPath = modelPath,
+        supportedLanguages = metadata.languages,
+        downloadedAt = downloadedAt,
+        remoteStatus = metadata.remoteStatus,
+        status = status,
+        cachedAt = metadata.cachedAt,
+    )
 
-internal fun TranscriptionModel.toLocal() = LocalTranscriptionModel(
+    // Set internal mutable fields
+    model.variant = metadata.variant
+    model.artifactPath = metadata.artifactPath
+    model.source = metadata.source
+    model.revision = metadata.revision
+    model.repository = metadata.repository
+    model.artifactType = metadata.remoteStorageType ?: ModelArtifactType.PACKAGED
+
+    return model
+}
+
+internal fun TranscriptionModel.toLocal(): LocalTranscriptionModel = LocalTranscriptionModel(
     id = id,
     modelPath = modelPath,
-    status = modelStatus,
+    status = status,
     downloadedAt = downloadedAt,
     metadata = LocalTranscriptionModel.Metadata(
         modelFamily = modelFamily,
         variant = variant,
         version = version,
         displayName = displayName,
+        description = description,
+        transcriptionType = TranscriptionMode.BATCHED,
+        isDefault = false,
+        remoteStorageType = artifactType,
         source = source,
         repository = repository,
         revision = revision,
         artifactPath = artifactPath,
-        languages = languages,
+        languages = supportedLanguages,
         sizeInBytes = sizeInBytes,
         checksum = checksum,
         cachedAt = cachedAt,
-        remoteStatus = status,
+        lastSync = cachedAt,
+        remoteStatus = remoteStatus,
     ),
 )

@@ -1,25 +1,43 @@
 package com.sam.talkdraft.model_manager.domain.model
 
-import com.sam.talkdraft.database.enums.RemoteModelStatus
 import kotlin.uuid.Uuid
 import kotlinx.datetime.LocalDateTime
 
 data class TranscriptionModel(
     val id: Uuid,
-    val modelFamily: String,
-    val variant: String,
     val version: String,
     val displayName: String,
-    val source: String,
-    val repository: String,
-    val revision: String,
-    val artifactPath: String,
-    val languages: List<String>,
-    val sizeInBytes: Long,
-    val checksum: String,
+    val modelFamily: TranscriberFamily = TranscriberFamily.UNKNOWN,
+    val description: String? = null,
+    val sizeInBytes: Long = 0L,
+    val checksum: String? = null,
     val modelPath: String? = null,
-    val status: RemoteModelStatus,
-    val modelStatus: LocalModelStatus,
+    val supportedLanguages: List<String> = emptyList(),
     val downloadedAt: LocalDateTime? = null,
+    val remoteStatus: RemoteModelStatus = RemoteModelStatus.ACTIVE,
+    val status: ModelInstallStatus = ModelInstallStatus.NOT_INSTALLED,
     val cachedAt: LocalDateTime,
-)
+) {
+
+    internal var artifactPath: String = ""
+    internal var variant: String = ""
+    internal var source: String = ""
+    internal var revision: String = ""
+    internal var repository: String = ""
+    internal var artifactType: ModelArtifactType = ModelArtifactType.PACKAGED
+
+    val downloadURL: String?
+        get() = when (modelFamily) {
+            // provided via hugging face
+            TranscriberFamily.WHISPER -> "${source}/${repository}/resolve/${revision}/${artifactPath}"
+            // provided via GitHub
+            TranscriberFamily.ZIP_FORMER -> "${source}/$repository/$revision/$artifactPath"
+            else -> null
+        }
+
+    val isUnzipRequired: Boolean
+        get() = artifactType == ModelArtifactType.PACKAGED
+
+    val isAllLanguageSupported: Boolean
+        get() = supportedLanguages.size == 1 && supportedLanguages.contains("*")
+}

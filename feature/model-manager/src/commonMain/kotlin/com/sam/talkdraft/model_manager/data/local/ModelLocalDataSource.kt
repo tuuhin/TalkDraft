@@ -1,13 +1,13 @@
 package com.sam.talkdraft.model_manager.data.local
 
 import com.sam.talkdraft.database.dao.LocalTranscriptionEntityDao
-import com.sam.talkdraft.database.enums.ModelDownloadStatus
+import com.sam.talkdraft.database.enums.DBModelDownloadStatus
 import com.sam.talkdraft.model_manager.data.mapper.toDomain
 import com.sam.talkdraft.model_manager.data.mapper.toEntity
 import com.sam.talkdraft.model_manager.domain.exceptions.LocalDataSourceException
 import com.sam.talkdraft.model_manager.domain.local.IModelLocalDataSource
 import com.sam.talkdraft.model_manager.domain.local.LocalTranscriptionModel
-import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
+import com.sam.talkdraft.model_manager.domain.model.ModelInstallStatus
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -57,12 +57,12 @@ internal class ModelLocalDataSource(
 
     override suspend fun updateModelStatus(
         modelId: Uuid,
-        status: LocalModelStatus,
+        status: ModelInstallStatus,
     ): LocalTranscriptionModel? {
         val dbStatus = when (status) {
-            LocalModelStatus.NOT_INSTALLED -> ModelDownloadStatus.UNKNOWN
-            LocalModelStatus.DOWNLOADING -> ModelDownloadStatus.DOWNLOADING
-            LocalModelStatus.INSTALLED -> ModelDownloadStatus.DOWNLOADED
+            ModelInstallStatus.NOT_INSTALLED -> DBModelDownloadStatus.UNKNOWN
+            ModelInstallStatus.DOWNLOADING -> DBModelDownloadStatus.DOWNLOADING
+            ModelInstallStatus.INSTALLED -> DBModelDownloadStatus.DOWNLOADED
         }
         dao.updateDownloadModelStatus(modelId, dbStatus)
         return dao.getModel(modelId)?.toDomain(timeZone)

@@ -1,7 +1,7 @@
 package com.sam.talkdraft.model_manager.domain.repository
 
 import com.sam.talkdraft.common.utils.Resource
-import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
+import com.sam.talkdraft.model_manager.domain.model.ModelInstallStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.flow.Flow
@@ -66,7 +66,7 @@ interface ITranscriptionModelsRepo {
      */
     suspend fun updateModelStatus(
         modelId: Uuid,
-        status: LocalModelStatus = LocalModelStatus.NOT_INSTALLED,
+        status: ModelInstallStatus = ModelInstallStatus.NOT_INSTALLED,
     ): Result<TranscriptionModel>
 
     /**
