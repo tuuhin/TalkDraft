@@ -28,7 +28,7 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("ktorLibs") {
-            from("io.ktor:ktor-version-catalog:3.5.2")
+            from("io.ktor:ktor-version-catalog:3.6.0")
         }
     }
 }
@@ -57,6 +57,9 @@ include(":core:transcription-core")
 include(":core:transcription-android")
 include(":core:transcription-ios")
 include(":core:permissions")
+include(":core:archive-core")
+include(":core:archive-android")
+include(":core:archive-ios")
 // feature modules
 include(":feature:model-manager")
 include(":feature:model-downloader")

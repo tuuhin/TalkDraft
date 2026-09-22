@@ -1,0 +1,23 @@
+# Keep native archiver classes and JNI entry points
+-keep class com.sam.talkdraft.archive_android.NativeBzip2Compressor {
+    <fields>;
+    <methods>;
+}
+
+-keep class com.sam.talkdraft.archive_android.NativeTarArchiver {
+    <fields>;
+    <methods>;
+}
+
+# Keep exceptions thrown from native code via JNI (FindClass / ThrowNew)
+-keep class com.sam.talkdraft.archive_android.exceptions.NativeCompressionException {
+    <init>(java.lang.String);
+    <fields>;
+    <methods>;
+}
+
+-keep class com.sam.talkdraft.archive_android.exceptions.NativeArchiveException {
+    <init>(java.lang.String);
+    <fields>;
+    <methods>;
+}

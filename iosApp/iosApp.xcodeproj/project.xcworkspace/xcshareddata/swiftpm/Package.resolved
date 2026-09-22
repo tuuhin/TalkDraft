@@ -74,6 +74,15 @@
       }
     },
     {
+      "identity" : "libarchive-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/everpcpc/libarchive-swift.git",
+      "state" : {
+        "revision" : "69a947c0e5bf4e940a6ac998a8fab3165d5b97f6",
+        "version" : "0.1.11"
+      }
+    },
+    {
       "identity" : "measure",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/measure-sh/measure.git",
