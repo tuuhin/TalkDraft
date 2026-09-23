@@ -6,7 +6,7 @@ plugins {
 android {
     namespace = "com.sam.talkdraft.transcription_android"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    ndkVersion = "30.0.16248370"
+    ndkVersion = libs.versions.android.ndk.get().toString()
 
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()

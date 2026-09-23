@@ -29,6 +29,7 @@ kotlin {
             // local
             implementation(project(":feature:model-manager"))
             implementation(project(":core:common"))
+            implementation(project(":core:archive-core"))
         }
     }
 

@@ -20,7 +20,7 @@ kotlin {
         packageResolvedSynchronization = noSynchronization()
 
         localSwiftPackage(
-            directory = layout.projectDirectory.dir("src/native"),
+            directory = layout.projectDirectory.dir("src/archive-native"),
             products = listOf(product("IosNativeTar")),
         )
     }

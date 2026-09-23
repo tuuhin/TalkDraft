@@ -3,9 +3,6 @@ import TalkDraftApp
 
 class AppDelegate: NSObject, UIApplicationDelegate {
 
-    private let whisper = SwiftWhisperBridge()
-    private let voiceActivity = SwiftVoiceActivityDetector()
-
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -16,10 +13,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         KoinInitializer.shared.doInitKoin()
         // sync db refresh task
         RemoteDbSyncRegistrarBridge.shared.invoke()
-        // set the whisper provider
-        IosWhisperBridge.shared.setProtocol(protocol: whisper)
-        // set up vad provider
-        IosVoiceActivityDetectorBridge.shared.setProtocol(protocol: voiceActivity)
         Task {
             // sets up analytics and crashlytics
             try? await IosAppInitializer.shared.setup()
