@@ -9,7 +9,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(BUILD_SHARED_LIBS ON)
+
 set(ENABLE_TEST OFF CACHE BOOL "" FORCE)
+set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
 set(ENABLE_TAR OFF CACHE BOOL "" FORCE)
 set(ENABLE_CPIO OFF CACHE BOOL "" FORCE)
 set(ENABLE_CAT OFF CACHE BOOL "" FORCE)
@@ -28,6 +32,25 @@ set(ENABLE_EXPAT OFF CACHE BOOL "" FORCE)
 set(ENABLE_ICONV OFF CACHE BOOL "" FORCE)
 set(ENABLE_ACL OFF CACHE BOOL "" FORCE)
 set(ENABLE_XATTR OFF CACHE BOOL "" FORCE)
+
+# Disable unused libarchive read/write formats to minimize binary size
+set(ENABLE_READ_FORMAT_CAB OFF CACHE BOOL "" FORCE)
+set(ENABLE_READ_FORMAT_CPIO OFF CACHE BOOL "" FORCE)
+set(ENABLE_READ_FORMAT_ISO9660 OFF CACHE BOOL "" FORCE)
+set(ENABLE_READ_FORMAT_LHA OFF CACHE BOOL "" FORCE)
+set(ENABLE_READ_FORMAT_MTREE OFF CACHE BOOL "" FORCE)
+set(ENABLE_READ_FORMAT_RAR OFF CACHE BOOL "" FORCE)
+set(ENABLE_READ_FORMAT_ZIP OFF CACHE BOOL "" FORCE)
+set(ENABLE_READ_FORMAT_7Z OFF CACHE BOOL "" FORCE)
+set(ENABLE_READ_FORMAT_AR OFF CACHE BOOL "" FORCE)
+set(ENABLE_READ_FORMAT_SHAR OFF CACHE BOOL "" FORCE)
+set(ENABLE_READ_FORMAT_XAR OFF CACHE BOOL "" FORCE)
+set(ENABLE_READ_FORMAT_WARC OFF CACHE BOOL "" FORCE)
+set(ENABLE_WRITE_FORMAT_CPIO OFF CACHE BOOL "" FORCE)
+set(ENABLE_WRITE_FORMAT_ISO9660 OFF CACHE BOOL "" FORCE)
+set(ENABLE_WRITE_FORMAT_MTREE OFF CACHE BOOL "" FORCE)
+set(ENABLE_WRITE_FORMAT_SHAR OFF CACHE BOOL "" FORCE)
+set(ENABLE_WRITE_FORMAT_ZIP OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
         bzip2
@@ -57,5 +80,25 @@ add_library(android_archiver SHARED
         src/cpp_result.cpp)
 
 target_include_directories(android_archiver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(android_archiver PRIVATE archive_static)
+target_link_libraries(android_archiver PRIVATE bz2 archive)
 target_compile_features(android_archiver PRIVATE cxx_std_20)
+
+# ABI-specific and target optimizations applied strictly to our wrapper library
+if (${ANDROID_ABI} STREQUAL "arm64-v8a")
+    target_compile_options(android_archiver PRIVATE -Os -flto=thin -march=armv8-a+fp16+dotprod -fvisibility=hidden -fvisibility-inlines-hidden)
+elseif (${ANDROID_ABI} STREQUAL "armeabi-v7a")
+    target_compile_options(android_archiver PRIVATE -Os -flto=thin -mfpu=neon-vfpv4 -mfloat-abi=softfp -fvisibility=hidden -fvisibility-inlines-hidden)
+elseif (${ANDROID_ABI} STREQUAL "x86_64")
+    target_compile_options(android_archiver PRIVATE -Os -flto=thin -fvisibility=hidden -fvisibility-inlines-hidden)
+elseif (${ANDROID_ABI} STREQUAL "x86")
+    target_compile_options(android_archiver PRIVATE -Os -flto=thin -fvisibility=hidden -fvisibility-inlines-hidden)
+else ()
+    target_compile_options(android_archiver PRIVATE -Os -flto=thin -fvisibility=hidden -fvisibility-inlines-hidden)
+endif ()
+
+target_link_options(android_archiver PRIVATE
+        -flto=thin
+        -Wl,--gc-sections
+        -Wl,--icf=safe
+        -Wl,--exclude-libs,ALL
+)
