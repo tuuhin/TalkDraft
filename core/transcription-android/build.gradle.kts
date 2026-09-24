@@ -6,7 +6,7 @@ plugins {
 android {
     namespace = "com.sam.talkdraft.transcription_android"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    ndkVersion = libs.versions.android.ndk.get().toString()
+    ndkVersion = libs.versions.android.ndk.get()
 
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
@@ -14,7 +14,7 @@ android {
 
         externalNativeBuild {
             cmake {
-                cppFlags += listOf("-std=c++20")
+                cppFlags += listOf("-std=c++20", "-Wno-format")
             }
         }
     }

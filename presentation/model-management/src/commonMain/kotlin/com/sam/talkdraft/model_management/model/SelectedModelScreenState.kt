@@ -1,6 +1,6 @@
 package com.sam.talkdraft.model_management.model
 
-import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
+import com.sam.talkdraft.model_manager.domain.model.ModelInstallStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 
 internal data class SelectedModelScreenState(
@@ -10,7 +10,7 @@ internal data class SelectedModelScreenState(
 ) {
 
     val isModelPresent: Boolean
-        get() = model?.modelStatus == LocalModelStatus.INSTALLED && model.modelPath != null
+        get() = model?.status == ModelInstallStatus.INSTALLED && model.modelPath != null
 
     val isModelSetupRunning: Boolean
         get() = downloadStatus != UIModelDownloadStatus.Idle

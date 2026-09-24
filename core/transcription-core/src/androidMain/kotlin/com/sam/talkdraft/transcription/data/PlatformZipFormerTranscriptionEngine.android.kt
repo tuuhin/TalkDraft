@@ -83,11 +83,12 @@ internal actual class PlatformZipFormerTranscriptionEngine(
         val foundFiles = fs.listRecursively(path)
             .filter { fs.metadata(it).isRegularFile }
             .mapNotNull { path ->
-                val nameWithoutExtension = path.name.substringBeforeLast('.')
-                val matchedTarget = targetNames.firstOrNull { target ->
-                    nameWithoutExtension.equals(target, ignoreCase = true)
+                // matching based on the start name
+                val fileName = path.name.lowercase()
+                val matchedPrefix = targetNames.firstOrNull { prefix ->
+                    fileName.startsWith(prefix)
                 }
-                matchedTarget?.let { it to path }
+                matchedPrefix?.let { it to path }
             }
             .toMap()
 

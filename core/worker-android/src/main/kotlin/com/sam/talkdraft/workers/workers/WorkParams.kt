@@ -23,6 +23,7 @@ object WorkParams {
     const val TRANSCRIPTION_STATUS_DOWNLOAD_FAILED = "transcription_status_download_failed"
     const val TRANSCRIPTION_STATUS_DOWNLOAD_FAILED_REASON = "transcription_status_download_failed_reason"
     const val TRANSCRIPTION_STATUS_DOWNLOADING = "transcription_status_downloading"
+    const val TRANSCRIPTION_STATUS_EXTRACTING = "transcription_status_extracting"
     const val TRANSCRIPTION_STATUS_VERIFYING = "transcription_status_verifying"
     const val TRANSCRIPTION_STATUS_DOWNLOAD_SUCCESS = "transcription_status_download_success"
     const val TRANSCRIPTION_STATUS_DOWNLOAD_PERCENTAGE = "download_percentage"

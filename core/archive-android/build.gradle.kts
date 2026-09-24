@@ -14,6 +14,7 @@ android {
 
         externalNativeBuild {
             cmake {
+                cFlags("-w")
                 cppFlags += listOf("-std=c++20")
             }
         }

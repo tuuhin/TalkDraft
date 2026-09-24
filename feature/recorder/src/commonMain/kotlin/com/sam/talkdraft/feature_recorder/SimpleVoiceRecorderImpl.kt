@@ -2,12 +2,14 @@ package com.sam.talkdraft.feature_recorder
 
 import com.sam.talkdraft.common.model.ReadOnlyFloatBuffer
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
+import com.sam.talkdraft.common.platform.IPlatformFilePathProvider
 import com.sam.talkdraft.model_manager.domain.repository.ISelectedTranscriptionModelStore
 import com.sam.talkdraft.recorder.domain.IVoiceRecorderWithByteReader
 import com.sam.talkdraft.recorder.domain.models.RecorderState
 import com.sam.talkdraft.recorder_visualizer.domain.IAudioDynamicVisualizer
-import com.sam.talkdraft.transcription.domain.ITranscriptionEngine
-import com.sam.talkdraft.transcription.domain.IVoiceDetectionProvider
+import com.sam.talkdraft.transcription.domain.ITranscriberResultsProvider
+import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
+import com.sam.talkdraft.transcription.domain.model.TranscriberEngine
 import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import kotlin.time.Duration
 import kotlinx.coroutines.CoroutineScope
@@ -16,7 +18,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import org.koin.core.annotation.Factory
@@ -27,9 +28,9 @@ import org.koin.core.parameter.parametersOf
 @Factory(binds = [ISimpleVoiceRecorder::class])
 class SimpleVoiceRecorderImpl(
     private val dispatchers: IPlatformCoroutineDispatchers,
-    private val transcriptionEngine: ITranscriptionEngine,
-    private val voiceDetector: IVoiceDetectionProvider,
+    private val transcriber: ITranscriberResultsProvider,
     private val selectedModelProvider: ISelectedTranscriptionModelStore,
+    private val filesProvider: IPlatformFilePathProvider,
 ) : ISimpleVoiceRecorder, KoinComponent {
 
     private val _scope = CoroutineScope(dispatchers.default + SupervisorJob())
@@ -41,33 +42,29 @@ class SimpleVoiceRecorderImpl(
     override val elapsedTime: Flow<Duration> = _recorder.elapsedTime
 
     override val waveform: Flow<ReadOnlyFloatBuffer?>
-        get() = _ampsReader.waveformFlow(20)
+        get() = _ampsReader.waveformFlow(30)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override val transcription: Flow<TranscriptionState>
-        get() = emptyFlow()
+        get() = transcriber.transcribe(_recorder.stream)
 
     override val errors: Flow<Exception>
         field = MutableSharedFlow<Exception>()
 
     override suspend fun setup(): Result<Unit> = runCatching {
         val model = selectedModelProvider.getSelectedModel()
-//            .getOrThrow()
-//
-//        val modelPath = model.modelPath
-//            ?: throw IllegalStateException("Invalid model cannot use it ")
-//
-//        val language = model.languages.let {
-//            if (it.contains("*")) "en"
-//            else it.firstOrNull()
-//        }
+            .getOrThrow()
 
+        val modelPath = model.modelPath
+            ?: throw IllegalStateException("Invalid model cannot use it ")
+
+        val language = model.supportedLanguages.let {
+            if (it.contains("*")) null
+            else it.firstOrNull()
+        }
         // transcription engine setup
-//        val request = TranscriptionRequestMetadata(modelPath, language)
-//        transcriptionEngine.warmUp(request)
-
-        // voice detector setup
-//        voiceDetector.setup()
+        val request = TranscriberConfig(modelPath, language)
+        transcriber.setConfig(request, TranscriberEngine.ZIP_FORMER)
     }
 
 
@@ -84,9 +81,7 @@ class SimpleVoiceRecorderImpl(
 
     override fun close() {
         // transcription engine cleanup
-        transcriptionEngine.cleanUp()
-        // vad cleanup
-        voiceDetector.cleanup()
+        transcriber.setConfig(null)
         // release the recorder
         _recorder.release()
         // cleans up the recorder scope

@@ -5,13 +5,14 @@ import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.common.platform.IPlatformFilePathProvider
 import com.sam.talkdraft.common.platform.PlatformRandomNonceGenerator
 import com.sam.talkdraft.model_downloader.domain.IDownloadTempFileManager
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.CancellationException
+import io.ktor.utils.io.readAvailable
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path
 import okio.SYSTEM
-import okio.Source
 import okio.buffer
 import okio.use
 import org.koin.core.annotation.Factory
@@ -28,7 +29,7 @@ internal class DownloadTempFileManager(
     private val cacheFileProvider by lazy { fileProvider.providesCachesDirPath() / "transcription_models" }
     private val fs = FileSystem.SYSTEM
 
-    override suspend fun saveToCache(source: Source, fileName: String?): Result<Path> {
+    override suspend fun saveToCache(channel: ByteReadChannel, fileName: String?): Result<Path> {
         return try {
             val path = cacheFileProvider / ((fileName ?: randomGenerator.generateNonce()) + ".tmp")
 
@@ -38,8 +39,13 @@ internal class DownloadTempFileManager(
                 }
                 try {
                     fs.sink(path).buffer().use { sink ->
-                        sink.writeAll(source)
-                        sink.flush()
+                        val buffer = ByteArray(20 * 1024)
+                        while (!channel.isClosedForRead) {
+                            val read = channel.readAvailable(buffer, 0, buffer.size)
+                            if (read <= 0) break
+                            sink.write(buffer, 0, read)
+                            sink.emit()
+                        }
                     }
                     Logger.d(tag = TAG) { "FILE SAVED SUCCESSFULLY AT :$path" }
                 } catch (e: CancellationException) {

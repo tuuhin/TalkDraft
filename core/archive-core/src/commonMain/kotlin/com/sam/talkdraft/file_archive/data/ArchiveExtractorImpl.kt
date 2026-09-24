@@ -22,8 +22,16 @@ internal class ArchiveExtractorImpl(
     private val dispatchers: IPlatformCoroutineDispatchers,
     private val archiver: IPlatformTarArchiver,
     private val zipArchiver: IPlatformZipArchiver,
-    @Named(type = CompressionAlgo.GZip::class) private val gzipCompressor: IPlatformCompressor,
-    @Named(type = CompressionAlgo.BZip2::class) private val bzip2Compressor: IPlatformCompressor,
+    @Named(
+        type = CompressionAlgo.GZip::class,
+        value = "gzip_compressor",
+    )
+    private val gzipCompressor: IPlatformCompressor,
+    @Named(
+        type = CompressionAlgo.BZip2::class,
+        value = "bzip2_compressor",
+    )
+    private val bzip2Compressor: IPlatformCompressor,
 ) : IArchiveExtractor {
 
     private val fs = FileSystem.SYSTEM

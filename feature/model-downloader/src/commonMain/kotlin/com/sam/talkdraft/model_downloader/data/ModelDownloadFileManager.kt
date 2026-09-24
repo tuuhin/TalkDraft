@@ -24,6 +24,7 @@ internal class ModelDownloadFileManager(
     private val repo: ITranscriptionModelsRepo,
     private val fileProvider: IPlatformFilePathProvider,
     private val dispatchers: IPlatformCoroutineDispatchers,
+    private val zipFormerExtractor: ZipFormerModelFileExtractor,
 ) : IModelFileManager {
 
     private val fs = FileSystem.SYSTEM
@@ -68,18 +69,31 @@ internal class ModelDownloadFileManager(
                 if (!fs.exists(cachedPath))
                     throw IllegalStateException("Source cached file does not exist at: $cachedPath")
 
-                if (oldPath != null && fs.exists(oldPath) && !overwrite) throw ModelFileAlreadyExistsException()
+                if (oldPath != null && fs.exists(oldPath) && !overwrite)
+                    throw ModelFileAlreadyExistsException()
 
-
-                if (fs.exists(newModelPath)) fs.delete(newModelPath)
+                if (fs.exists(newModelPath)) {
+                    Logger.d(tag = TAG) { "MODEL PATH ALREADY PRESENT DELETING IT FIRST" }
+                    fs.delete(newModelPath)
+                }
 
                 newModelPath.parent?.let { parentDir ->
                     fs.createDirectories(parentDir)
                 }
+
                 try {
-                    fs.copy(cachedPath, newModelPath)
-                    repo.updateModelStatus(modelId = model.id, status = ModelInstallStatus.INSTALLED)
+                    if (model.isUnzipRequired) {
+                        // if unzip is required then unzip the file and transfer files at model path
+                        Logger.d(tag = TAG) { "UN-ARCHIVING: $cachedPath $newModelPath" }
+                        zipFormerExtractor.extractAndSetModelFiles(cachedPath, newModelPath)
+                        // extraction done now remove all the files that are not needed
+                    } else {
+                        Logger.d(tag = TAG) { "COPYING MODEL PATH :$cachedPath $newModelPath" }
+                        // otherwise just copy the path to the model path
+                        fs.copy(cachedPath, newModelPath)
+                    }
                     repo.updateModelPath(modelId = model.id, path = newModelPath.toString())
+                    repo.updateModelStatus(modelId = model.id, status = ModelInstallStatus.INSTALLED)
                 } catch (e: CancellationException) {
                     Logger.d(tag = TAG) { "Operation cancelled, deleting partial file" }
                     withContext(NonCancellable) {

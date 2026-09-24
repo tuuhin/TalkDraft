@@ -36,6 +36,7 @@ kotlin {
             // local
             implementation(project(":core:common"))
             implementation(project(":core:background-jobs"))
+            implementation(project(":core:connectivity"))
             implementation(project(":presentation:design-system"))
             implementation(project(":presentation:navigation"))
             implementation(project(":feature:model-manager"))

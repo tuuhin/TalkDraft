@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="sync_models_notification_title">Syncing db models</string>
+    <string name="sync_models_notification_title">Syncing Database</string>
 
-    <string name="start_download_notification_body">Starting model download</string>
-    <string name="downloading_speech_model_notification_title">Downloading Speech model</string>
-    <string name="downloading_speech_model_notification_body">Downloading</string>
-    <string name="verifying_speech_model_notification_body">Verifying</string>
-    <string name="failed_speech_model_download_notification_body">Failed to download model</string>
-    <string name="speech_model_notification_download_success">Successfully downloaded speech model</string>
+    <string name="start_download_notification_body">Starting model download…</string>
+    <string name="downloading_speech_model_notification_title">Downloading Speech Model</string>
+    <string name="downloading_speech_model_notification_body">Downloading speech model…</string>
+    <string name="verifying_speech_model_notification_body">Verifying download integrity…</string>
+    <string name="failed_speech_model_download_notification_body">Couldn’t download speech model. Please try again.</string>
+    <string name="speech_model_notification_download_success">Speech model downloaded and ready to use.</string>
+    <string name="speech_model_notification_download_success_title">Model Installed</string>
+    <string name="extracting_speech_model_notification_body">Extracting files…</string>
 </resources>

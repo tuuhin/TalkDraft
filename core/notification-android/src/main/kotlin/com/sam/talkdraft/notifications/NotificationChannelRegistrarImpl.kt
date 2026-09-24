@@ -40,7 +40,6 @@ internal class NotificationChannelRegistrarImpl(
             NotificationConstants.DOWNLOAD_MODEL_WORKER_CHANNEL_NAME,
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            setSound(null, null)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             description = NotificationConstants.DOWNLOAD_MODEL_WORKER_CHANNEL_DESCRIPTION
         }

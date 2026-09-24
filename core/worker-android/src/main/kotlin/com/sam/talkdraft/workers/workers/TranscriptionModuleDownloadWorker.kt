@@ -1,10 +1,18 @@
 package com.sam.talkdraft.workers.workers
 
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.ComponentName
+import android.content.ContentResolver
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.media.AudioManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.content.getSystemService
 import androidx.core.graphics.drawable.IconCompat
+import androidx.core.net.toUri
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ForegroundInfo
@@ -13,6 +21,7 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.sam.talkdraft.analytics.AnalyticsEvent
 import com.sam.talkdraft.analytics.IAnalyticsProvider
+import com.sam.talkdraft.common.constants.IntentRequestCodes
 import com.sam.talkdraft.model_downloader.domain.IModelDownloadManager
 import com.sam.talkdraft.model_downloader.domain.models.DownloadState
 import com.sam.talkdraft.model_downloader.domain.models.ModelDownloadStatus
@@ -66,10 +75,9 @@ class TranscriptionModuleDownloadWorker internal constructor(
             modelId = modelId,
             onDownloadState = { state ->
                 // Update worker intermediate progress state
-                setProgressAsync(getWorkDataForState(state))
+                setProgressAsync(state.toWorkData())
                 // Safely post foreground notification update
-                if (environment.isProd)
-                    setForegroundAsync(createNotification(state.state))
+                if (environment.isProd) setForegroundAsync(createNotification(state.state))
             },
         )
 
@@ -98,54 +106,56 @@ class TranscriptionModuleDownloadWorker internal constructor(
             ),
         )
 
+        // show a completion notification with a done sound
+        if (environment.isProd && isSuccess) showCompleteNotification()
+
         return Result.success(
             workDataOf(WorkParams.TRANSCRIPTION_MODEL_DOWNLOAD_KEY to WorkParams.TRANSCRIPTION_MODEL_DOWNLOAD_SUCCESS),
         )
     }
 
-    private fun getWorkDataForState(status: ModelDownloadStatus): Data {
+    private fun ModelDownloadStatus.toWorkData(): Data {
         val builder = Data.Builder()
-        builder.putString(WorkParams.TRANSCRIPTION_STATUS_MODEL_ID_KEY, status.modelId.toString())
+        val stateValue = state
+        builder.putString(WorkParams.TRANSCRIPTION_STATUS_MODEL_ID_KEY, modelId.toString())
 
-        when (val state = status.state) {
-            DownloadState.Initiated ->
-                builder.putString(
-                    WorkParams.TRANSCRIPTION_STATUS_KEY,
-                    WorkParams.TRANSCRIPTION_STATUS_STARTING_DOWNLOAD,
-                )
+        val statusKey = when (state) {
+            is DownloadState.Downloading -> WorkParams.TRANSCRIPTION_STATUS_DOWNLOADING
+            DownloadState.Extracting -> WorkParams.TRANSCRIPTION_STATUS_EXTRACTING
+            is DownloadState.Failed -> WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED
+            DownloadState.Initiated -> WorkParams.TRANSCRIPTION_STATUS_STARTING_DOWNLOAD
+            DownloadState.Success -> WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_SUCCESS
+            DownloadState.Verifying -> WorkParams.TRANSCRIPTION_STATUS_VERIFYING
+        }
 
-            is DownloadState.Downloading -> {
-                builder.putString(WorkParams.TRANSCRIPTION_STATUS_KEY, WorkParams.TRANSCRIPTION_STATUS_DOWNLOADING)
-                builder.putFloat(WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_PERCENTAGE, state.progress)
-            }
-
-            DownloadState.Verifying -> builder.putString(
-                WorkParams.TRANSCRIPTION_STATUS_KEY, WorkParams.TRANSCRIPTION_STATUS_VERIFYING,
-            )
-
-            DownloadState.Success -> builder.putString(
-                WorkParams.TRANSCRIPTION_STATUS_KEY, WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_SUCCESS,
-            )
-
-            is DownloadState.Failed -> {
-                builder.putString(WorkParams.TRANSCRIPTION_STATUS_KEY, WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED)
-                state.message?.let {
-                    builder.putString(WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED_REASON, it)
-                }
-            }
+        builder.putString(WorkParams.TRANSCRIPTION_STATUS_KEY, statusKey)
+        if (stateValue is DownloadState.Downloading) {
+            builder.putFloat(WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_PERCENTAGE, stateValue.progress)
+        } else if (stateValue is DownloadState.Failed) {
+            builder.putString(WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_FAILED_REASON, stateValue.message ?: "")
         }
         return builder.build()
     }
 
-    // Helper function to safely drop null entries when state.message is null
-    private fun <K, V> arrayOfNotNull(vararg elements: Pair<K, V>?): Array<Pair<K, V>> =
-        elements.filterNotNull().toTypedArray()
 
     private fun createNotification(state: DownloadState): ForegroundInfo {
         val title = applicationContext.getString(R.string.downloading_speech_model_notification_title)
-        val isTerminalState = state is DownloadState.Success ||
-            state is DownloadState.Failed
+        val isEndState = state is DownloadState.Success || state is DownloadState.Failed
 
+        // add the content intent
+        val packageName = applicationContext.packageName
+        val mainActivityClassName = "$packageName.MainActivity"
+
+        val intent = Intent().apply {
+            component = ComponentName(packageName, mainActivityClassName)
+            action = Intent.ACTION_VIEW
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+
+        val pendingIntent = PendingIntent
+            .getActivity(applicationContext, IntentRequestCodes.OPEN_ONGOING_MODEL_DOWNLOAD, intent, flags)
 
         val textResource = when (state) {
             is DownloadState.Downloading -> R.string.downloading_speech_model_notification_body
@@ -153,18 +163,23 @@ class TranscriptionModuleDownloadWorker internal constructor(
             DownloadState.Initiated -> R.string.start_download_notification_body
             DownloadState.Success -> R.string.speech_model_notification_download_success
             DownloadState.Verifying -> R.string.verifying_speech_model_notification_body
+            DownloadState.Extracting -> R.string.extracting_speech_model_notification_body
         }
 
-        val builder =
-            NotificationCompat.Builder(applicationContext, NotificationConstants.DOWNLOAD_MODEL_WORKER_CHANNEL_ID)
-                .setContentTitle(title)
-                .setContentText(applicationContext.getString(textResource))
-                .setSmallIcon(R.drawable.ic_cloud_download)
-                .setOngoing(!isTerminalState)
-                .setSilent(true)
-                .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+        val builder = NotificationCompat.Builder(
+            applicationContext,
+            NotificationConstants.DOWNLOAD_MODEL_WORKER_CHANNEL_ID,
+        )
+            .setContentTitle(title)
+            .setContentText(applicationContext.getString(textResource))
+            .setSmallIcon(R.drawable.ic_download_simplified)
+            .setOngoing(!isEndState)
+            .setSilent(true)
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .setContentIntent(pendingIntent)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
 
-        if (!isTerminalState) {
+        if (!isEndState) {
             val intent = WorkManager.getInstance(applicationContext).createCancelPendingIntent(id)
             val cancelAction = NotificationCompat.Action.Builder(
                 IconCompat.createWithResource(applicationContext, R.drawable.ic_cancel),
@@ -172,34 +187,43 @@ class TranscriptionModuleDownloadWorker internal constructor(
                 intent,
             ).build()
             builder.addAction(cancelAction)
-            builder.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
         }
 
-
         when (state) {
-            is DownloadState.Downloading -> builder.setProgress(
-                100,
-                state.progress.roundToInt().coerceAtMost(100),
-                false,
-            )
+            is DownloadState.Downloading -> {
+                val progress = state.progress.roundToInt().coerceAtMost(100)
+                builder.setProgress(100, progress, false)
+            }
 
             DownloadState.Verifying -> builder.setProgress(100, 0, true)
             else -> builder.setProgress(0, 0, false)
         }
 
         val notification = builder.build()
+        val notificationId = NotificationConstants.DOWNLOAD_STT_MODEL_WORKER_NOTIFICATION_ID
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            ForegroundInfo(
-                NotificationConstants.DOWNLOAD_STT_MODEL_WORKER_NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
-            )
-        } else {
-            ForegroundInfo(
-                NotificationConstants.DOWNLOAD_STT_MODEL_WORKER_NOTIFICATION_ID,
-                notification,
-            )
-        }
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            ForegroundInfo(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        else ForegroundInfo(notificationId, notification)
+    }
+
+    private fun showCompleteNotification() {
+        val notificationManager = applicationContext.getSystemService<NotificationManager>() ?: return
+        val soundUri =
+            "${ContentResolver.SCHEME_ANDROID_RESOURCE}://${applicationContext.packageName}/${R.raw.sound_of_success}".toUri()
+
+        val notification = NotificationCompat.Builder(
+            applicationContext,
+            NotificationConstants.DOWNLOAD_MODEL_WORKER_CHANNEL_ID,
+        )
+            .setContentTitle(applicationContext.getString(R.string.speech_model_notification_download_success_title))
+            .setContentText(applicationContext.getString(R.string.speech_model_notification_download_success))
+            .setSmallIcon(R.drawable.ic_download_success)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setSound(soundUri, AudioManager.STREAM_NOTIFICATION)
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .build()
+
+        notificationManager.notify(NotificationConstants.DOWNLOAD_STT_MODEL_WORKER_NOTIFICATION_ID, notification)
     }
 }
