@@ -51,6 +51,10 @@ android {
             excludes += listOf("**/libparakeet.so")
         }
     }
+
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {

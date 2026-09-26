@@ -1,5 +1,6 @@
 package com.sam.talkdraft.transcription.data
 
+import co.touchlab.kermit.Logger
 import com.sam.talkdraft.common.model.ReadOnlyShortBuffer
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.transcription.domain.ITranscriberResultsProvider
@@ -36,64 +37,95 @@ internal class TranscriptionResultsProvider(
     private val _config = MutableStateFlow<TranscriberConfig?>(null)
     private val _engine = MutableStateFlow<TranscriberEngine?>(null)
 
+    private fun resolveEngine(engineType: TranscriberEngine?): ITranscriptionEngine? = when (engineType) {
+        TranscriberEngine.WHISPER -> whisperEngine
+        TranscriberEngine.ZIP_FORMER -> zipFormerEngine
+        else -> null
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun transcribe(audioFrame: Flow<ReadOnlyShortBuffer>)
-        : Flow<TranscriptionState> = combine(_config, _engine) { c, e -> c to e }
-        .flatMapLatest { (config, engine) ->
-            // if config is not set mark not running
-            if (config == null || engine == null) return@flatMapLatest flowOf(TranscriptionState.NotRunning)
+    override fun transcribe(audioFrame: Flow<ReadOnlyShortBuffer>): Flow<TranscriptionState> =
+        combine(_config, _engine) { config, engineType -> config to engineType }
+            .flatMapLatest { (config, engineType) ->
+                val engine = resolveEngine(engineType)
+                if (config == null || engine == null || engineType == null) {
+                    return@flatMapLatest flowOf(TranscriptionState.Idle)
+                }
 
-            // else perform transcription
-            flow {
-                emit(TranscriptionState.RunningOrProcessing)
-
-                audioFrame.collect { frame ->
-                    val frame = frame.toShortArray()
-                    // process the audio buffer
-                    val detection = vad.processAudioBuffer(frame)
-                    // determine the speech segment
-                    val speechSegment = vadProcessor.process(audioFrame = frame, detection = detection)
-                    if (speechSegment != null) {
-                        when (engine) {
-                            TranscriberEngine.WHISPER -> emit(whisperEngine.process(speechSegment))
-                            TranscriberEngine.ZIP_FORMER -> emit(zipFormerEngine.process(speechSegment))
-                        }
+                audioFrame.runTranscriptionEngine(engine)
+                    .onStart {
+                        emit(TranscriptionState.Idle)
+                        setupEngine(engine, engineType, config)
+                        emit(TranscriptionState.Ready)
                     }
-                }
-            }.flowOn(dispatchers.default)
-                .onStart {
-                    setupEngine(engine, config)
-                    vad.setup()
-                    vadProcessor.reset()
-                }.onCompletion {
-                    // check anything remains
-                    // cleanup vad
-                    vad.cleanup()
-                    val segment = vadProcessor.flush() ?: return@onCompletion
-                    processAndCleanUp(engine, segment)
-                }
-        }
+                    .onCompletion { processAndCleanUp(engine, engineType, vadProcessor.flush()) }
+            }
+
 
     override fun setConfig(config: TranscriberConfig?, engine: TranscriberEngine) {
         // will reset the flow when config is null otherwise create a new flow based on the given condition
+        Logger.d(tag = TAG) { "ENGINE CONFIG ENGINE:$engine CONFIG:$config" }
         _config.update { config }
         _engine.update { engine }
     }
 
-    private suspend fun setupEngine(engine: TranscriberEngine, config: TranscriberConfig) {
-        when (engine) {
-            TranscriberEngine.WHISPER -> whisperEngine.warmUp(config)
-            TranscriberEngine.ZIP_FORMER -> zipFormerEngine.warmUp(config)
+    /**
+     * Collect the buffers and process the stream
+     */
+    private fun Flow<ReadOnlyShortBuffer>.runTranscriptionEngine(engine: ITranscriptionEngine) = flow {
+        emit(TranscriptionState.Preparing)
+        collect { frame ->
+            val frameArray = frame.toShortArray()
+            val detection = vad.processAudioBuffer(frameArray)
+
+            val speechSegment = vadProcessor.process(frameArray, detection)
+            val state = engine.process(frameArray)
+            emit(state)
+            if (speechSegment != null) engine.reset()
+        }
+    }.flowOn(dispatchers.io)
+
+    /**
+     * Setups up the engine and vad
+     */
+    private suspend fun setupEngine(
+        engine: ITranscriptionEngine,
+        engineType: TranscriberEngine,
+        config: TranscriberConfig,
+    ) {
+        Logger.d(tag = TAG) { "ENGINE SETUP ENGINE:$engineType CONFIG:$config" }
+        engine.warmUp(config)
+        Logger.d(tag = TAG) { "SETTING UP VAD" }
+        vad.setup()
+        vadProcessor.reset()
+    }
+
+    /**
+     * Cleanup with engine and reset vad
+     */
+    private suspend fun processAndCleanUp(
+        engine: ITranscriptionEngine,
+        engineType: TranscriberEngine,
+        bytes: ShortArray?,
+    ) {
+        try {
+            if (bytes != null && bytes.isNotEmpty()) {
+                engine.process(bytes)
+                engine.reset()
+            }
+        } catch (e: Exception) {
+            Logger.e(tag = TAG, throwable = e) { "Error processing remaining audio buffer on cleanup" }
+        } finally {
+            Logger.d(tag = TAG) { "CLEANING UP THE VAD" }
+            vadProcessor.reset()
+            vad.cleanup()
+            Logger.d(tag = TAG) { "ENGINE CLEANUP ENGINE:$engineType" }
+            engine.cleanUp()
         }
     }
 
-    private fun processAndCleanUp(engine: TranscriberEngine, bytes: ShortArray) {
-        val engine = when (engine) {
-            TranscriberEngine.WHISPER -> whisperEngine
-            TranscriberEngine.ZIP_FORMER -> zipFormerEngine
-        }
-        engine.process(bytes)
-        engine.cleanUp()
+    companion object {
+        const val TAG = "TRANSCRIPTOR_RESULTS_PROVIDER"
     }
 }
 

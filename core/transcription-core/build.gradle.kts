@@ -22,6 +22,7 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(project(":core:transcription-android"))
+            implementation(libs.androidx.collection)
         }
 
         commonMain.dependencies {

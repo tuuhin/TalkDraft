@@ -46,6 +46,9 @@ internal actual class PlatformWhisperTranscriptionEngine : ITranscriptionEngine 
         )
     }
 
+    actual override fun reset() {
+    }
+
     actual override fun cleanUp() {
         instance.close()
     }

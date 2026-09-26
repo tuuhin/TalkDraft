@@ -49,13 +49,13 @@ internal actual class PlatformWhisperTranscriptionEngine(
 
         if (!_isSetupDone.load()) {
             Logger.w(tag = TAG) { "SETUP IS MISSING FIRST SET IT UP" }
-            return TranscriptionState.NotRunning
+            return TranscriptionState.Idle
         }
 
         return when (val result = instance.processSamples(bytes)) {
             is ProcessingState.Buffering -> {
                 Logger.d(tag = TAG) { "BUFFERING" }
-                TranscriptionState.RunningOrProcessing
+                TranscriptionState.Preparing
             }
 
             is ProcessingState.Error -> {
@@ -69,10 +69,14 @@ internal actual class PlatformWhisperTranscriptionEngine(
                 Logger.d(tag = TAG) { "GOT SOME SAMPLE RESULT :$state" }
                 TranscriptionState.Success(
                     text = state.text,
-                    segments = state.segments.map { TranscriptionSegmentModel(text = it.text) },
+                    segments = state.segments.map { TranscriptionSegmentModel(text = it.text, segmentId = 0) },
                 )
             }
         }
+    }
+
+    actual override fun reset() {
+
     }
 
     actual override fun cleanUp() {

@@ -7,5 +7,6 @@ internal interface ITranscriptionEngine {
 
     suspend fun warmUp(request: TranscriberConfig)
     fun process(bytes: ShortArray): TranscriptionState
+    fun reset()
     fun cleanUp()
 }

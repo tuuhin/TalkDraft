@@ -2,11 +2,13 @@
 
 package com.sam.talkdraft.transcription.data
 
+import androidx.collection.mutableObjectListOf
 import co.touchlab.kermit.Logger
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.transcription.data.models.ZipFormerModelPath
 import com.sam.talkdraft.transcription.domain.ITranscriptionEngine
 import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
+import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
 import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import com.sam.talkdraft.transcription_android.NativeZipFormer
 import kotlin.concurrent.atomics.AtomicBoolean
@@ -29,6 +31,14 @@ internal actual class PlatformZipFormerTranscriptionEngine(
     private val instance by lazy { NativeZipFormer() }
     private val _isSetupDone = AtomicBoolean(false)
     private val _lock = Mutex()
+
+    // segments builder
+    private val _segments = mutableObjectListOf<String>()
+    private val segments: List<String>
+        get() = _segments.asList()
+
+    // full text builder
+    private val _fullText = StringBuilder()
 
     private val fs = FileSystem.SYSTEM
 
@@ -58,16 +68,30 @@ internal actual class PlatformZipFormerTranscriptionEngine(
 
         if (!_isSetupDone.load()) {
             Logger.w(tag = TAG) { "SETUP IS MISSING FIRST SET IT UP" }
-            return TranscriptionState.NotRunning
+            return TranscriptionState.Idle
         }
 
-        val result = instance.processFrame(bytes)
-            ?: return TranscriptionState.Success(text = "", segments = emptyList())
+        val zipFormerResult = instance.processFrame(bytes)
+        val segmentId = zipFormerResult?.segmentId ?: -1L
+        val stringSegment = zipFormerResult?.segment ?: ""
 
-        Logger.d(tag = TAG) { "RESULT $result" }
+        val trimmedSegment = stringSegment.trim()
+        if (trimmedSegment.isNotEmpty()) {
+            _segments.add(trimmedSegment)
+            if (_fullText.isNotEmpty()) _fullText.append(" ")
+            _fullText.append(trimmedSegment)
+        }
 
-        return TranscriptionState.Success(text = result, emptyList())
+        return TranscriptionState.Success(
+            text = _fullText.toString(),
+            segments = segments.map { TranscriptionSegmentModel(text = it, segmentId = segmentId) },
+        )
+    }
 
+    actual override fun reset() {
+        if (!_isSetupDone.load()) return
+        // setup is ready to work with
+        instance.reset()
     }
 
     actual override fun cleanUp() {
@@ -75,6 +99,10 @@ internal actual class PlatformZipFormerTranscriptionEngine(
             Logger.d(tag = TAG) { "AUDIO TRANSCRIPTION SETUP CLOSED" }
             instance.close()
         }
+        Logger.d(tag = TAG) { "SEGMENTS SETUP CLEANED" }
+        // reset the fields
+        _segments.clear()
+        _fullText.setLength(0)
     }
 
     private fun checkAndFetchFileMap(path: Path): ZipFormerModelPath {

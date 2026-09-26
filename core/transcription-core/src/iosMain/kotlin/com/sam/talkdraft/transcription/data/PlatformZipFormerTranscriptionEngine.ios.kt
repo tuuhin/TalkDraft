@@ -59,7 +59,7 @@ internal actual class PlatformZipFormerTranscriptionEngine(
 
         if (!_isSetupDone.load()) {
             Logger.w(tag = TAG) { "SETUP IS MISSING FIRST SET IT UP" }
-            return TranscriptionState.NotRunning
+            return TranscriptionState.Idle
         }
 
         val result = instance.processFrame(bytes)
@@ -76,6 +76,10 @@ internal actual class PlatformZipFormerTranscriptionEngine(
             Logger.d(tag = TAG) { "AUDIO TRANSCRIPTION SETUP CLOSED" }
             instance.close()
         }
+    }
+
+    actual override fun reset() {
+
     }
 
     private fun checkAndFetchFileMap(path: Path): ZipFormerModelPath {

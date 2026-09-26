@@ -30,15 +30,26 @@ JNIEXPORT jlong JNICALL Java_com_sam_talkdraft_transcription_1android_NativeZipF
     return reinterpret_cast<jlong>(instance);
 }
 
-JNIEXPORT jstring JNICALL Java_com_sam_talkdraft_transcription_1android_NativeZipFormer_processNativeDirectBuffer(
+JNIEXPORT jobject JNICALL Java_com_sam_talkdraft_transcription_1android_NativeZipFormer_processNativeDirectBuffer(
     JNIEnv* env, jobject, jlong handle, jobject direct_buffer, jint length) {
     auto* instance = reinterpret_cast<zip_former*>(handle);
-    if (!instance) return env->NewStringUTF("");
+    if (!instance || !direct_buffer || length == 0) return nullptr;
 
-    auto* samples    = static_cast<float*>(env->GetDirectBufferAddress(direct_buffer));
-    std::string text = instance->ProcessPCM(samples, length);
+    auto* samples               = static_cast<float*>(env->GetDirectBufferAddress(direct_buffer));
+    transcription_result result = instance->ProcessPCM(samples, length);
+    if (result.is_empty()) return nullptr;
 
-    return env->NewStringUTF(text.c_str());
+    jclass klass = env->FindClass("com/sam/talkdraft/transcription_android/models/ZipFormerSegment");
+    if (klass == nullptr) return nullptr;
+
+    jmethodID init = env->GetMethodID(klass, "<init>", "(JLjava/lang/String;)V");
+    if (init == nullptr) return nullptr;
+
+    jstring j_text        = env->NewStringUTF(result.text.c_str());
+    jobject return_result = env->NewObject(klass, init, static_cast<jlong>(result.segment_id), j_text);
+
+    env->DeleteLocalRef(j_text);
+    return return_result;
 }
 
 JNIEXPORT void JNICALL Java_com_sam_talkdraft_transcription_1android_NativeZipFormer_resetNative(JNIEnv* env, jobject,

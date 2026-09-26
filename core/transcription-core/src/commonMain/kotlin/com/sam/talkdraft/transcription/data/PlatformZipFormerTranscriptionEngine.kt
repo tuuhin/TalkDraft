@@ -11,5 +11,6 @@ import org.koin.core.annotation.Named
 internal expect class PlatformZipFormerTranscriptionEngine : ITranscriptionEngine {
     override suspend fun warmUp(request: TranscriberConfig)
     override fun process(bytes: ShortArray): TranscriptionState
+    override fun reset()
     override fun cleanUp()
 }
