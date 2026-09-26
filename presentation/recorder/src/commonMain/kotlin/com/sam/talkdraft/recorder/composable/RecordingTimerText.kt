@@ -37,10 +37,22 @@ internal fun RecorderTimerText(
     minuteColor: Color = MaterialTheme.colorScheme.secondary,
     secondsColor: Color = MaterialTheme.colorScheme.primary,
     fontFamily: FontFamily = spaceGrotesk(),
+    clockFontWeight: FontWeight = FontWeight.Bold,
+    separatorFontWeight: FontWeight = FontWeight.Bold,
 ) {
     val tabularFeature = "tnum"
-    val baseClockStyle = clockTextStyle.copy(fontFamily = fontFamily, fontFeatureSettings = tabularFeature)
-    val baseSeparatorStyle = separatorStyle.copy(fontFamily = fontFamily, fontFeatureSettings = tabularFeature)
+
+    val baseClockStyle = clockTextStyle.copy(
+        fontFamily = fontFamily,
+        fontWeight = clockFontWeight,
+        fontFeatureSettings = tabularFeature,
+    )
+
+    val baseSeparatorStyle = separatorStyle.copy(
+        fontFamily = fontFamily,
+        fontWeight = clockFontWeight,
+        fontFeatureSettings = tabularFeature,
+    )
 
     val timeComponents by remember {
         derivedStateOf {
@@ -80,7 +92,7 @@ internal fun RecorderTimerText(
                     text = ":",
                     style = separatorStyle.copy(fontFamily = fontFamily),
                     color = separatorColor,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = separatorFontWeight,
                 )
             }
 
@@ -94,7 +106,7 @@ internal fun RecorderTimerText(
                 text = ":",
                 style = baseSeparatorStyle,
                 color = separatorColor,
-                fontWeight = FontWeight.Black,
+                fontWeight = separatorFontWeight,
             )
 
             Text(
@@ -107,7 +119,7 @@ internal fun RecorderTimerText(
                 text = ".",
                 style = baseSeparatorStyle,
                 color = separatorColor,
-                fontWeight = FontWeight.Black,
+                fontWeight = separatorFontWeight,
             )
 
             if (timeComponents.hours == null) {

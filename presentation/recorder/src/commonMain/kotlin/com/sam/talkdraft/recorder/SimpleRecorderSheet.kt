@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.sam.talkdraft.common.model.ReadOnlyFloatBuffer
 import com.sam.talkdraft.designsystem.components.SheetTitleBar
 import com.sam.talkdraft.designsystem.utils.Dimensions
+import com.sam.talkdraft.recorder.composable.RealtimeTranscriptionText
 import com.sam.talkdraft.recorder.composable.RecorderDynamicVisualizer
 import com.sam.talkdraft.recorder.composable.RecorderSheetActions
 import com.sam.talkdraft.recorder.composable.RecorderSheetContent
@@ -59,12 +60,20 @@ internal fun SimpleRecorderSheet(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                RecorderTimerText(duration = recordingDuration, modifier = Modifier.fillMaxWidth())
+                RecorderTimerText(
+                    duration = recordingDuration,
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 RecorderDynamicVisualizer(
                     audioWaveForm = audioWaveForm,
                     modifier = Modifier.widthIn(max = 380.dp)
                         .fillMaxWidth(.8f)
                         .height(120.dp),
+                )
+                // transcription text
+                RealtimeTranscriptionText(
+                    state = screenState.transcriptions,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

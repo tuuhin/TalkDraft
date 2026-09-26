@@ -77,7 +77,7 @@ internal fun RecorderSheetContent(
                     )
             },
             label = "transition_between_states",
-            modifier = Modifier.matchParentSize(),
+            modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center,
         ) { contentState ->
             when (contentState) {

@@ -8,6 +8,7 @@ import com.sam.talkdraft.analytics.IAnalyticsProvider
 import com.sam.talkdraft.common.platform.IPlatformTargetProvider
 import com.sam.talkdraft.designsystem.utils.UIEvents
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
+import com.sam.talkdraft.model_manager.domain.model.TranscriptionType
 import com.sam.talkdraft.model_manager.domain.repository.IRecommendedModelProvider
 import com.sam.talkdraft.model_manager.domain.repository.ITranscriptionModelsRepo
 import com.sam.talkdraft.onboarding.models.CaptureIdeaOption
@@ -47,7 +48,7 @@ internal class OnBoardingViewmodel(
         field = MutableSharedFlow<UIEvents>()
 
     private val _recommendedModel = MutableStateFlow<TranscriptionModel?>(null)
-    private val _captureIdeas = MutableStateFlow(listOf(CaptureIdeaOption.BRAIN_STORMING))
+    private val _captureIdeas = MutableStateFlow(CaptureIdeaOption.entries.toList())
     private val _permissionsState = MutableStateFlow<Map<Permissions, PermissionState>>(emptyMap())
 
     val screenSate = combine(
@@ -131,7 +132,7 @@ internal class OnBoardingViewmodel(
 
 
     private fun readAndObserveRecommendedModel() = viewModelScope.launch {
-        val model = recommendationProvider.recommendedModel().getOrNull()
+        val model = recommendationProvider.recommendedModel(TranscriptionType.STREAMING).getOrNull()
             ?: return@launch
 
         transcriptionModelRepo.readModelAsFlow(model.id)

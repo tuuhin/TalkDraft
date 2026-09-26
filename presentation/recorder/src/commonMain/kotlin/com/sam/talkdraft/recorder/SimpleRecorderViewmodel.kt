@@ -11,7 +11,6 @@ import com.sam.talkdraft.permissions.model.IosPermissionStatus
 import com.sam.talkdraft.permissions.model.PermissionState
 import com.sam.talkdraft.permissions.model.Permissions
 import com.sam.talkdraft.recorder.events.RecordingScreenEvent
-import com.sam.talkdraft.recorder.model.RealtimeTranscriptions
 import com.sam.talkdraft.recorder.model.RecorderScreenState
 import com.sam.talkdraft.recorder.model.RecorderSetupFailedReason
 import com.sam.talkdraft.transcription.domain.model.TranscriptionState
@@ -23,7 +22,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -40,13 +38,11 @@ internal class SimpleRecorderViewmodel(
     private val _isLoaded = MutableStateFlow(false)
     private val _failedReason = MutableStateFlow<RecorderSetupFailedReason>(RecorderSetupFailedReason.None)
 
-
     private val transcriptions = recorder.transcription
-        .map { RealtimeTranscriptions(it) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = RealtimeTranscriptions(TranscriptionState.None),
+            initialValue = TranscriptionState.Idle,
         )
 
     val recorderDuration: StateFlow<Duration> = recorder.elapsedTime

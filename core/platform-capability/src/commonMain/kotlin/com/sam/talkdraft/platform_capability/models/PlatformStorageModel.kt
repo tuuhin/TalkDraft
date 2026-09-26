@@ -1,6 +1,6 @@
 package com.sam.talkdraft.platform_capability.models
 
-class PlatformStorageModel(
+data class PlatformStorageModel(
     val totalBytes: Long,
     val availableBytes: Long,
 )

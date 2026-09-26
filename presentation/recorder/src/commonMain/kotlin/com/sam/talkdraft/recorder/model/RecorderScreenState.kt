@@ -8,6 +8,6 @@ import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 internal data class RecorderScreenState(
     val isLoaded: Boolean = true,
     val recorderState: RecorderState = RecorderState.IDLE,
-    val transcriptions: RealtimeTranscriptions = RealtimeTranscriptions(TranscriptionState.Processing),
+    val transcriptions: TranscriptionState = TranscriptionState.Idle,
     val failedReason: RecorderSetupFailedReason = RecorderSetupFailedReason.None,
 )
