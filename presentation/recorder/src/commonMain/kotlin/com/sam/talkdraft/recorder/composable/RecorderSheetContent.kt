@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sam.talkdraft.recorder.domain.models.RecorderState
@@ -134,12 +135,14 @@ private fun OneImageTwoTextLayout(
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = title,
+            fontWeight = FontWeight.SemiBold,
             style = MaterialTheme.typography.titleMediumEmphasized,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMediumEmphasized,
+            fontWeight = FontWeight.Medium,
             color = if (isFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(.8f),

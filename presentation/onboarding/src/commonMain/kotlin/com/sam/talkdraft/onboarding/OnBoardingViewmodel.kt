@@ -1,5 +1,6 @@
 package com.sam.talkdraft.onboarding
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
@@ -13,6 +14,7 @@ import com.sam.talkdraft.model_manager.domain.repository.IRecommendedModelProvid
 import com.sam.talkdraft.model_manager.domain.repository.ITranscriptionModelsRepo
 import com.sam.talkdraft.onboarding.models.CaptureIdeaOption
 import com.sam.talkdraft.onboarding.models.OnboardingEvents
+import com.sam.talkdraft.onboarding.models.OnboardingScene
 import com.sam.talkdraft.onboarding.models.OnboardingScreenState
 import com.sam.talkdraft.permissions.IAppSettingsProvider
 import com.sam.talkdraft.permissions.IPermissionsRequester
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
@@ -42,14 +45,18 @@ internal class OnBoardingViewmodel(
     private val transcriptionModelRepo: ITranscriptionModelsRepo,
     private val analytics: IAnalyticsProvider,
     private val appTargetProvider: IPlatformTargetProvider,
+    private val savedState: SavedStateHandle,
 ) : ViewModel() {
-
-    val uiEvents: SharedFlow<UIEvents>
-        field = MutableSharedFlow<UIEvents>()
 
     private val _recommendedModel = MutableStateFlow<TranscriptionModel?>(null)
     private val _captureIdeas = MutableStateFlow(CaptureIdeaOption.entries.toList())
     private val _permissionsState = MutableStateFlow<Map<Permissions, PermissionState>>(emptyMap())
+
+    val initialScene: StateFlow<OnboardingScene>
+        field = MutableStateFlow<OnboardingScene>(OnboardingScene.WELCOME_SCREEN)
+
+    val uiEvents: SharedFlow<UIEvents>
+        field = MutableSharedFlow<UIEvents>()
 
     val screenSate = combine(
         _recommendedModel,
@@ -63,6 +70,7 @@ internal class OnBoardingViewmodel(
             permissionsState = permissions.toImmutableMap(),
         )
     }.onStart {
+        readAndSetInitialPagerPage()
         loadPermissionsState()
         readAndObserveRecommendedModel()
     }.stateIn(
@@ -82,14 +90,7 @@ internal class OnBoardingViewmodel(
                 },
             )
 
-            is OnboardingEvents.SendAnalyticsEvent -> analytics.track(
-                AnalyticsEvent.OnboardingScreen,
-                buildMap {
-                    put("screen", event.screen.name)
-                    put("screen_index", event.screen.index)
-                    putAll(event.extras)
-                },
-            )
+            is OnboardingEvents.SendAnalyticsEvent -> onIncomingSceneAnalyticsEvent(event.screen, event.extras)
 
             OnboardingEvents.OnOnboardingCompleted ->
                 analytics.track(AnalyticsEvent.OnboardingCompleted)
@@ -141,7 +142,27 @@ internal class OnBoardingViewmodel(
             .launchIn(this)
     }
 
+    private fun readAndSetInitialPagerPage() {
+        val pageIdx = savedState.get<Int>(PAGER_INITIAL_PAGE_IDX) ?: 0
+        val page = OnboardingScene.entries.find { it.index == pageIdx }
+            ?: OnboardingScene.WELCOME_SCREEN
+        initialScene.update { page }
+    }
+
+    private fun onIncomingSceneAnalyticsEvent(scene: OnboardingScene, extras: Map<String, Any>) {
+        savedState[PAGER_INITIAL_PAGE_IDX] = scene.index
+        analytics.track(
+            AnalyticsEvent.OnboardingScreen,
+            buildMap {
+                put("screen", scene.name)
+                put("screen_index", scene.index)
+                putAll(extras)
+            },
+        )
+    }
+
     companion object {
         private const val TAG = "ONBOARDING_VIEWMODEL"
+        private const val PAGER_INITIAL_PAGE_IDX = "PAGER_PAGE_INDEX"
     }
 }

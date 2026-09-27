@@ -7,6 +7,7 @@ data class TranscriptionModel(
     val id: Uuid,
     val version: String,
     val displayName: String,
+    val type: TranscriptionType,
     val modelFamily: TranscriberFamily = TranscriberFamily.UNKNOWN,
     val description: String? = null,
     val sizeInBytes: Long = 0L,
@@ -31,7 +32,7 @@ data class TranscriptionModel(
             // provided via hugging face
             TranscriberFamily.WHISPER -> "${source}/${repository}/resolve/${revision}/${artifactPath}"
             // provided via GitHub
-            TranscriberFamily.ZIP_FORMER -> "${source}/$repository/$revision/$artifactPath"
+            TranscriberFamily.ZIP_FORMER -> "${source}/$repository/releases/download/$revision/$artifactPath"
             else -> null
         }
 

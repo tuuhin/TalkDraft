@@ -52,3 +52,7 @@ kotlin {
     }
 
 }
+
+dependencies {
+    androidRuntimeClasspath(libs.cmp.ui.tooling)
+}

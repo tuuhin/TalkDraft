@@ -1,10 +1,7 @@
 package com.sam.talkdraft.recorder.composable
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandIn
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -15,11 +12,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
@@ -31,13 +29,13 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.sam.talkdraft.designs.CommonResources
 import com.sam.talkdraft.designs.ic_error_simple
 import com.sam.talkdraft.designs.ic_listener
-import com.sam.talkdraft.transcription.domain.model.TranscriptionError
+import com.sam.talkdraft.designsystem.theme.montserrat
 import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
 import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import org.jetbrains.compose.resources.painterResource
@@ -50,20 +48,13 @@ internal fun RealtimeTranscriptionText(
     val uiState by remember(state) {
         derivedStateOf {
             when (state) {
-                is TranscriptionState.Failed -> {
-                    val errorMessage = when (state.error) {
-                        TranscriptionError.AudioNotFound -> "Audio not found"
-                        TranscriptionError.TranscriptionFailed -> "Transcription Failed"
-                        TranscriptionError.UnsupportedAudioFormat -> "UnSupported format"
-                    }
-                    UIRealtimeTranscriptionMode.Error(state.message ?: errorMessage)
-                }
-
+                is TranscriptionState.Failed -> UIRealtimeTranscriptionMode.Error
                 TranscriptionState.Idle -> UIRealtimeTranscriptionMode.Idle
                 TranscriptionState.Preparing -> UIRealtimeTranscriptionMode.Preparing
                 TranscriptionState.Ready -> UIRealtimeTranscriptionMode.Ready
                 is TranscriptionState.Success -> {
-                    val id = state.segments.lastOrNull()?.segmentId ?: -1
+                    val id = state.segments.lastOrNull()?.segmentId
+                        ?: return@derivedStateOf UIRealtimeTranscriptionMode.Ready
                     UIRealtimeTranscriptionMode.Success(segmentId = id)
                 }
             }
@@ -71,15 +62,15 @@ internal fun RealtimeTranscriptionText(
     }
 
     Box(
-        modifier = modifier.heightIn(min = 64.dp),
-        contentAlignment = Alignment.Center,
+        modifier = modifier.heightIn(min = 42.dp),
+        contentAlignment = Alignment.TopCenter,
     ) {
         AnimatedContent(
             targetState = uiState,
             transitionSpec = {
                 if (targetState is UIRealtimeTranscriptionMode.Success) {
                     val enter = fadeIn() + slideInVertically { height -> height / 2 } + expandVertically()
-                    val exit = fadeOut() + shrinkVertically() + shrinkVertically()
+                    val exit = fadeOut() + shrinkVertically()
                     enter togetherWith exit using SizeTransform(clip = false)
                 } else {
                     fadeIn() togetherWith fadeOut()
@@ -92,10 +83,18 @@ internal fun RealtimeTranscriptionText(
                 is UIRealtimeTranscriptionMode.Ready -> EngineReadyIndicator()
                 is UIRealtimeTranscriptionMode.Success -> {
                     val transcription = state as? TranscriptionState.Success
-                    GrowingTranscriptionText(segmentModel = transcription?.segments?.lastOrNull())
+                    GrowingTranscriptionText(
+                        segmentModel = transcription?.segments?.lastOrNull(),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
 
-                is UIRealtimeTranscriptionMode.Error -> TranscriptionEngineFailed(error = targetState.message)
+                is UIRealtimeTranscriptionMode.Error -> {
+                    val failed = state as? TranscriptionState.Failed
+                    val failedMessage = failed?.message ?: failed?.error?.uiMessage ?: "Unable to process"
+                    TranscriptionEngineFailed(error = failedMessage)
+                }
+
                 else -> {}
             }
         }
@@ -109,43 +108,36 @@ private sealed class UIRealtimeTranscriptionMode {
 
     // segment id differentiate a segment not the message
     data class Success(val segmentId: Long) : UIRealtimeTranscriptionMode()
-    data class Error(val message: String) : UIRealtimeTranscriptionMode()
+    data object Error : UIRealtimeTranscriptionMode()
 }
 
 @Composable
 private fun GrowingTranscriptionText(
     segmentModel: TranscriptionSegmentModel?,
     modifier: Modifier = Modifier,
+    fontFamily: FontFamily = montserrat(),
 ) {
-    if (segmentModel == null) return
-
-    val words = segmentModel.text.trim().split("\\s+".toRegex())
-
+    val words = segmentModel?.text?.trim()?.split("\\s+".toRegex()) ?: emptyList()
+    val segmentId = segmentModel?.segmentId ?: -1
 
     FlowRow(
-        modifier = modifier.padding(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Center,
         verticalArrangement = Arrangement.Center,
         maxItemsInEachRow = 8,
     ) {
         words.forEachIndexed { index, word ->
-            key("${segmentModel.segmentId}_${index}_$word") {
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn(animationSpec = tween(durationMillis = 120))
-                        + expandIn(initialSize = { IntSize.Zero }),
-                ) {
-                    Text(
-                        text = word,
-                        style = MaterialTheme.typography.bodyMediumEmphasized,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
+            key("$segmentId\"_${index}_$word") {
+                Text(
+                    text = word,
+                    fontFamily = fontFamily,
+                    style = MaterialTheme.typography.bodyMediumEmphasized,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 2.dp),
+                )
             }
         }
     }
-
 }
 
 @Composable
@@ -158,13 +150,14 @@ private fun TranscriptionEngineFailed(modifier: Modifier = Modifier, error: Stri
         Icon(
             painter = painterResource(CommonResources.drawable.ic_error_simple),
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.size(20.dp),
         )
         Text(
             text = error ?: "Transcription failed",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.titleMediumEmphasized,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onErrorContainer,
         )
     }
 }
@@ -175,19 +168,25 @@ private fun EngineReadyIndicator(modifier: Modifier = Modifier) {
         onClick = {},
         label = {
             Text(
-                text = "Listening...",
+                text = "Listening.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
                 modifier = modifier,
+                fontWeight = FontWeight.SemiBold,
             )
         },
+        border = null,
+        shape = MaterialTheme.shapes.extraLarge,
         icon = {
-            Icon(painter = painterResource(CommonResources.drawable.ic_listener), contentDescription = "Listener")
+            Icon(
+                painter = painterResource(CommonResources.drawable.ic_listener),
+                contentDescription = "Listener",
+            )
         },
         modifier = modifier,
         colors = SuggestionChipDefaults.suggestionChipColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = .8f),
-            labelColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            iconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = .8f),
+            labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ),
     )
 }
@@ -196,18 +195,18 @@ private fun EngineReadyIndicator(modifier: Modifier = Modifier) {
 private fun PreparingEngineContainer(modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier,
     ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(12.dp),
-            strokeWidth = 2.dp,
+        LoadingIndicator(
+            modifier = Modifier.size(24.dp),
             color = MaterialTheme.colorScheme.outlineVariant,
         )
         Text(
             text = "Initializing engine...",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodyMediumEmphasized,
+            color = MaterialTheme.colorScheme.tertiary,
         )
     }
 }

@@ -1,11 +1,13 @@
 package com.sam.talkdraft.app.utils
 
 import co.touchlab.kermit.Logger
+import co.touchlab.kermit.OSLogWriter
 import co.touchlab.kermit.Severity
 import co.touchlab.kermit.XcodeSeverityWriter
 import com.sam.talkdraft.analytics.posthog.IPostHogInitManager
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.crashlytics.MeasureSetupManager
+import kotlin.experimental.ExperimentalNativeApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -28,8 +30,14 @@ object IosAppInitializer : KoinComponent {
         Unit
     }
 
+    @OptIn(ExperimentalNativeApi::class)
     fun setupLogging() {
-        Logger.setLogWriters(XcodeSeverityWriter())
-        Logger.setMinSeverity(Severity.Verbose)
+        val isDebug = Platform.isDebugBinary
+        Logger.setLogWriters(
+            if (isDebug) XcodeSeverityWriter()
+            else OSLogWriter(subsystem = "com.sam.talkdraft", category = "TalkDraft", publicLogging = true),
+        )
+        if (isDebug) Logger.setMinSeverity(Severity.Verbose)
+        else Logger.setMinSeverity(Severity.Info)
     }
 }

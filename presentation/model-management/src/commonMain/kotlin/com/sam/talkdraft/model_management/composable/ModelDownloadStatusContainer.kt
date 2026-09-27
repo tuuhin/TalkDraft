@@ -33,12 +33,12 @@ import com.sam.talkdraft.designs.CommonResources
 import com.sam.talkdraft.designs.ic_model_absent
 import com.sam.talkdraft.designs.ic_model_present
 import com.sam.talkdraft.model_management.model.UIModelDownloadStatus
-import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
+import com.sam.talkdraft.model_manager.domain.model.ModelInstallStatus
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
 internal fun ModelDownloadStatusContainer(
-    status: LocalModelStatus = LocalModelStatus.INSTALLED,
+    status: ModelInstallStatus = ModelInstallStatus.INSTALLED,
     uiDownloadStatus: UIModelDownloadStatus = UIModelDownloadStatus.Idle,
     modifier: Modifier = Modifier,
 ) {
@@ -55,15 +55,16 @@ internal fun ModelDownloadStatusContainer(
 
     val artWorkState = remember(status, uiDownloadStatus) {
         when (status) {
-            LocalModelStatus.NOT_INSTALLED -> DownloadArtWorkState.NotInstalledOrNotStarted
-            LocalModelStatus.INSTALLED -> DownloadArtWorkState.ModelInstalledAndReady
-            LocalModelStatus.DOWNLOADING -> when (uiDownloadStatus) {
+            ModelInstallStatus.NOT_INSTALLED -> DownloadArtWorkState.NotInstalledOrNotStarted
+            ModelInstallStatus.INSTALLED -> DownloadArtWorkState.ModelInstalledAndReady
+            ModelInstallStatus.DOWNLOADING -> when (uiDownloadStatus) {
                 UIModelDownloadStatus.Idle -> DownloadArtWorkState.NotInstalledOrNotStarted
                 is UIModelDownloadStatus.Downloading -> DownloadArtWorkState.InstallDownloadProgressive
                 is UIModelDownloadStatus.Failed -> DownloadArtWorkState.ModelInstallationFailed(
                     uiDownloadStatus.message.ifBlank { "Failed to download model" },
                 )
 
+                UIModelDownloadStatus.Extracting -> DownloadArtWorkState.Extracting
                 UIModelDownloadStatus.Starting -> DownloadArtWorkState.InstallStarted
                 UIModelDownloadStatus.Success -> DownloadArtWorkState.ModelInstalledAndReady
                 UIModelDownloadStatus.Verifying -> DownloadArtWorkState.InstallVerifying
@@ -144,6 +145,21 @@ internal fun ModelDownloadStatusContainer(
                 )
             }
 
+            DownloadArtWorkState.Extracting -> Box(
+                modifier = Modifier.size(200.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularWavyProgressIndicator(
+                    modifier = Modifier.matchParentSize(),
+                    stroke = with(density) { Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round) },
+                    trackStroke = with(density) { Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round) },
+                    gapSize = 6.dp,
+                    wavelength = 40.dp,
+                    waveSpeed = 32.dp,
+                )
+                Text(text = "Extracting")
+            }
+
             DownloadArtWorkState.InstallDownloadProgressive -> Box(
                 modifier = Modifier.size(200.dp),
                 contentAlignment = Alignment.Center,
@@ -174,6 +190,7 @@ private sealed class DownloadArtWorkState {
     data object InstallVerifying : DownloadArtWorkState()
     data class ModelInstallationFailed(val reason: String) : DownloadArtWorkState()
     data object ModelInstalledAndReady : DownloadArtWorkState()
+    data object Extracting : DownloadArtWorkState()
 }
 
 

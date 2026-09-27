@@ -22,15 +22,22 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import com.sam.talkdraft.common.model.PlatformTarget
+import com.sam.talkdraft.designsystem.annotations.DarkThemedPreview
+import com.sam.talkdraft.designsystem.annotations.LightThemedPreview
 import com.sam.talkdraft.designsystem.utils.Dimensions
 import com.sam.talkdraft.designsystem.utils.LocalSnackBarState
 import com.sam.talkdraft.onboarding.composables.LocalAndCloudAIMarker
@@ -38,9 +45,11 @@ import com.sam.talkdraft.onboarding.composables.OnBoardingScenes
 import com.sam.talkdraft.onboarding.composables.OnBoardingScreenTopBar
 import com.sam.talkdraft.onboarding.composables.OnboardingIndicator
 import com.sam.talkdraft.onboarding.composables.WaveFormDraw
+import com.sam.talkdraft.onboarding.models.CaptureIdeaOption
 import com.sam.talkdraft.onboarding.models.OnboardingEvents
 import com.sam.talkdraft.onboarding.models.OnboardingScene
 import com.sam.talkdraft.onboarding.models.OnboardingScreenState
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.launch
 
 @Composable
@@ -51,13 +60,14 @@ internal fun OnBoardingScreen(
     onNavigateToRecorder: () -> Unit,
     onNavigateToHome: () -> Unit,
     modifier: Modifier = Modifier,
+    initialScene: OnboardingScene = OnboardingScene.WELCOME_SCREEN,
 ) {
 
     val snackBarHostState = LocalSnackBarState.current
     val layoutDirection = LocalLayoutDirection.current
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
-    val pager = rememberPagerState { OnboardingScene.entries.size }
+    val pager = rememberPagerState(initialPage = initialScene.index) { OnboardingScene.entries.size }
     val scope = rememberCoroutineScope()
 
     val isFirstPage by remember(pager) {
@@ -72,6 +82,16 @@ internal fun OnBoardingScreen(
         derivedStateOf {
             OnboardingScene.entries.find { it.index == pager.currentPage }
                 ?: OnboardingScene.WELCOME_SCREEN
+        }
+    }
+
+    LaunchedEffect(pager) {
+        // sending analytics events about the onboarding scene
+        snapshotFlow {
+            OnboardingScene.entries.find { it.index == pager.currentPage }
+                ?: OnboardingScene.WELCOME_SCREEN
+        }.collect {
+            onEvent(OnboardingEvents.SendAnalyticsEvent(it))
         }
     }
 
@@ -177,4 +197,31 @@ internal fun OnBoardingScreen(
             }
         }
     }
+}
+
+private class OnBoardingScreenPreviewParams : PreviewParameterProvider<OnboardingScene> {
+    override val values: Sequence<OnboardingScene>
+        get() = OnboardingScene.entries.asSequence()
+}
+
+@LightThemedPreview
+@DarkThemedPreview
+@Composable
+private fun OnboardingScreenPreview(
+    @PreviewParameter(OnBoardingScreenPreviewParams::class)
+    initialState: OnboardingScene,
+) {
+    OnBoardingScreen(
+        state = OnboardingScreenState(
+            platform = PlatformTarget.ANDROID,
+            capturedIdeas = persistentSetOf(
+                CaptureIdeaOption.IDEAS, CaptureIdeaOption.PERSONAL_NOTE,
+            ),
+        ),
+        onEvent = {},
+        onNavigateToHome = {},
+        onNavigateToRecorder = {},
+        onNavigateToModelDownload = {},
+        initialScene = initialState,
+    )
 }

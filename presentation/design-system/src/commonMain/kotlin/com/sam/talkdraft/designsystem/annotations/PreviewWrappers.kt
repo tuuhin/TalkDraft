@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.PreviewWrapperProvider
 import com.sam.talkdraft.designsystem.theme.TalkDraftTheme
 
-class PreviewAppTheme : PreviewWrapperProvider {
+internal class ThemedPreviewWrapper : PreviewWrapperProvider {
 
     @Composable
     override fun Wrap(content: @Composable (() -> Unit)) {

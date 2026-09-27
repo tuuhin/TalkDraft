@@ -20,11 +20,13 @@ internal class OnboardingNavEntry : NavDestinationBuilder {
 
         val viewmodel = koinViewModel<OnBoardingViewmodel>()
         val screenState by viewmodel.screenSate.collectAsStateWithLifecycle()
+        val initialScene by viewmodel.initialScene.collectAsStateWithLifecycle()
 
         UIEventsSideEffect(eventsFlow = viewmodel::uiEvents)
 
         OnBoardingScreen(
             state = screenState,
+            initialScene = initialScene,
             onEvent = viewmodel::onEvent,
             onNavigateToModelDownload = { backStack.add(NavDestinations.RecommendedDownloadModelScreen) },
             onNavigateToRecorder = { backStack.add(NavDestinations.CaptureFirstRecording) },

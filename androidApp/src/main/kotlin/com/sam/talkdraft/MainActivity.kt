@@ -8,11 +8,11 @@ import android.os.Bundle
 import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.sam.talkdraft.app.App
 import com.sam.talkdraft.feature_onboarding.IOnboardingPreferences
@@ -46,9 +46,9 @@ class MainActivity : ComponentActivity() {
         deepLinkUri = intent?.data
 
         // enable edge to edge
-        enableEdgeToEdge()
+        WindowCompat.enableEdgeToEdge(window)
         // on splash complete again enable edge to edge
-        splash.animateOnExit(onAnimationEnd = { enableEdgeToEdge() })
+        splash.animateOnExit()
         splash.setKeepOnScreenCondition { !_isRemoteConfigLoaded || !_isOnboardingValueChecked }
 
         // set activity transitions
