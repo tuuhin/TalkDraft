@@ -20,15 +20,17 @@ struct AppVersionRequiredModifier<AppContent: View>: ViewModifier {
             isPresented: $viewModel.showDialog,
             titleVisibility: .visible
         ) {
-            Button("Update Now") {
+            Button {
                 if let url = URL(string: "https://tuhinbhowmick.in") {
                     UIApplication.shared.open(url)
                 }
                 viewModel.showDialog = true
+            } label: {
+                Text("Update Now")
             }
         } message: {
             Text(
-                "A new version of the app is required. Please update to continue using the application."
+                "A new version is required, Please update to continue using the application."
             )
         }
     }
@@ -37,5 +39,12 @@ struct AppVersionRequiredModifier<AppContent: View>: ViewModifier {
 extension View {
     func requireAppUpdate<AppContent: View>(@ViewBuilder content: @escaping (Bool) -> AppContent) -> some View {
         self.modifier(AppVersionRequiredModifier(contentBuilder: content))
+    }
+}
+
+
+#Preview("App update dialog") {
+    Color.primary.requireAppUpdate { showContent in
+        ContentView()
     }
 }

@@ -30,10 +30,11 @@ kotlin {
     iosTargets.forEach { target ->
         target.binaries.framework {
             baseName = xcfName
+            // required for room
             linkerOpts.add("-lsqlite3")
-            // export them to read the model classes
-            export(project(":core:transcription-ios"))
+            // bridge binding for worker
             export(project(":core:background-jobs"))
+            export(libs.kermit.simple)
         }
     }
 
@@ -84,6 +85,7 @@ kotlin {
 
         iosMain.dependencies {
             implementation(libs.kermit.koin)
+            api(libs.kermit.simple)
         }
 
         getByName("androidDeviceTest") {

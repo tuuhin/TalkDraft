@@ -15,3 +15,6 @@ expect fun manrope(settings: FontVariation.Settings = FontVariation.Settings()):
 
 @Composable
 expect fun spaceGrotesk(settings: FontVariation.Settings = FontVariation.Settings()): FontFamily
+
+@Composable
+expect fun montserrat(settings: FontVariation.Settings = FontVariation.Settings()): FontFamily

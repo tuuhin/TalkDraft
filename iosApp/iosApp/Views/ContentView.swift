@@ -1,5 +1,4 @@
 import SwiftUI
-import TalkDraftApp
 
 struct ContentView: View {
 

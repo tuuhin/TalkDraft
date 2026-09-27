@@ -7,6 +7,7 @@ import com.sam.talkdraft.designs.CommonResources
 import com.sam.talkdraft.designs.GoogleSansFlex
 import com.sam.talkdraft.designs.IBMPlexMono
 import com.sam.talkdraft.designs.Manrope
+import com.sam.talkdraft.designs.Montserrat
 import com.sam.talkdraft.designs.SpaceGrotesk
 import org.jetbrains.compose.resources.Font
 
@@ -45,6 +46,16 @@ actual fun spaceGrotesk(settings: FontVariation.Settings): FontFamily {
     return FontFamily(
         Font(
             resource = CommonResources.font.SpaceGrotesk,
+            variationSettings = settings,
+        ),
+    )
+}
+
+@Composable
+actual fun montserrat(settings: FontVariation.Settings): FontFamily {
+    return FontFamily(
+        Font(
+            resource = CommonResources.font.Montserrat,
             variationSettings = settings,
         ),
     )

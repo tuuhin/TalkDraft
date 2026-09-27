@@ -105,6 +105,7 @@ koin-androidx-workmanager = { module = "io.insert-koin:koin-androidx-workmanager
 # Kermit
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 kermit-koin = { module = "co.touchlab:kermit-koin", version.ref = "kermit" }
+kermit-simple = { module = "co.touchlab:kermit-simple", version.ref = "kermit" }
 # Measure
 measure-android = { module = "sh.measure:measure-android", version.ref = "measure" }
 # Supabase
