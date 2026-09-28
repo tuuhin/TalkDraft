@@ -1,22 +1,25 @@
 import Foundation
-internal import OnnxRuntimeBindings
+internal import sherpa_onnx
 
 @objc(IosZipFormer)
 @objcMembers
 public final class IosZipFormerImpl: NSObject, IosZipFormerProtocol {
 
-    private var env: ORTEnv?
-    private var encoderSession: ORTSession?
-    private var decoderSession: ORTSession?
-    private var joinerSession: ORTSession?
+    private var recognizer: OpaquePointer?
+    private var stream: OpaquePointer?
 
-    private var tokensMap: [Int64: String] = [:]
-    private var blankTokenId: Int64 = 0
+    private var isReady: Bool = false
+    private var currentSegment: String = ""
+    private var segmentId: Int64 = 1
 
     private let lock = NSLock()
 
     public override init() {
         super.init()
+    }
+
+    deinit {
+        cleanUp()
     }
 
     @objc(doInitWithEncoderPath:decoderPath:joinerPath:tokensPath:error:)
@@ -32,127 +35,135 @@ public final class IosZipFormerImpl: NSObject, IosZipFormerProtocol {
             lock.unlock()
         }
 
-        do {
-            let env = try ORTEnv(loggingLevel: .warning)
-            self.env = env
+        cleanUpLocked()
 
-            let options = try ORTSessionOptions()
-            do {
-                try options.appendCoreMLExecutionProvider()
-            } catch {
-                #if DEBUG
-                print(
-                    "[IosZipFormer] CoreML provider unavailable, falling back to CPU: \(error.localizedDescription)"
-                )
-                #endif
-            }
-
-            self.encoderSession = try ORTSession(
-                env: env, modelPath: encoderPath, sessionOptions: options)
-            self.decoderSession = try ORTSession(
-                env: env, modelPath: decoderPath, sessionOptions: options)
-            self.joinerSession = try ORTSession(
-                env: env, modelPath: joinerPath, sessionOptions: options)
-
-            try loadTokens(from: tokensPath)
-            return true
-        } catch let catchedError {
-            Self.setError(error, message: catchedError.localizedDescription)
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: encoderPath),
+              fileManager.fileExists(atPath: decoderPath),
+              fileManager.fileExists(atPath: joinerPath),
+              fileManager.fileExists(atPath: tokensPath)
+        else {
+            Self.setError(error, message: "One or more model files do not exist.")
             return false
         }
+
+        var config = SherpaOnnxOnlineRecognizerConfig()
+        memset(&config, 0, MemoryLayout<SherpaOnnxOnlineRecognizerConfig>.size)
+
+        config.feat_config.sample_rate = 16000
+        config.feat_config.feature_dim = 80
+        config.model_config.num_threads = 2
+
+        if let encoderMutblePtr = encoderPath.cStringCopy,
+           let decoderMutablePtr = decoderPath.cStringCopy,
+           let joinerMutablePtr = joinerPath.cStringCopy {
+            config.model_config.transducer.encoder = UnsafePointer(encoderMutblePtr)
+            config.model_config.transducer.decoder = UnsafePointer(decoderMutablePtr)
+            config.model_config.transducer.joiner = UnsafePointer(joinerMutablePtr)
+        }
+
+        if let modelTypePtr = "zipformer2".cStringCopy, let modelProviderPtr = "cpu".cStringCopy,
+           let decodringTypePtr = "modified_bean_search".cStringCopy {
+            config.model_config.model_type = UnsafePointer(modelTypePtr)
+            config.model_config.provider = UnsafePointer(modelProviderPtr)
+            config.decoding_method = UnsafePointer(decodringTypePtr)
+        }
+
+        #if DEBUG
+        config.model_config.debug = 1
+        #else
+        config.model_config.debug = 0
+        #endif
+
+        config.max_active_paths = 4
+        config.enable_endpoint = 0
+        config.blank_penalty = 0.0
+
+        self.recognizer = SherpaOnnxCreateOnlineRecognizer(&config)
+
+        guard let recognizer = self.recognizer else {
+            Self.setError(error, message: "Failed to create SherpaOnnx Online Recognizer.")
+            return false
+        }
+
+        self.stream = SherpaOnnxCreateOnlineStream(recognizer)
+        if self.stream == nil {
+            SherpaOnnxDestroyOnlineRecognizer(recognizer)
+            self.recognizer = nil
+            Self.setError(error, message: "Failed to create SherpaOnnx Online Stream.")
+            return false
+        }
+
+        self.segmentId = 1
+        self.isReady = true
+        return true
     }
 
     @objc(transcribe:numFrames:error:)
-    public func transcribe(melFeatures: [Float], numFrames: Int, error: NSErrorPointer) -> String? {
+    public func transcribe(melFeatures: [Float], numFrames: Int, error: NSErrorPointer)
+        -> ZipFormerResultSegment? {
         lock.lock()
-        guard let encoderSession = self.encoderSession,
-              let decoderSession = self.decoderSession,
-              let joinerSession = self.joinerSession
-        else {
+        defer {
             lock.unlock()
-            Self.setError(error, message: "Sessions not initialized. Call doInit first.")
+        }
+
+        guard isReady, let recognizer = self.recognizer, let stream = self.stream else {
+            Self.setError(
+                error, message: "Recognizer or stream not initialized. Call doInit first.")
             return nil
         }
-        lock.unlock()
 
-        do {
-            // 1. Run Encoder
-            let encoderInput = try createTensor(
-                data: melFeatures,
-                shape: [1, NSNumber(value: numFrames), 80],
-                type: .float
-            )
-
-            let encoderOutputs = try encoderSession.run(
-                withInputs: ["speech": encoderInput],
-                outputNames: ["encoder_out"],
-                runOptions: nil
-            )
-
-            guard let encoderOut = encoderOutputs["encoder_out"] else {
-                Self.setError(error, message: "Missing 'encoder_out' from encoder session.")
-                return nil
-            }
-
-            // 2. Greedy Search Transducer Decoding Loop
-            var resultTokens: [Int64] = []
-            var decoderContext: [Int64] = [blankTokenId]
-
-            for _ in 0..<numFrames {
-                var emittedNonBlank = true
-                var maxStepsPerFrame = 10
-
-                while emittedNonBlank && maxStepsPerFrame > 0 {
-                    maxStepsPerFrame -= 1
-
-                    let decoderInput = try createTensor(
-                        data: decoderContext,
-                        shape: [1, NSNumber(value: decoderContext.count)],
-                        type: .int64
-                    )
-
-                    let decoderOutputs = try decoderSession.run(
-                        withInputs: ["y": decoderInput],
-                        outputNames: ["decoder_out"],
-                        runOptions: nil
-                    )
-
-                    guard let decoderOut = decoderOutputs["decoder_out"] else {
-                        break
-                    }
-
-                    let joinerOutputs = try joinerSession.run(
-                        withInputs: [
-                            "encoder_out": encoderOut,
-                            "decoder_out": decoderOut,
-                        ],
-                        outputNames: ["logit"],
-                        runOptions: nil
-                    )
-
-                    guard let logits = joinerOutputs["logit"] else {
-                        break
-                    }
-                    let predictedToken = try extractArgMaxToken(logitsTensor: logits)
-
-                    if predictedToken != blankTokenId {
-                        resultTokens.append(predictedToken)
-                        decoderContext.append(predictedToken)
-                        if decoderContext.count > 2 {
-                            decoderContext.removeFirst()
-                        }
-                    } else {
-                        emittedNonBlank = false
-                    }
-                }
-            }
-
-            return decodeTokensToText(resultTokens)
-
-        } catch let catchedError {
-            Self.setError(error, message: catchedError.localizedDescription)
+        guard !melFeatures.isEmpty && numFrames > 0 else {
             return nil
         }
+
+        SherpaOnnxOnlineStreamAcceptWaveform(stream, 16000, melFeatures, Int32(numFrames))
+
+        // Decode available frames
+        while SherpaOnnxIsOnlineStreamReady(recognizer, stream) != 0 {
+            SherpaOnnxDecodeOnlineStream(recognizer, stream)
+        }
+
+        var newText = ""
+        if let resultPtr = SherpaOnnxGetOnlineStreamResult(recognizer, stream) {
+            if let textPtr = resultPtr.pointee.text, strlen(textPtr) > 0 {
+                newText = String(cString: textPtr)
+            }
+            SherpaOnnxDestroyOnlineRecognizerResult(resultPtr)
+        }
+
+        if !newText.isEmpty && newText != currentSegment {
+            currentSegment = newText
+            return ZipFormerResultSegment(segmentId: self.segmentId, segment: currentSegment)
+        }
+
+        return nil
+    }
+
+    /// Resets the current stream state for segment boundary processing
+    public func reset() {
+        lock.lock()
+        defer {
+            lock.unlock()
+        }
+
+        guard let recognizer = self.recognizer, let stream = self.stream else {
+            return
+        }
+
+        SherpaOnnxOnlineStreamInputFinished(stream)
+
+        while SherpaOnnxIsOnlineStreamReady(recognizer, stream) != 0 {
+            SherpaOnnxDecodeOnlineStream(recognizer, stream)
+        }
+
+        if let finalResult = SherpaOnnxGetOnlineStreamResult(recognizer, stream) {
+            SherpaOnnxDestroyOnlineRecognizerResult(finalResult)
+        }
+
+        currentSegment = ""
+        segmentId += 1
+        SherpaOnnxOnlineStreamReset(recognizer, stream)
     }
 
     @objc(cleanUp)
@@ -161,70 +172,20 @@ public final class IosZipFormerImpl: NSObject, IosZipFormerProtocol {
         defer {
             lock.unlock()
         }
-        self.encoderSession = nil
-        self.decoderSession = nil
-        self.joinerSession = nil
-        self.env = nil
-        tokensMap.removeAll()
+        cleanUpLocked()
     }
 
-    private func loadTokens(from path: String) throws {
-        let content = try String(contentsOfFile: path, encoding: .utf8)
-        let lines = content.components(separatedBy: .newlines)
-        for line in lines {
-            let parts = line.trimmingCharacters(in: .whitespaces).components(separatedBy: .whitespaces)
-            if parts.count >= 2, let id = Int64(parts[1]) {
-                let token = parts[0]
-                if token == "<blk>" || token == "<blank>" {
-                    blankTokenId = id
-                }
-                tokensMap[id] = token
-            }
+    private func cleanUpLocked() {
+        if let stream = self.stream {
+            SherpaOnnxDestroyOnlineStream(stream)
+            self.stream = nil
         }
-    }
-
-
-    private func extractArgMaxToken(logitsTensor: ORTValue) throws -> Int64 {
-        let tensorData = try logitsTensor.tensorData() as Data
-        return tensorData.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) -> Int64 in
-            let floatBuffer = buffer.bindMemory(to: Float.self)
-            guard let maxElement = floatBuffer.enumerated().max(by: { $0.element < $1.element })
-            else {
-                return 0
-            }
-            return Int64(maxElement.offset)
+        if let recognizer = self.recognizer {
+            SherpaOnnxDestroyOnlineRecognizer(recognizer)
+            self.recognizer = nil
         }
-    }
-
-    private func decodeTokensToText(_ tokens: [Int64]) -> String {
-        tokens
-        .compactMap {
-            self.tokensMap[$0]
-        }
-        .joined()
-        .replacingOccurrences(of: " ", with: " ")
-        .trimmingCharacters(in: .whitespaces)
-    }
-
-    private func createTensor<T: BitwiseCopyable>(
-        data: [T],
-        shape: [NSNumber],
-        type: ORTTensorElementDataType
-    ) throws -> ORTValue {
-        let tensorData = data.withUnsafeBytes { bufferPointer in
-            Data(bufferPointer)
-        }
-
-        let nsData = NSMutableData(data: tensorData)
-
-        guard let tensor = try? ORTValue(tensorData: nsData, elementType: type, shape: shape) else {
-            throw NSError(
-                domain: "IosZipFormerError",
-                code: 2,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to create ORTValue tensor."]
-            )
-        }
-        return tensor
+        isReady = false
+        currentSegment = ""
     }
 
     private static func setError(_ error: NSErrorPointer, message: String) {
@@ -233,5 +194,19 @@ public final class IosZipFormerImpl: NSObject, IosZipFormerProtocol {
             code: 1,
             userInfo: [NSLocalizedDescriptionKey: message]
         )
+    }
+}
+
+extension String {
+    /// Creates a heap-allocated `char *` using `strdup`.
+    /// - Important: The caller is responsible for freeing the returned pointer using `free()`.
+    var cStringCopy: UnsafeMutablePointer<CChar>? {
+        strdup(self)
+    }
+
+    /// Safely executes a block passing a non-null `UnsafePointer<CChar>` (const char *).
+    func withCStringPointer<Result>(_ body: (UnsafePointer<CChar>) throws -> Result) rethrows
+        -> Result {
+        try self.withCString(body)
     }
 }

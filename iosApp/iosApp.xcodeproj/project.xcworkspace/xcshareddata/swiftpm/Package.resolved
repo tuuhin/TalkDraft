@@ -1,5 +1,5 @@
 {
-  "originHash" : "7f5212c15916a0bc7d23958eaf10825b34c205f6e3340e7eb7f74641864adae9",
+  "originHash" : "d81fd92bb18d4216e846a945b0586f7549645c8555216594d737ff4a67d2d340",
   "pins" : [
     {
       "identity" : "app-check",
@@ -92,15 +92,6 @@
       }
     },
     {
-      "identity" : "onnxruntime-swift-package-manager",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/microsoft/onnxruntime-swift-package-manager.git",
-      "state" : {
-        "revision" : "b7fb7f7dea8a2469e6335d95a61b8f36d0dc83b2",
-        "version" : "1.24.2"
-      }
-    },
-    {
       "identity" : "posthog-ios",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/PostHog/posthog-ios.git",
@@ -116,6 +107,15 @@
       "state" : {
         "revision" : "f4a19a3c313dc2616c70bb49d29a799fb16be837",
         "version" : "2.4.1"
+      }
+    },
+    {
+      "identity" : "sherpa-onnx-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/fdddf/sherpa-onnx-spm.git",
+      "state" : {
+        "revision" : "470ce0a2d6cbd390eadaee81f6e0eb09ab5a5449",
+        "version" : "1.13.4"
       }
     },
     {

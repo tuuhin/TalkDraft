@@ -28,9 +28,9 @@ protocol IosZipFormerProtocol: NSObjectProtocol {
     ///   - melFeatures: Flattened log-mel feature buffer.
     ///   - numFrames: Total number of acoustic frames in the input.
     ///   - error: Pointer to an `NSError` object that captures transcription errors.
-    /// - Returns: Decoded text string if successful; otherwise, `nil`.
+    /// - Returns: A segment result instance
     @objc(transcribe:numFrames:error:)
-    func transcribe(melFeatures: [Float], numFrames: Int, error: NSErrorPointer) -> String?
+    func transcribe(melFeatures: [Float], numFrames: Int, error: NSErrorPointer) -> ZipFormerResultSegment?
 
     // Cleans up the setup logic
     @objc(cleanUp)

@@ -1,8 +1,8 @@
 package com.sam.talkdraft.transcription.ios
 
 import com.sam.talkdraft.transcription.ios.exception.WhisperFrameFailedException
-import com.sam.talkdraft.transcription.ios.models.IosBridgeWhisperSegment
-import com.sam.talkdraft.transcription.ios.models.IosBridgeWhisperState
+import com.sam.talkdraft.transcription.ios.models.IosTranscriptionResultSegment
+import com.sam.talkdraft.transcription.ios.models.IosTranscriptionResultState
 import com.sam.talkdraft.transcription.ios.models.IosWhisperCodeError
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -48,11 +48,11 @@ class IosNativeWhisper {
 
     }
 
-    fun readState(): IosBridgeWhisperState? {
+    fun readState(): IosTranscriptionResultState? {
         val state = provider.readState() ?: return null
         val segments = state.segment.filterIsInstance<IosWhisperSegment>()
-            .map { IosBridgeWhisperSegment(it.text, startTimeMs = it.startTimeMs, endTimeMs = it.endTimeMs) }
-        return IosBridgeWhisperState(state.fullText, segments)
+            .map { IosTranscriptionResultSegment(0L, it.text, startTimeMs = it.startTimeMs, endTimeMs = it.endTimeMs) }
+        return IosTranscriptionResultState(state.fullText, segments)
     }
 
     fun close() = provider.close()

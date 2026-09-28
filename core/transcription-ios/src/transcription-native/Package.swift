@@ -16,8 +16,8 @@ let package = Package(
     ],
     dependencies: [
         .package(
-            url: "https://github.com/microsoft/onnxruntime-swift-package-manager.git",
-            from: "1.24.2"
+            url: "https://github.com/fdddf/sherpa-onnx-spm.git",
+            from: "1.13.4"
         ),
         .package(
             url: "https://github.com/exPHAT/SwiftWhisper.git",
@@ -28,11 +28,11 @@ let package = Package(
         .target(
             name: "IosNativeTranscription",
             dependencies: [
-                .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager"),
+                .product(name: "sherpa-onnx-spm", package: "sherpa-onnx-spm"),
                 .product(name: "SwiftWhisper", package: "SwiftWhisper")
             ],
             resources: [
-                .process("Resources/silero_vad.onnx")
+                .process("Resources/silero_vad.int8.onnx")
             ]
         )
     ]
