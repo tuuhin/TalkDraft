@@ -2,8 +2,8 @@ package com.sam.talkdraft.transcription_android
 
 import android.content.Context
 import android.content.res.AssetManager
-import android.util.Log
-import com.sam.talkdraft.transcription_android.models.VADResult
+import com.sam.talkdraft.transcription_android.models.AndroidVADResult
+import com.sam.talkdraft.transcription_android.models.AndroidVadConfig
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -28,14 +28,13 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
 
     fun initialize(
         assets: AssetManager,
-        assetName: String = MODEL_NAME,
-        sampleRate: Int = 16000,
+        config: AndroidVadConfig = AndroidVadConfig(),
     ): Boolean {
-        require(sampleRate == 16000 || sampleRate == 8000) { "VAD requires 8kHz or 16kHz sample rate." }
+        require(config.sampleRate == 16000 || config.sampleRate == 8000) { "VAD requires 8kHz or 16kHz sample rate." }
 
         if (_isInitialized.load()) throw IllegalStateException("Voice detector is already initialized close it to continue")
 
-        val handle = initializeNativeFromAssets(assets, context.cacheDir.absolutePath, assetName, sampleRate)
+        val handle = initFromAssets(assets, context.cacheDir.absolutePath, MODEL_NAME, config)
         if (handle == 0L) return false
 
         if (!_isInitialized.compareAndSet(expectedValue = false, newValue = true)) {
@@ -46,12 +45,12 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
         return true
     }
 
-    fun initialize(modelPath: String, sampleRate: Int = 16000): Boolean {
-        require(sampleRate == 16000 || sampleRate == 8000) { "VAD requires 8kHz or 16kHz sample rate." }
+    fun initialize(modelPath: String, config: AndroidVadConfig = AndroidVadConfig()): Boolean {
+        require(config.sampleRate == 16000 || config.sampleRate == 8000) { "VAD requires 8kHz or 16kHz sample rate." }
 
         if (_isInitialized.load()) throw IllegalStateException("Voice detector is already initialized close it to continue")
 
-        val handle = initializeNative(modelPath, sampleRate)
+        val handle = initNative(modelPath, config)
         if (handle == 0L) return false
 
         if (!_isInitialized.compareAndSet(expectedValue = false, newValue = true)) {
@@ -64,25 +63,22 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
     }
 
 
-    fun processFrame(audioFrame: ShortArray): VADResult {
+    fun processFrame(audioFrame: ShortArray): AndroidVADResult {
         if (!_isInitialized.load()) throw IllegalStateException("Voice recorder is not initialized make sure its done first")
-        if (audioFrame.isEmpty()) return VADResult(0f, false)
+        if (audioFrame.isEmpty()) return AndroidVADResult(false)
 
         val handle = _nativeHandle.load()
         check(handle != 0L) { "Voice detector native handle is invalid." }
-
         appendSamples(audioFrame)
 
-        var maxResult = VADResult(
-            probability = 0f,
-            isSpeech = false,
-        )
+        var isSpeech = false
+
         while (pendingSampleCount >= SILERO_SAMPLE_COUNT) {
             val result = runNativeInference(handle)
-            // the inference engine uses the max probability
-            if (result.probability > maxResult.probability) maxResult = result
+            if (result.isSpeech) isSpeech = true
         }
-        return maxResult
+
+        return AndroidVADResult(isSpeech = isSpeech)
     }
 
     private fun appendSamples(audioFrame: ShortArray) {
@@ -105,7 +101,7 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
         }
     }
 
-    private fun runNativeInference(handle: Long): VADResult {
+    private fun runNativeInference(handle: Long): AndroidVADResult {
         floatBuffer.clear()
         for (i in 0 until SILERO_SAMPLE_COUNT) {
             val buf = pendingSamples[i] * FLOAT_MULTIPLIER
@@ -114,7 +110,7 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
         frameBuffer.position(0)
         frameBuffer.limit(SILERO_SAMPLE_COUNT * Float.SIZE_BYTES)
 
-        val probability = processNativeDirectBuffer(handle, frameBuffer, SILERO_SAMPLE_COUNT)
+        val isSpeech = processNativeDirectBuffer(handle, frameBuffer, SILERO_SAMPLE_COUNT)
 
         // Shift remaining samples to the front.
         val remaining = pendingSampleCount - SILERO_SAMPLE_COUNT
@@ -128,23 +124,40 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
         }
         pendingSampleCount = remaining.coerceAtLeast(0)
 
-        return probability
+        return AndroidVADResult(isSpeech)
     }
 
     fun resetState() {
-        if (!_isInitialized.load()) {
-            Log.w(TAG, "VOICE DETECTOR WAS NOT INITIALIZED")
-            return
-        }
+        if (!_isInitialized.load()) return
         resetStatesNative(_nativeHandle.load())
         pendingSampleCount = 0   // also drop any partial PCM carry-over on reset
     }
 
-    override fun close() {
-        if (!_isInitialized.compareAndSet(expectedValue = true, newValue = false)) {
-            Log.w(TAG, "VOICE DETECTOR WAS NOT INITIALIZED")
-            return
+    fun popSpeechSegments(): Sequence<FloatArray> {
+        check(_isInitialized.load()) { "Voice detector is not initialized." }
+
+        val handle = _nativeHandle.load()
+        check(handle != 0L) { "Voice detector native handle is invalid." }
+
+        return sequence {
+            while (true) {
+                val segment = popNativeSegmentFromSpeech(handle) ?: break
+                if (segment.isNotEmpty()) yield(segment)
+            }
         }
+    }
+
+    fun flushSpeechSegments(): Sequence<FloatArray> {
+        check(_isInitialized.load()) { "Voice detector is not initialized." }
+        val handle = _nativeHandle.load()
+        check(handle != 0L) { "Voice detector native handle is invalid." }
+        pendingSampleCount = 0
+        flushNative(handle)
+        return popSpeechSegments()
+    }
+
+    override fun close() {
+        if (!_isInitialized.compareAndSet(expectedValue = true, newValue = false)) return
         val handle = _nativeHandle.fetchAndUpdate { 0L }
         if (handle != 0L) destroyNative(handle)
         pendingSampleCount = 0
@@ -153,12 +166,19 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
     internal val isInitialized: Boolean
         get() = _isInitialized.load()
 
-    private external fun initializeNative(modelPath: String, sampleRate: Int): Long
-    private external fun initializeNativeFromAssets(
-        manager: AssetManager, cacheDir: String, assetName: String, sampleRate: Int,
+    private external fun initNative(modelPath: String, config: AndroidVadConfig): Long
+    private external fun initFromAssets(
+        manager: AssetManager,
+        cacheDir: String,
+        modelName: String,
+        config: AndroidVadConfig,
     ): Long
 
-    private external fun processNativeDirectBuffer(handle: Long, buffer: ByteBuffer, length: Int): VADResult
+    private external fun processNativeDirectBuffer(
+        handle: Long,
+        buffer: ByteBuffer,
+        length: Int,
+    ): Boolean
 
     private external fun resetStatesNative(handle: Long)
     private external fun destroyNative(handle: Long)
@@ -168,7 +188,6 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
     private external fun flushNative(handle: Long)
 
     companion object {
-        private const val TAG = "ANDROID_NATIVE_VAD"
 
         init {
             System.loadLibrary("native_vad")
@@ -185,6 +204,6 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
         private const val MAX_PENDING_SAMPLE_COUNT = 32_000
 
         // using the quantized model
-        const val MODEL_NAME = "silero_vad.int8.onnx"
+        internal const val MODEL_NAME = "silero_vad.int8.onnx"
     }
 }

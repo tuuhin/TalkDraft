@@ -14,7 +14,7 @@ sherpa_vad_manager& sherpa_vad_manager::instance() {
 
 int64_t sherpa_vad_manager::create_vad(const sherpa_vad::Config& config) {
     auto vad = std::make_shared<sherpa_vad>(config);
-    if (!vad->ok()) {
+    if (!vad) {
         LOGE("Failed to create VAD from model: %s", config.model_path.c_str());
         return kInvalidHandle;
     }
@@ -25,16 +25,15 @@ int64_t sherpa_vad_manager::create_vad(const sherpa_vad::Config& config) {
     return handle;
 }
 
-int64_t sherpa_vad_manager::create_vad_from_asset(AAssetManager* mgr, const std::string& asset_name,
-                                                  const std::string& cache_dir, int sample_rate) {
+int64_t sherpa_vad_manager::create_vad_from_asset(AAssetManager* mgr, const std::string& cache_dir,
+                                                  sherpa_vad::Config& config) {
     if (!mgr) return kInvalidHandle;
 
-    const std::string dst = cache_dir + "/" + asset_name;
-    if (!copy_asset_to_file(mgr, asset_name, dst)) return kInvalidHandle;
+    const std::string dst = cache_dir + "/" + config.model_path;
+    if (!copy_asset_to_file(mgr, config.model_path, dst)) return kInvalidHandle;
 
-    sherpa_vad::Config config;
-    config.model_path  = dst;
-    config.sample_rate = sample_rate;
+    // mutating model path to the asset path destination
+    config.model_path = dst;
     return create_vad(config);
 }
 

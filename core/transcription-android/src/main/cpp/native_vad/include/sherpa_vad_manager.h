@@ -17,8 +17,7 @@ public:
 
     int64_t create_vad(const sherpa_vad::Config& config);
 
-    int64_t create_vad_from_asset(AAssetManager* mgr, const std::string& asset_name, const std::string& cache_dir,
-                                  int sample_rate);
+    int64_t create_vad_from_asset(AAssetManager* mgr, const std::string& cache_dir, sherpa_vad::Config& config);
 
     std::shared_ptr<sherpa_vad> create_from_handle(int64_t handle);
 

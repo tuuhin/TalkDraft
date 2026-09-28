@@ -26,9 +26,7 @@ public:
     sherpa_vad(const sherpa_vad&)            = delete;
     sherpa_vad& operator=(const sherpa_vad&) = delete;
 
-    [[nodiscard]] bool ok() const { return _vad != nullptr; }
     bool accept(const float* samples, size_t count);
-    bool is_speech();
     bool pop_segment(std::vector<float>& out, int32_t& start_sample);
     void flush();
     void reset();
