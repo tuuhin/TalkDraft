@@ -17,7 +17,6 @@ find_library(log-lib log)
 
 target_link_libraries(native_zipformer PRIVATE
         sherpa-onnx-c-api
-        onnxruntime
         ${log-lib}
         android
 )

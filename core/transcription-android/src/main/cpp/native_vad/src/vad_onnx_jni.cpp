@@ -1,6 +1,4 @@
-#include "vad_onnx.h"
-#include <android/asset_manager.h>
-#include <android/asset_manager_jni.h>
+#include "sherpa_vad_manager.h"
 #include <jni.h>
 #include <vector>
 
@@ -10,54 +8,87 @@ Java_com_sam_talkdraft_transcription_1android_NativeVoiceActivityDetector_initia
                                                                                            jint sample_rate) {
 
     const char* path = env->GetStringUTFChars(model_path, nullptr);
-    auto* vad        = new silero_vad(std::string(path), sample_rate);
+    sherpa_vad::Config config;
+    config.model_path  = std::string(path);
+    config.sample_rate = sample_rate;
+    auto handle        = sherpa_vad_manager::instance().create_vad(config);
     env->ReleaseStringUTFChars(model_path, path);
-    return reinterpret_cast<jlong>(vad);
+    return reinterpret_cast<jlong>(handle);
 }
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_sam_talkdraft_transcription_1android_NativeVoiceActivityDetector_initializeNativeFromAssets(
-    JNIEnv* env, jobject thiz, jobject assetsManager, jstring asset_name, jint sample_rate) {
-    const char* asset_name_string = env->GetStringUTFChars(asset_name, nullptr);
-    AAssetManager* mgr            = AAssetManager_fromJava(env, assetsManager);
+    JNIEnv* env, jobject thiz, jobject assetsManager, jstring cacheDir, jstring asset_name, jint sample_rate) {
 
-    const auto asset_obj = AAssetManager_open(mgr, asset_name_string, AASSET_MODE_BUFFER);
-    if (asset_obj == nullptr) {
-        env->ReleaseStringUTFChars(asset_name, asset_name_string);
-        return -1L;
-    }
+    const char* asset_name_string     = env->GetStringUTFChars(asset_name, nullptr);
+    const char* cache_dir_path_string = env->GetStringUTFChars(cacheDir, nullptr);
+    AAssetManager* mgr                = AAssetManager_fromJava(env, assetsManager);
 
-    size_t asset_size = AAsset_getLength(asset_obj);
-    std::vector<uint8_t> buffer(asset_size);
-    AAsset_read(asset_obj, buffer.data(), asset_size);
-    AAsset_close(asset_obj);
+    const auto handle = sherpa_vad_manager::instance().create_vad_from_asset(mgr, asset_name_string,
+                                                                             cache_dir_path_string, sample_rate);
 
     env->ReleaseStringUTFChars(asset_name, asset_name_string);
-    auto* vad = new silero_vad(buffer.data(), asset_size, sample_rate);
+    env->ReleaseStringUTFChars(cacheDir, cache_dir_path_string);
 
-    return reinterpret_cast<jlong>(vad);
+    return reinterpret_cast<jlong>(handle);
 }
 
-extern "C" JNIEXPORT jfloat JNICALL
+extern "C" JNIEXPORT jfloatArray JNICALL
+Java_com_sam_talkdraft_transcription_1android_NativeVoiceActivityDetector_popNativeSegmentFromSpeech(JNIEnv* env,
+                                                                                                     jobject /*thiz*/,
+                                                                                                     jlong handle) {
+    auto vad = sherpa_vad_manager::instance().create_from_handle(handle);
+    if (!vad) return nullptr;
+
+    std::vector<float> samples;
+    int32_t start = 0;
+    if (!vad->pop_segment(samples, start)) return nullptr;
+
+    jfloatArray arr = env->NewFloatArray(static_cast<jsize>(samples.size()));
+    if (!arr) return nullptr;
+    env->SetFloatArrayRegion(arr, 0, static_cast<jsize>(samples.size()), samples.data());
+    return arr;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_sam_talkdraft_transcription_1android_NativeVoiceActivityDetector_flushNative(JNIEnv*, jobject, jlong handle) {
+    auto vad = sherpa_vad_manager::instance().create_from_handle(handle);
+    if (vad) vad->flush();
+}
+
+extern "C" JNIEXPORT jobject JNICALL
 Java_com_sam_talkdraft_transcription_1android_NativeVoiceActivityDetector_processNativeDirectBuffer(
     JNIEnv* env, jobject thiz, jlong handle, jobject direct_buffer, jint sample_count) {
 
-    auto* vad        = reinterpret_cast<silero_vad*>(handle);
-    auto* pcm_floats = static_cast<float*>(env->GetDirectBufferAddress(direct_buffer));
-    return vad->process_frame(pcm_floats, sample_count);
+    auto vad = sherpa_vad_manager::instance().create_from_handle(handle);
+    if (!vad) return nullptr;
+    auto* pcm = static_cast<float*>(env->GetDirectBufferAddress(direct_buffer));
+    if (!pcm) return nullptr;
+
+    auto probability = vad->accept(pcm, static_cast<size_t>(sample_count)) ? 1.0f : 0.0f;
+    auto isSpeech    = vad->is_speech();
+
+    // create the model
+    jclass klass = env->FindClass("com/sam/talkdraft/transcription_android/models/VADResult");
+    if (klass == nullptr) return nullptr;
+
+    jmethodID init = env->GetMethodID(klass, "<init>", "(FZ)V");
+    if (init == nullptr) return nullptr;
+
+    jobject return_result = env->NewObject(klass, init, probability, isSpeech);
+    return return_result;
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_sam_talkdraft_transcription_1android_NativeVoiceActivityDetector_resetStatesNative(JNIEnv* env, jobject thiz,
                                                                                             jlong handle) {
-    auto* vad = reinterpret_cast<silero_vad*>(handle);
-    if (!vad) return;
-    vad->reset_states();
+
+    auto vad = sherpa_vad_manager::instance().create_from_handle(handle);
+    if (vad) vad->reset();
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_sam_talkdraft_transcription_1android_NativeVoiceActivityDetector_destroyNative(JNIEnv* env, jobject thiz,
                                                                                         jlong handle) {
-    auto* vad = reinterpret_cast<silero_vad*>(handle);
-    delete vad;
+    sherpa_vad_manager::instance().destroy_vad(handle);
 }

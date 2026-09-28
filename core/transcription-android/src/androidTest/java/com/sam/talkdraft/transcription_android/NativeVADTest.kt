@@ -14,7 +14,7 @@ import assertk.assertions.isTrue
 import com.sam.talkdraft.testing.annotations.RunWithPlatform
 import com.sam.talkdraft.testing.di.TestPlatformModule
 import com.sam.talkdraft.transcription_android.assets.AssetsToFileConvertor
-import com.sam.talkdraft.transcription_android.models.VoiceDetectionProbability
+import com.sam.talkdraft.transcription_android.models.VADResult
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -45,7 +45,7 @@ class NativeVADTest : KoinTest {
 
     @BeforeTest
     fun setup() {
-        vad = NativeVoiceActivityDetector()
+        vad = NativeVoiceActivityDetector(context)
         assetManager = context.assets
         fileProvider = AssetsToFileConvertor(assetManager)
     }
@@ -152,7 +152,7 @@ class NativeVADTest : KoinTest {
         }
 
         val windowSize = 640
-        var probability = VoiceDetectionProbability(0.0f)
+        var probability = VADResult(0.0f, false)
         var offset = 0
 
         while (offset + windowSize <= pcmShorts.size) {
@@ -196,8 +196,8 @@ class NativeVADTest : KoinTest {
 
     @Test
     fun test_multiple_instances_can_exist_independently() {
-        NativeVoiceActivityDetector().use { vad1 ->
-            NativeVoiceActivityDetector().use { vad2 ->
+        NativeVoiceActivityDetector(context).use { vad1 ->
+            NativeVoiceActivityDetector(context).use { vad2 ->
                 assertThat(vad1.initialize(assetManager, NativeVoiceActivityDetector.MODEL_NAME)).isTrue()
                 assertThat(vad2.initialize(assetManager, NativeVoiceActivityDetector.MODEL_NAME)).isTrue()
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sherpa-c-api.h"
+#include "sherpa-onnx/c-api/c-api.h"
 #include <memory>
 #include <mutex>
 #include <string>
@@ -31,6 +31,7 @@ public:
 
 private:
     void cleanup();
+    void cleanup_locked();
 
     const SherpaOnnxOnlineRecognizer* _online_recognizer = nullptr;
     const SherpaOnnxOnlineStream* _online_stream         = nullptr;

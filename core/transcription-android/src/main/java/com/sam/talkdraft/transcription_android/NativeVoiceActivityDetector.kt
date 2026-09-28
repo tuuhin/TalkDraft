@@ -1,8 +1,9 @@
 package com.sam.talkdraft.transcription_android
 
+import android.content.Context
 import android.content.res.AssetManager
 import android.util.Log
-import com.sam.talkdraft.transcription_android.models.VoiceDetectionProbability
+import com.sam.talkdraft.transcription_android.models.VADResult
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -12,7 +13,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.fetchAndUpdate
 
 @OptIn(ExperimentalAtomicApi::class)
-class NativeVoiceActivityDetector : AutoCloseable {
+class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable {
 
     private val _nativeHandle = AtomicLong(0L)
     private val _isInitialized = AtomicBoolean(false)
@@ -34,7 +35,7 @@ class NativeVoiceActivityDetector : AutoCloseable {
 
         if (_isInitialized.load()) throw IllegalStateException("Voice detector is already initialized close it to continue")
 
-        val handle = initializeNativeFromAssets(assets, assetName, sampleRate)
+        val handle = initializeNativeFromAssets(assets, context.cacheDir.absolutePath, assetName, sampleRate)
         if (handle == 0L) return false
 
         if (!_isInitialized.compareAndSet(expectedValue = false, newValue = true)) {
@@ -63,22 +64,25 @@ class NativeVoiceActivityDetector : AutoCloseable {
     }
 
 
-    fun processFrame(audioFrame: ShortArray): VoiceDetectionProbability {
+    fun processFrame(audioFrame: ShortArray): VADResult {
         if (!_isInitialized.load()) throw IllegalStateException("Voice recorder is not initialized make sure its done first")
-        if (audioFrame.isEmpty()) return VoiceDetectionProbability(0f)
+        if (audioFrame.isEmpty()) return VADResult(0f, false)
 
         val handle = _nativeHandle.load()
         check(handle != 0L) { "Voice detector native handle is invalid." }
 
         appendSamples(audioFrame)
 
-        var maxProbability = 0f
+        var maxResult = VADResult(
+            probability = 0f,
+            isSpeech = false,
+        )
         while (pendingSampleCount >= SILERO_SAMPLE_COUNT) {
-            val probability = runNativeInference(handle)
-            if (probability > maxProbability) maxProbability = probability
+            val result = runNativeInference(handle)
+            // the inference engine uses the max probability
+            if (result.probability > maxResult.probability) maxResult = result
         }
-
-        return VoiceDetectionProbability(maxProbability)
+        return maxResult
     }
 
     private fun appendSamples(audioFrame: ShortArray) {
@@ -101,7 +105,7 @@ class NativeVoiceActivityDetector : AutoCloseable {
         }
     }
 
-    private fun runNativeInference(handle: Long): Float {
+    private fun runNativeInference(handle: Long): VADResult {
         floatBuffer.clear()
         for (i in 0 until SILERO_SAMPLE_COUNT) {
             val buf = pendingSamples[i] * FLOAT_MULTIPLIER
@@ -151,14 +155,17 @@ class NativeVoiceActivityDetector : AutoCloseable {
 
     private external fun initializeNative(modelPath: String, sampleRate: Int): Long
     private external fun initializeNativeFromAssets(
-        assetsManager: AssetManager,
-        assetName: String,
-        sampleRate: Int,
+        manager: AssetManager, cacheDir: String, assetName: String, sampleRate: Int,
     ): Long
 
-    private external fun processNativeDirectBuffer(handle: Long, buffer: ByteBuffer, length: Int): Float
+    private external fun processNativeDirectBuffer(handle: Long, buffer: ByteBuffer, length: Int): VADResult
+
     private external fun resetStatesNative(handle: Long)
     private external fun destroyNative(handle: Long)
+
+    // use for direct speech buffer extraction
+    private external fun popNativeSegmentFromSpeech(handle: Long): FloatArray?
+    private external fun flushNative(handle: Long)
 
     companion object {
         private const val TAG = "ANDROID_NATIVE_VAD"
@@ -177,6 +184,7 @@ class NativeVoiceActivityDetector : AutoCloseable {
         // never overflow the carry-over buffer between calls.
         private const val MAX_PENDING_SAMPLE_COUNT = 32_000
 
-        const val MODEL_NAME = "silero_vad.onnx"
+        // using the quantized model
+        const val MODEL_NAME = "silero_vad.int8.onnx"
     }
 }

@@ -29,11 +29,16 @@ bool check_file_exists(const std::string& path) {
 zip_former::zip_former() = default;
 
 zip_former::~zip_former() { cleanup(); }
+
 zip_former::zip_former(zip_former&& other) noexcept { *this = std::move(other); }
 
 zip_former& zip_former::operator=(zip_former&& other) noexcept {
     if (this != &other) {
-        std::lock_guard<std::mutex> lock(other._mutex);
+        // Lock both mutexes safely using std::scoped_lock to avoid deadlock
+        std::scoped_lock lock(_mutex, other._mutex);
+
+        // lock free cleanup
+        cleanup_locked();
 
         _online_recognizer = other._online_recognizer;
         _online_stream     = other._online_stream;
@@ -44,12 +49,17 @@ zip_former& zip_former::operator=(zip_former&& other) noexcept {
         other._online_recognizer = nullptr;
         other._online_stream     = nullptr;
         other._isReady           = false;
+        other._segment_id        = 1;
     }
     return *this;
 }
 
 void zip_former::cleanup() {
     std::lock_guard<std::mutex> lock(_mutex);
+    cleanup_locked();
+}
+
+void zip_former::cleanup_locked() {
     if (_online_stream) {
         LOG_D("CLEARING ONLINE STREAM");
         SherpaOnnxDestroyOnlineStream(_online_stream);
@@ -90,8 +100,10 @@ bool zip_former::Initialize(const std::string& encoder_path, const std::string& 
     online_cfg.model_config.model_type         = "zipformer2";
     online_cfg.model_config.provider           = "cpu";
     online_cfg.model_config.debug              = IS_DEBUG;
-    online_cfg.decoding_method                 = "greedy_search";
+    online_cfg.decoding_method                 = "modified_beam_search";
     online_cfg.max_active_paths                = 4;
+    online_cfg.enable_endpoint                 = 0;
+    online_cfg.blank_penalty                   = 0.0f;
 
     LOG_D("TRYING TO CREATE ONLINE STREAM FOR RECOGNIZER");
     _online_recognizer = SherpaOnnxCreateOnlineRecognizer(&online_cfg);
@@ -156,12 +168,24 @@ transcription_result zip_former::ProcessPCM(const float* pcm_data, int sample_co
 
 void zip_former::Reset() {
     std::lock_guard<std::mutex> lock(_mutex);
-    if (!_current_segment.empty()) LOG_D("[SEGMENT %d COMPLETED FINAL='%s'", _segment_id, _current_segment.c_str());
+    if (!_online_recognizer || !_online_stream) return;
 
-    // clear the current segment
+    // mark online stream input done
+    SherpaOnnxOnlineStreamInputFinished(_online_stream);
+
+    // stream out anything that is left
+    while (SherpaOnnxIsOnlineStreamReady(_online_recognizer, _online_stream)) {
+        SherpaOnnxDecodeOnlineStream(_online_recognizer, _online_stream);
+    }
+
+    const auto* final_result = SherpaOnnxGetOnlineStreamResult(_online_recognizer, _online_stream);
+    if (final_result) {
+        LOG_D("CLEARING AWAITING SEGMENTS");
+        SherpaOnnxDestroyOnlineRecognizerResult(final_result);
+    }
+
     _current_segment.clear();
     _segment_id++;
-    if (!_online_recognizer || !_online_stream) return;
-    // reset the stream
+    LOG_D("SHERPA RESET");
     SherpaOnnxOnlineStreamReset(_online_recognizer, _online_stream);
 }

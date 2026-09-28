@@ -236,7 +236,7 @@ class NativeZipFormerTest : KoinTest {
 
             val result = zipFormer.processFrame(frame)
             if (result != null) {
-                finalTranscript = result
+                finalTranscript = result.segment
             }
             offset += chunkSize
         }
