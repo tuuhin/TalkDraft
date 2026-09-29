@@ -59,6 +59,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -67,6 +70,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
         }
     }
     compileOptions {
@@ -99,6 +108,8 @@ dependencies {
     implementation(project(":app"))
     implementation(project(":core:permissions"))
     implementation(project(":feature:onboarding"))
+    // benchmarks
+    implementation(libs.androidx.profileinstaller)
 }
 
 // Workaround for AGP 9.4.0+ JarFlinger validation: R8 synthesizes

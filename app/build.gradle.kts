@@ -115,11 +115,11 @@ koinCompiler {
 }
 
 skie {
-    isEnabled = false
     build {
-        enableSwiftLibraryEvolution.set(true)
+        enableSwiftLibraryEvolution = true
+        enableParallelSwiftCompilation = true
     }
-    features {
-        enableSwiftUIObservingPreview = true
+    swiftBundling {
+        enabled = true
     }
 }

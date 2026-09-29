@@ -35,6 +35,7 @@ dependencyResolutionManagement {
 
 // entry point
 include(":androidApp")
+include(":androidBenchMark")
 // modules
 include(":core:common")
 include(":core:analytics")

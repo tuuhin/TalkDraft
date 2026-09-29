@@ -1,0 +1,121 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <group
+        android:name="splash_icon_group"
+        android:pivotX="24"
+        android:pivotY="24"
+        android:scaleX="0.5"
+        android:scaleY="0.5"
+        android:translateX="0"
+        android:translateY="0">
+
+        <path
+            android:fillColor="#00000000"
+            android:fillType="nonZero"
+            android:pathData="M6,14L6,12C6,8.708 8.708,6 12,6L36,6C39.292,6 42,8.708 42,12L42,14M6,34L6,36C6,39.292 8.708,42 12,42L36,42C39.292,42 42,39.292 42,36L42,34"
+            android:strokeWidth="3"
+            android:strokeColor="#6B8DEB"
+            android:strokeLineCap="round" />
+
+        <path
+            android:fillColor="#00000000"
+            android:fillType="nonZero"
+            android:pathData="M10,25.3C11.536,25.3 12.8,24.126 12.8,22.7L12.8,17.5C12.8,16.074 14.064,14.9 15.6,14.9C17.136,14.9 18.4,16.074 18.4,17.5L18.4,34.4C18.4,35.826 19.664,37 21.2,37C22.736,37 24,35.826 24,34.4L24,13.6C24,12.174 25.264,11 26.8,11C28.336,11 29.6,12.174 29.6,13.6L29.6,30.5C29.6,31.926 30.864,33.1 32.4,33.1C33.936,33.1 35.2,31.926 35.2,30.5L35.2,25.3C35.2,23.874 36.464,22.7 38,22.7"
+            android:strokeWidth="3"
+            android:strokeColor="#E4CF5E"
+            android:strokeLineCap="round" />
+
+    </group>
+
+
+    <!-- Debug badge -->
+    <group
+        android:name="debug_badge"
+        android:pivotX="42"
+        android:pivotY="36"
+        android:scaleX="1"
+        android:scaleY="1"
+        android:translateX="0"
+        android:translateY="0">
+
+        <!-- White debug/robot icon -->
+        <group
+            android:pivotX="32"
+            android:pivotY="28"
+            android:scaleX=".5"
+            android:scaleY=".5"
+            android:translateX="10"
+            android:translateY="10">
+
+            <path
+                android:fillColor="#4CAF50"
+                android:fillType="nonZero"
+                android:pathData="M10,11
+                C10,10.448 10.448,10 11,10
+                L13,10
+                C13.552,10 14,10.448 14,11
+                C14,11.552 13.552,12 13,12
+                L11,12
+                C10.448,12 10,11.552 10,11
+
+                M10,15
+                C10,14.448 10.448,14 11,14
+                C11.552,14 12,14.448 12,15
+                C12,15.552 11.552,16 11,16
+                L13,16
+                C13.552,16 14,15.552 14,15
+                C14,14.448 13.552,14 13,14
+
+                M9.094,4.75
+                A4,4 0 0 1 8,2
+                L10,2
+                A2,2 0 1 0 14,2
+                L16,2
+                A4,4 0 0 1 14.906,4.75
+                A6.02,6.02 0 0 1 17.659,8
+                L19,8
+                C19.552,8 20,8.448 20,9
+                C20,9.552 19.552,10 19,10
+                L18,10
+                L18,12
+                L19,12
+                C19.552,12 20,12.448 20,13
+                C20,13.552 19.552,14 19,14
+                L18,14
+                L18,16
+                L19,16
+                C19.552,16 20,16.448 20,17
+                C20,17.552 19.552,18 19,18
+                L17.659,18
+                A6.003,6.003 0 0 1 6.341,18
+                L5,18
+                C4.448,18 4,17.552 4,17
+                C4,16.448 4.448,16 5,16
+                L6,16
+                L6,14
+                L5,14
+                C4.448,14 4,13.552 4,13
+                C4,12.448 4.448,12 5,12
+                L6,12
+                L6,10
+                L5,10
+                C4.448,10 4,9.552 4,9
+                C4,8.448 4.448,8 5,8
+                L6.341,8
+                A6.02,6.02 0 0 1 9.094,4.75
+
+                M8,10
+                L8,16
+                A4,4 0 1 0 16,16
+                L16,10
+                A4,4 0 1 0 8,10" />
+
+        </group>
+
+    </group>
+
+</vector>
