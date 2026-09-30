@@ -20,6 +20,15 @@
       }
     },
     {
+      "identity" : "bitbytedata",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tsolomko/BitByteData",
+      "state" : {
+        "revision" : "e1a5443be67daf0833cbb5f4fa3a06a265ca3105",
+        "version" : "2.1.0"
+      }
+    },
+    {
       "identity" : "googlesignin-ios",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleSignIn-iOS",
@@ -74,15 +83,6 @@
       }
     },
     {
-      "identity" : "libarchive-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/everpcpc/libarchive-swift.git",
-      "state" : {
-        "revision" : "69a947c0e5bf4e940a6ac998a8fab3165d5b97f6",
-        "version" : "0.1.11"
-      }
-    },
-    {
       "identity" : "measure",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/measure-sh/measure.git",
@@ -116,6 +116,15 @@
       "state" : {
         "revision" : "470ce0a2d6cbd390eadaee81f6e0eb09ab5a5449",
         "version" : "1.13.4"
+      }
+    },
+    {
+      "identity" : "swcompression",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tsolomko/SWCompression.git",
+      "state" : {
+        "revision" : "03a68e67991815a267e28174a0a01fbe0cff937b",
+        "version" : "4.9.1"
       }
     },
     {

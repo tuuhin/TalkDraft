@@ -18,7 +18,7 @@ kotlin {
 
     swiftPMDependencies {
         packageResolvedSynchronization = noSynchronization()
-
+        iosMinimumDeploymentTarget = "17.0"
         localSwiftPackage(
             directory = layout.projectDirectory.dir("src/archive-native"),
             products = listOf(product("IosNativeTar")),

@@ -7,7 +7,7 @@ let package = Package(
     name: "IosNativeTar",
 
     platforms: [
-        .iOS(.v15)
+        .iOS(.v17)
     ],
 
     products: [
@@ -19,20 +19,16 @@ let package = Package(
 
     dependencies: [
         .package(
-            url: "https://github.com/everpcpc/libarchive-swift.git",
-            from: "0.1.11"
+            url: "https://github.com/tsolomko/SWCompression.git",
+            from: "4.8.6"
         )
     ],
-
     targets: [
         .target(
             name: "IosNativeTar",
             dependencies: [
-                .product(
-                    name: "LibArchive",
-                    package: "libarchive-swift"
-                )
-            ],
-            )
+                .product(name: "SWCompression", package: "SWCompression")
+            ]
+        )
     ]
 )

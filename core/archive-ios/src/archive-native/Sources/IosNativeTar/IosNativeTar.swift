@@ -1,25 +1,113 @@
 import Foundation
-import LibArchive
+import SWCompression
+
+private enum IosNativeTarError: Error {
+    case unsafeEntryPath(String)
+    case unsafeLinkPath(entry: String, link: String)
+    case message(String)
+}
 
 @objc(IosNativeTar)
 public final class IosNativeTar: NSObject {
 
-    /*
-     * The current LibArchive Swift API does not expose an ArchiveWriter.
-     *
-     * Therefore TAR creation cannot currently be implemented without
-     * dropping down to CArchive.
-     */
+    // MARK: - Create
+
     @objc(createTarFromDirectory:destination:error:)
     public static func createTar(
         fromDirectory sourceDirectory: String,
         destination: String,
         error: NSErrorPointer
     ) -> Bool {
-        setError(
-            error, message: "TAR creation is not supported by the current LibArchive Swift API.")
-        return false
+
+        guard !sourceDirectory.isEmpty, !destination.isEmpty else {
+            setError(error, message: "Source and destination cannot be empty.")
+            return false
+        }
+
+        let fm = FileManager.default
+        let rootURL = URL(fileURLWithPath: sourceDirectory).standardized
+        let destinationURL = URL(fileURLWithPath: destination)
+
+        do {
+            guard
+                let enumerator = fm.enumerator(
+                    at: rootURL,
+                    includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
+                    options: []
+                )
+            else {
+                throw IosNativeTarError.message("Unable to read directory: \(sourceDirectory)")
+            }
+
+            var entries: [TarEntry] = []
+            let rootPath = rootURL.path.hasSuffix("/") ? rootURL.path : rootURL.path + "/"
+
+            for case let fileURL as URL in enumerator {
+                let fullPath = fileURL.standardized.path
+                guard fullPath.hasPrefix(rootPath) else {
+                    continue
+                }
+                let relativePath = String(fullPath.dropFirst(rootPath.count))
+                guard !relativePath.isEmpty else {
+                    continue
+                }
+
+                let values = try fileURL.resourceValues(
+                    forKeys: [.isDirectoryKey, .isSymbolicLinkKey]
+                )
+                let attrs = try? fm.attributesOfItem(atPath: fileURL.path)
+
+                if values.isSymbolicLink == true {
+                    var info = TarEntryInfo(name: relativePath, type: .symbolicLink)
+                    info.linkName = try fm.destinationOfSymbolicLink(atPath: fileURL.path)
+                    info.modificationTime = attrs?[.modificationDate] as? Date
+                    entries.append(TarEntry(info: info, data: nil))
+
+                } else if values.isDirectory == true {
+                    var info = TarEntryInfo(name: relativePath, type: .directory)
+                    applyAttributes(attrs, to: &info)
+                    entries.append(TarEntry(info: info, data: nil))
+
+                } else {
+                    var info = TarEntryInfo(name: relativePath, type: .regular)
+                    applyAttributes(attrs, to: &info)
+                    let data = try Data(contentsOf: fileURL)
+                    entries.append(TarEntry(info: info, data: data))
+                }
+            }
+
+            var tarData = TarContainer.create(from: entries)
+
+            // Write gzip if the destination ends with .gz / .tgz
+            let lower = destination.lowercased()
+            if lower.hasSuffix(".gz") || lower.hasSuffix(".tgz") {
+                tarData = try GzipArchive.archive(data: tarData)
+            }
+
+            try fm.createDirectory(
+                at: destinationURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try tarData.write(to: destinationURL, options: .atomic)
+            return true
+
+        } catch let err {
+            setError(error, message: errorMessage(err))
+            return false
+        }
     }
+
+    private static func applyAttributes(
+        _ attrs: [FileAttributeKey: Any]?,
+        to info: inout TarEntryInfo
+    ) {
+        info.modificationTime = attrs?[.modificationDate] as? Date
+        if let posix = attrs?[.posixPermissions] as? NSNumber {
+            info.permissions = Permissions(rawValue: UInt32(posix.intValue & 0o777))
+        }
+    }
+
+    // MARK: - Extract
 
     @objc(extractTar:destination:error:)
     public static func extractTar(
@@ -29,56 +117,69 @@ public final class IosNativeTar: NSObject {
     ) -> Bool {
 
         guard !source.isEmpty, !destination.isEmpty else {
-            setError(
-                error,
-                message: "Source and destination cannot be empty."
-            )
+            setError(error, message: "Source and destination cannot be empty.")
             return false
         }
 
+        let fm = FileManager.default
         let sourceURL = URL(fileURLWithPath: source)
-        let destinationURL = URL(fileURLWithPath: destination)
+        let destinationURL = URL(fileURLWithPath: destination).standardized
 
         do {
-            try FileManager.default.createDirectory(
-                at: destinationURL,
-                withIntermediateDirectories: true
-            )
+            try fm.createDirectory(at: destinationURL, withIntermediateDirectories: true)
 
-            let reader = ArchiveReader()
+            var archiveData = try Data(contentsOf: sourceURL)
 
-            let entries = try reader.entries(at: sourceURL)
+            // gzip magic bytes: 1F 8B
+            if archiveData.count >= 2, archiveData[0] == 0x1F, archiveData[1] == 0x8B {
+                archiveData = try GzipArchive.unarchive(archive: archiveData)
+            }
+
+            let entries = try TarContainer.open(container: archiveData)
 
             for entry in entries {
+                let name = entry.info.name
 
-                guard isSafeArchivePath(entry.path) else {
-                    throw ArchiveError.unsafeEntryPath(entry.path)
+                guard isSafeArchivePath(name) else {
+                    throw IosNativeTarError.unsafeEntryPath(name)
                 }
 
-                let outputURL =
-                    destinationURL
-                        .appendingPathComponent(entry.path)
+                let outputURL = destinationURL.appendingPathComponent(name).standardized
+                guard isInside(outputURL, root: destinationURL) else {
+                    throw IosNativeTarError.unsafeEntryPath(name)
+                }
 
-                switch entry.fileType {
+                switch entry.info.type {
 
                 case .directory:
-                    try FileManager.default.createDirectory(
-                        at: outputURL,
-                        withIntermediateDirectories: true
-                    )
+                    try fm.createDirectory(at: outputURL, withIntermediateDirectories: true)
 
                 case .regular:
-                    try extractFile(
-                        entry: entry,
-                        reader: reader,
-                        archiveURL: sourceURL,
-                        outputURL: outputURL
+                    try fm.createDirectory(
+                        at: outputURL.deletingLastPathComponent(),
+                        withIntermediateDirectories: true
                     )
+                    try (entry.data ?? Data()).write(to: outputURL, options: .atomic)
+                    applyMetadata(entry.info, to: outputURL)
 
                 case .symbolicLink:
-                    try extractSymbolicLink(
-                        entry: entry,
-                        outputURL: outputURL
+                    let target = entry.info.linkName
+                    guard !target.isEmpty else {
+                        continue
+                    }
+
+                    guard isSafeLink(target, entryPath: name, root: destinationURL) else {
+                        throw IosNativeTarError.unsafeLinkPath(entry: name, link: target)
+                    }
+
+                    try fm.createDirectory(
+                        at: outputURL.deletingLastPathComponent(),
+                        withIntermediateDirectories: true
+                    )
+                    try? fm.removeItem(at: outputURL)
+                    try fm.createSymbolicLink(
+                        atPath: outputURL.path,
+                        withDestinationPath: target
                     )
 
                 default:
@@ -88,237 +189,96 @@ public final class IosNativeTar: NSObject {
 
             return true
 
-        } catch let archiveError {
-            setError(
-                error,
-                message: errorMessage(archiveError)
-            )
+        } catch let err {
+            setError(error, message: errorMessage(err))
             return false
         }
-    }
-
-    private static func extractFile(
-        entry: ArchiveEntry,
-        reader: ArchiveReader,
-        archiveURL: URL,
-        outputURL: URL
-    ) throws {
-
-        let parentDirectory = outputURL.deletingLastPathComponent()
-
-        try FileManager.default.createDirectory(
-            at: parentDirectory,
-            withIntermediateDirectories: true
-        )
-
-        let data = try reader.data(
-            forEntryPath: entry.path,
-            in: archiveURL
-        )
-
-        try data.write(
-            to: outputURL,
-            options: .atomic
-        )
-
-        applyMetadata(
-            entry: entry,
-            to: outputURL
-        )
-    }
-
-    private static func extractSymbolicLink(
-        entry: ArchiveEntry,
-        outputURL: URL
-    ) throws {
-
-        guard let target = entry.symlinkTarget else {
-            return
-        }
-
-        guard
-            isSafeLinkPath(
-                target,
-                entryPath: entry.path
-            )
-        else {
-            throw ArchiveError.unsafeLinkPath(
-                entry: entry.path,
-                link: target
-            )
-        }
-
-        let parentDirectory = outputURL.deletingLastPathComponent()
-
-        try FileManager.default.createDirectory(
-            at: parentDirectory,
-            withIntermediateDirectories: true
-        )
-
-        try FileManager.default.createSymbolicLink(
-            atPath: outputURL.path,
-            withDestinationPath: target
-        )
     }
 
     // MARK: - Security
 
-    private static func isSafeArchivePath(
-        _ path: String
-    ) -> Bool {
-
+    private static func isSafeArchivePath(_ path: String) -> Bool {
         guard !path.isEmpty else {
             return false
         }
-
-        // Absolute Unix path.
         if path.hasPrefix("/") {
             return false
         }
 
-        // Windows drive path.
-        let characters = Array(path)
-
-        if characters.count >= 2,
-           characters[1] == ":" {
+        let chars = Array(path)
+        if chars.count >= 2, chars[1] == ":" {
             return false
         }
 
-        // Path traversal.
-        let components = path.split(
-            separator: "/",
-            omittingEmptySubsequences: true
-        )
-
-        if components.contains("..") {
-            return false
-        }
-
-        return true
+        let components = path.split(separator: "/", omittingEmptySubsequences: true)
+        return !components.contains("..")
     }
 
-    private static func isSafeLinkPath(
-        _ target: String,
-        entryPath: String
-    ) -> Bool {
+    private static func isInside(_ url: URL, root: URL) -> Bool {
+        let rootPath = root.path.hasSuffix("/") ? root.path : root.path + "/"
+        let path = url.path
+        return path == root.path || path.hasPrefix(rootPath)
+    }
 
-        // Absolute link.
+    private static func isSafeLink(_ target: String, entryPath: String, root: URL) -> Bool {
         if target.hasPrefix("/") {
             return false
         }
 
-        let entryDirectory = URL(
-            fileURLWithPath: entryPath
-        ).deletingLastPathComponent()
-
         let resolved =
-            entryDirectory
+            root
+                .appendingPathComponent(entryPath)
+                .deletingLastPathComponent()
                 .appendingPathComponent(target)
                 .standardized
 
-        let normalizedRoot = URL(
-            fileURLWithPath: "."
-        ).standardized
-
-        return resolved.path.hasPrefix(
-            normalizedRoot.path
-        )
+        return isInside(resolved, root: root)
     }
 
     // MARK: - Metadata
 
-    private static func applyMetadata(
-        entry: ArchiveEntry,
-        to url: URL
-    ) {
-
+    private static func applyMetadata(_ info: TarEntryInfo, to url: URL) {
         var attributes: [FileAttributeKey: Any] = [:]
 
-        if let modificationDate = entry.modificationDate {
-            attributes[.modificationDate] = modificationDate
+        if let modified = info.modificationTime {
+            attributes[.modificationDate] = modified
+        }
+        if let permissions = info.permissions {
+            attributes[.posixPermissions] = Int(permissions.rawValue & 0o777)
         }
 
         if !attributes.isEmpty {
-            try? FileManager.default.setAttributes(
-                attributes,
-                ofItemAtPath: url.path
-            )
+            try? FileManager.default.setAttributes(attributes, ofItemAtPath: url.path)
         }
     }
 
     // MARK: - Error Handling
 
-    private static func setError(
-        _ error: NSErrorPointer,
-        message: String
-    ) {
-
+    private static func setError(_ error: NSErrorPointer, message: String) {
         error?.pointee = NSError(
             domain: "IosNativeTar",
             code: 1,
-            userInfo: [
-                NSLocalizedDescriptionKey: message
-            ]
+            userInfo: [NSLocalizedDescriptionKey: message]
         )
     }
 
-    private static func errorMessage(
-        _ error: Error
-    ) -> String {
-
-        if let archiveError = error as? ArchiveError {
-            return archiveErrorDescription(
-                archiveError
-            )
+    private static func errorMessage(_ error: Error) -> String {
+        if let e = error as? IosNativeTarError {
+            switch e {
+            case .unsafeEntryPath(let path):
+                return "Unsafe archive path: \(path)"
+            case .unsafeLinkPath(let entry, let link):
+                return "Unsafe symbolic link '\(entry)' -> '\(link)'."
+            case .message(let text):
+                return text
+            }
         }
-
+        if let e = error as? TarError {
+            return "Invalid TAR archive: \(e)"
+        }
+        if let e = error as? GzipError {
+            return "Invalid gzip data: \(e)"
+        }
         return error.localizedDescription
-    }
-
-    private static func archiveErrorDescription(
-        _ error: ArchiveError
-    ) -> String {
-
-        switch error {
-
-        case .cannotCreateReader:
-            return "Unable to create archive reader."
-
-        case .cannotCreateWriter:
-            return "Unable to create archive writer."
-
-        case .cannotCreateDirectory(let path, let message):
-            return "Unable to create directory '\(path)': \(message)"
-
-        case .cannotOpenArchive(let path, let message):
-            return "Unable to open archive '\(path)': \(message)"
-
-        case .entryNotFound(let path):
-            return "Archive entry not found: \(path)"
-
-        case .entryDataTooLarge(let path):
-            return "Archive entry is too large: \(path)"
-
-        case .invalidEntryDataOffset(let path, let offset):
-            return "Invalid data offset \(offset) for entry '\(path)'."
-
-        case .readFailed(let message):
-            return "Archive read failed: \(message)"
-
-        case .writeFailed(let message):
-            return "Archive write failed: \(message)"
-
-        case .cannotCreateUTF8Locale(let candidates):
-            return "Unable to create UTF-8 locale: \(candidates)"
-
-        case .invalidEntryPath:
-            return "Archive contains an invalid entry path."
-
-        case .unsafeEntryPath(let path):
-            return "Unsafe archive path: \(path)"
-
-        case .unsafeLinkPath(let entry, let link):
-            return "Unsafe symbolic link '\(entry)' -> '\(link)'."
-        }
     }
 }
