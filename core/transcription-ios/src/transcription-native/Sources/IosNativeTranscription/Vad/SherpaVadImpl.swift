@@ -21,6 +21,7 @@ public final class SherpaVadImpl: NSObject, VADProtocol {
         }
     }
 
+    @objc(initializeWithConfig:error:)
     public func initialize(config: SherpaVADConfig, error: NSErrorPointer) -> Bool {
 
         lock.lock()
@@ -70,6 +71,7 @@ public final class SherpaVadImpl: NSObject, VADProtocol {
         }
     }
 
+    @objc(acceptWithSamples:)
     public func accept(samples: [Float]) -> Bool {
         lock.lock()
         defer {
@@ -91,7 +93,8 @@ public final class SherpaVadImpl: NSObject, VADProtocol {
         return isDetected
     }
 
-    func popSegment(out: inout [Float], startSample: inout Int32) -> Bool {
+    @objc(popSegment)
+    public func popSegment() -> SherpaVadSegmentResult? {
         lock.lock()
         defer {
             lock.unlock()
@@ -99,35 +102,37 @@ public final class SherpaVadImpl: NSObject, VADProtocol {
 
         guard let vad = vad else {
             debugLog("pop_segment(): VAD INSTANCE IS NOT SET, SET INSTANCE TO POP OUT THE SEGMENTS")
-            return false
+            return nil
         }
 
         if SherpaOnnxVoiceActivityDetectorEmpty(vad) != 0 {
             debugLog("SPEECH QUEUE IS EMPTY")
-            return false
+            return nil
         }
 
         guard let seg = SherpaOnnxVoiceActivityDetectorFront(vad) else {
             debugLog("NO SEGMENTS AT THE FRONT")
-            return false
+            return nil
         }
 
         let sampleCount = Int(seg.pointee.n)
+        let samples: [Float]
         if let samplesPointer = seg.pointee.samples {
             let buffer = UnsafeBufferPointer(start: samplesPointer, count: sampleCount)
-            out = Array(buffer)
+            samples = Array(buffer)
         } else {
-            out = []
+            samples = []
         }
 
-        startSample = seg.pointee.start
+        let startSample = seg.pointee.start
 
-        debugLog("POPPED SEGMENT: START=\(seg.pointee.start), SIZE=\(seg.pointee.n) samples")
+        debugLog("POPPED SEGMENT: START=\(startSample), SIZE=\(sampleCount) samples")
         SherpaOnnxDestroySpeechSegment(seg)
         SherpaOnnxVoiceActivityDetectorPop(vad)
-        return true
+        return SherpaVadSegmentResult(samples: samples, startSample: startSample)
     }
 
+    @objc(flush)
     public func flush() {
         lock.lock()
         defer {
@@ -141,6 +146,7 @@ public final class SherpaVadImpl: NSObject, VADProtocol {
         debugLog("FLUSHED SAMPLES TO BUFFER")
     }
 
+    @objc(reset)
     public func reset() {
         lock.lock()
         defer {
@@ -154,6 +160,7 @@ public final class SherpaVadImpl: NSObject, VADProtocol {
         debugLog("VAD DETECTOR REST")
     }
 
+    @objc(close)
     public func close() {
         lock.lock()
         defer {

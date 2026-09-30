@@ -1,6 +1,6 @@
 package com.sam.talkdraft.transcription.domain.model
 
-internal data class VoiceDetectionResult(
-    val probability: Float,
-    val isSpeech: Boolean,
-)
+import kotlin.jvm.JvmInline
+
+@JvmInline
+internal value class VoiceDetectionResult(val isSpeech: Boolean)

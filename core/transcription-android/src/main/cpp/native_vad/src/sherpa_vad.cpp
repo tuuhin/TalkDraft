@@ -59,23 +59,19 @@ bool sherpa_vad::accept(const float* samples, size_t count) {
         return false;
     }
     SherpaOnnxVoiceActivityDetectorAcceptWaveform(_vad, samples, static_cast<int32_t>(count));
-    bool detected = (SherpaOnnxVoiceActivityDetectorDetected(_vad) != 0);
-
-    LOG_D("SPEECH IS ACTIVE: %s", detected ? "YES" : "NO");
-    return detected;
+    return SherpaOnnxVoiceActivityDetectorDetected(_vad) != 0;
 }
 
-bool sherpa_vad::pop_segment(std::vector<float>& out, int32_t& start_sample) {
+bool sherpa_vad::pop_segment(std::vector<float>& out, int32_t& start_sample, int32_t& end_sample) {
     std::lock_guard<std::mutex> lock(_lock);
     if (_vad == nullptr) {
         LOG_E("pop_segment(): VAD INSTANCE IS NOT SET, SET INSTANCE TO POP OUT THE SEGMENTS");
         return false;
     }
-    if (SherpaOnnxVoiceActivityDetectorEmpty(_vad)) {
-        LOG_D("SPEECH QUEUE IS EMPTY");
-        return false;
-    }
+    // speech queue is empty skip
+    if (SherpaOnnxVoiceActivityDetectorEmpty(_vad)) return false;
 
+    // now read in the segments
     const SherpaOnnxSpeechSegment* seg = SherpaOnnxVoiceActivityDetectorFront(_vad);
     if (!seg) {
         LOG_W("NO SEGMENTS AT THE FRONT");
@@ -83,9 +79,11 @@ bool sherpa_vad::pop_segment(std::vector<float>& out, int32_t& start_sample) {
     }
 
     out.assign(seg->samples, seg->samples + seg->n);
+    // segment start and end
     start_sample = seg->start;
+    end_sample   = seg->start + seg->n;
 
-    LOG_I("POPPED SEGMENT: START=%d, SIZE=%d samples", seg->start, seg->n);
+    LOG_I("POPPED SEGMENT: START=%d, END=%d", seg->start, seg->start + seg->n);
 
     SherpaOnnxDestroySpeechSegment(seg);
     SherpaOnnxVoiceActivityDetectorPop(_vad);

@@ -1,5 +1,5 @@
 {
-  "originHash" : "d81fd92bb18d4216e846a945b0586f7549645c8555216594d737ff4a67d2d340",
+  "originHash" : "7f5212c15916a0bc7d23958eaf10825b34c205f6e3340e7eb7f74641864adae9",
   "pins" : [
     {
       "identity" : "app-check",
@@ -87,8 +87,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/measure-sh/measure.git",
       "state" : {
-        "branch" : "ios-v0.13.2",
-        "revision" : "7e15705ffa563aa376d166d1c4cf5b40964d4fc7"
+        "branch" : "ios-v0.14.1",
+        "revision" : "87eb598688dcc917e2be07290f1a16b8edde7506"
       }
     },
     {

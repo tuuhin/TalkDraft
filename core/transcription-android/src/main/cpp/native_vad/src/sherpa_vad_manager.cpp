@@ -14,7 +14,7 @@ sherpa_vad_manager& sherpa_vad_manager::instance() {
 
 int64_t sherpa_vad_manager::create_vad(const sherpa_vad::Config& config) {
     auto vad = std::make_shared<sherpa_vad>(config);
-    if (!vad) {
+    if (!vad->is_valid()) {
         LOGE("Failed to create VAD from model: %s", config.model_path.c_str());
         return kInvalidHandle;
     }

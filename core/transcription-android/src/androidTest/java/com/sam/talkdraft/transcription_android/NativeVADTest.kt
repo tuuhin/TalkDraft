@@ -12,10 +12,14 @@ import assertk.assertions.isTrue
 import com.sam.talkdraft.testing.annotations.RunWithPlatform
 import com.sam.talkdraft.testing.di.TestPlatformModule
 import com.sam.talkdraft.transcription_android.assets.AssetsToFileConvertor
-import com.sam.talkdraft.transcription_android.models.AndroidVadConfig
+import com.sam.talkdraft.transcription_android.vad.AndroidVadConfig
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
@@ -164,29 +168,58 @@ class NativeVADTest : KoinTest {
     }
 
     @Test
+    fun test_pop_speech_segments_emits_segments() = runTest {
+        vad.initialize(assetManager)
+
+        val tempFolder = tempDirectory.newFolder()
+        val audioFile = fileProvider.convertToFile("test_wavs/0.wav", tempFolder)
+
+        val pcmShorts = audioFile.inputStream().use { stream ->
+            val fileBytes = stream.readBytes()
+            val headerSize = 44
+            val audioBytes = fileBytes.copyOfRange(headerSize, fileBytes.size)
+
+            ShortArray(audioBytes.size / 2) { i ->
+                val low = audioBytes[i * 2].toInt() and 0xFF
+                val high = audioBytes[i * 2 + 1].toInt()
+                ((high shl 8) or low).toShort()
+            }
+        }
+
+        val segments = mutableListOf<FloatArray>()
+        val collectJob = launch(Dispatchers.IO) {
+            vad.segments.collect { segment ->
+                segments.add(segment.samples)
+            }
+        }
+
+        val windowSize = 640
+        var offset = 0
+        while (offset + windowSize <= pcmShorts.size) {
+            val frame = pcmShorts.copyOfRange(offset, offset + windowSize)
+            vad.processFrame(frame)
+            offset += windowSize
+        }
+        vad.flushSpeechSegments()
+
+        delay(100.milliseconds)
+        collectJob.cancel()
+
+        assertThat(segments.isNotEmpty()).isTrue()
+    }
+
+    @Test
     fun test_resetState_clears_pending_buffers_without_error() {
         vad.initialize(assetManager)
 
-        // Push partial frame (< 640 samples)
+        // Push partial frame
         vad.processFrame(ShortArray(300) { 100 })
 
-        // Reset state should clear partial samples
+        // Reset state should clear state without error
         vad.resetState()
 
         val freshFrameResult = vad.processFrame(ShortArray(640) { 0 })
         assertThat(freshFrameResult.isSpeech).isEqualTo(false)
-    }
-
-    @Test
-    fun test_pending_sample_buffer_overflow_throws_exception() {
-        vad.initialize(assetManager)
-
-        // Overflow buffer (> 32,000 samples)
-        val massiveChunk = ShortArray(35_000) { 0 }
-
-        assertFailure {
-            vad.processFrame(massiveChunk)
-        }.isInstanceOf(IllegalStateException::class)
     }
 
     @Test

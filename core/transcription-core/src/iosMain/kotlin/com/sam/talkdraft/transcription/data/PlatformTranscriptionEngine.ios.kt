@@ -42,7 +42,12 @@ internal actual class PlatformWhisperTranscriptionEngine : ITranscriptionEngine 
 
         return TranscriptionState.Success(
             text = state.fullText,
-            segments = state.segment.map { TranscriptionSegmentModel(text = it.text) },
+            segments = state.segment.mapIndexed { index, it ->
+                TranscriptionSegmentModel(
+                    segmentId = index.toLong(),
+                    text = it.text,
+                )
+            },
         )
     }
 

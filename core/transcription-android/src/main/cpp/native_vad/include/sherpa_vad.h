@@ -25,9 +25,9 @@ public:
 
     sherpa_vad(const sherpa_vad&)            = delete;
     sherpa_vad& operator=(const sherpa_vad&) = delete;
-
+    [[nodiscard]] bool is_valid() const { return _vad != nullptr; }
     bool accept(const float* samples, size_t count);
-    bool pop_segment(std::vector<float>& out, int32_t& start_sample);
+    bool pop_segment(std::vector<float>& out, int32_t& start_sample, int32_t& end_sample);
     void flush();
     void reset();
 

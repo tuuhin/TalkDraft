@@ -96,9 +96,11 @@ Java_com_sam_talkdraft_transcription_1android_NativeVoiceActivityDetector_initFr
     nativeConfig.num_threads         = noOfThreads;
     nativeConfig.buffer_seconds      = bufferSeconds;
 
+    auto handle = sherpa_vad_manager::instance().create_vad_from_asset(mgr, cache_dir_path_string, nativeConfig);
+
+    // delete string values
     env->ReleaseStringUTFChars(model_name, model_file_name);
     env->ReleaseStringUTFChars(cacheDir, cache_dir_path_string);
-    auto handle = sherpa_vad_manager::instance().create_vad_from_asset(mgr, cache_dir_path_string, nativeConfig);
 
     // delete local ref config class
     env->DeleteLocalRef(config_class);
@@ -106,7 +108,7 @@ Java_com_sam_talkdraft_transcription_1android_NativeVoiceActivityDetector_initFr
     return reinterpret_cast<jlong>(handle);
 }
 
-extern "C" JNIEXPORT jfloatArray JNICALL
+extern "C" JNIEXPORT jobject JNICALL
 Java_com_sam_talkdraft_transcription_1android_NativeVoiceActivityDetector_popNativeSegmentFromSpeech(JNIEnv* env,
                                                                                                      jobject /*thiz*/,
                                                                                                      jlong handle) {
@@ -115,12 +117,33 @@ Java_com_sam_talkdraft_transcription_1android_NativeVoiceActivityDetector_popNat
 
     std::vector<float> samples;
     int32_t start = 0;
-    if (!vad->pop_segment(samples, start)) return nullptr;
+    int32_t end   = 0;
+    if (!vad->pop_segment(samples, start, end)) return nullptr;
 
     jfloatArray arr = env->NewFloatArray(static_cast<jsize>(samples.size()));
     if (!arr) return nullptr;
     env->SetFloatArrayRegion(arr, 0, static_cast<jsize>(samples.size()), samples.data());
-    return arr;
+
+    jclass vad_segment_klass = env->FindClass("com/sam/talkdraft/transcription_android/vad/JniVadSegment");
+
+    if (!vad_segment_klass) {
+        env->DeleteLocalRef(arr);
+        return nullptr;
+    }
+
+    jmethodID init = env->GetMethodID(vad_segment_klass, "<init>", "(DD[F)V");
+    if (!init) {
+        env->DeleteLocalRef(arr);
+        env->DeleteLocalRef(vad_segment_klass);
+        return nullptr;
+    }
+
+    jobject segment =
+        env->NewObject(vad_segment_klass, init, static_cast<jdouble>(start), static_cast<jdouble>(end), arr);
+
+    env->DeleteLocalRef(arr);
+    env->DeleteLocalRef(vad_segment_klass);
+    return segment;
 }
 
 extern "C" JNIEXPORT void JNICALL
