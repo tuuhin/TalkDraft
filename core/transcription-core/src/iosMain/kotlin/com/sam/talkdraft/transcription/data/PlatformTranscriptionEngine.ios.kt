@@ -8,6 +8,7 @@ import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import com.sam.talkdraft.transcription.ios.IosNativeWhisper
 import com.sam.talkdraft.transcription.ios.exception.WhisperFrameFailedException
 import com.sam.talkdraft.transcription.ios.models.IosWhisperCodeError
+import kotlin.time.Duration
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Named
 
@@ -23,7 +24,7 @@ internal actual class PlatformWhisperTranscriptionEngine : ITranscriptionEngine 
         if (!success) throw IllegalStateException("Failed to initialize NativeWhisper model at ${request.modelPath}")
     }
 
-    actual override fun process(bytes: ShortArray): TranscriptionState {
+    actual override fun processSegment(bytes: ShortArray, timeStamp: ClosedRange<Duration>): TranscriptionState {
         val processSuccess = try {
             instance.processBytes(bytes, bytes.size)
         } catch (e: WhisperFrameFailedException) {

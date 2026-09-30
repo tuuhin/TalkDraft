@@ -1,6 +1,7 @@
 package com.sam.talkdraft.transcription.domain
 
 import com.sam.talkdraft.common.model.ReadOnlyFloatBuffer
+import com.sam.talkdraft.transcription.domain.model.TimedVoiceDetectionSegment
 import com.sam.talkdraft.transcription.domain.model.VoiceDetectionResult
 import kotlinx.coroutines.flow.Flow
 
@@ -23,7 +24,7 @@ internal interface IVoiceDetectionProvider {
      * stale audio buffers. Emitted buffers contain normalized float PCM audio samples corresponding
      * strictly to detected speech windows.
      */
-    val speechSegments: Flow<ReadOnlyFloatBuffer>
+    val speechSegments: Flow<TimedVoiceDetectionSegment>
 
     /**
      * Initializes the underlying VAD engine with the required sample rate and threshold settings.
@@ -46,7 +47,7 @@ internal interface IVoiceDetectionProvider {
      * @return [VoiceDetectionResult] indicating whether speech was detected within the processed frames.
      * @throws IllegalStateException If called before [setup] or if internal sample buffers overflow.
      */
-    fun processAudioBuffer(shorts: ShortArray): VoiceDetectionResult
+    suspend fun processAudioBuffer(shorts: ShortArray): VoiceDetectionResult
 
     /**
      * Resets internal RNN model states and clears any pending un-processed PCM samples in the carry-over buffer.

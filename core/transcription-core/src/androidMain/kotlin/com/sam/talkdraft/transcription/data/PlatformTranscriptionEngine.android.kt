@@ -14,6 +14,7 @@ import com.sam.talkdraft.transcription_android.models.ProcessingState
 import com.sam.talkdraft.transcription_android.models.WhisperErrorCode
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.time.Duration
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -45,7 +46,7 @@ internal actual class PlatformWhisperTranscriptionEngine(
         }
     }
 
-    actual override fun process(bytes: ShortArray): TranscriptionState {
+    actual override fun processSegment(bytes: ShortArray, timeStamp: ClosedRange<Duration>): TranscriptionState {
 
         if (!_isSetupDone.load()) {
             Logger.w(tag = TAG) { "SETUP IS MISSING FIRST SET IT UP" }

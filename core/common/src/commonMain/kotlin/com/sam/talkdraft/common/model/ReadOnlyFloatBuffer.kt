@@ -1,7 +1,5 @@
 package com.sam.talkdraft.common.model
 
-import kotlin.math.sqrt
-
 class ReadOnlyFloatBuffer private constructor(
     private val array: FloatArray,
     val size: Int,
@@ -15,15 +13,13 @@ class ReadOnlyFloatBuffer private constructor(
 
     fun toArray(): FloatArray = array.copyOf(size)
 
-    fun toList(): List<Float> = toArray().toList()
-
-    fun rms(): Float {
-        val squareSum = array.map { sqrt(it) }.sum()
-        return sqrt(squareSum / size)
-    }
-
-    fun range(): ClosedRange<Float> {
-        return array.min()..array.max()
+    fun toShortArray(): ShortArray {
+        val shortArray = ShortArray(size)
+        for (i in array.indices) {
+            val sample = array[i].coerceIn(-1.0f, 1.0f)
+            shortArray[i] = (sample * Short.MAX_VALUE).toInt().toShort()
+        }
+        return shortArray
     }
 
     companion object {

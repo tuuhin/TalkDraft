@@ -8,8 +8,8 @@ data class AndroidVadSegment(
     val samples: FloatArray,
 ) {
 
-    val duration: Duration
-        get() = endSample - startSample
+    val duration: ClosedRange<Duration>
+        get() = endSample..startSample
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

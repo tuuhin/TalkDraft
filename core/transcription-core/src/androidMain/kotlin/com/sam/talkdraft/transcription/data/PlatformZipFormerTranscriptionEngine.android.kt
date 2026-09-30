@@ -12,7 +12,10 @@ import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
 import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import com.sam.talkdraft.transcription_android.NativeZipFormer
 import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -32,13 +35,11 @@ internal actual class PlatformZipFormerTranscriptionEngine(
     private val _isSetupDone = AtomicBoolean(false)
     private val _lock = Mutex()
 
-    // segments builder
-    private val _segments = mutableObjectListOf<String>()
-    private val segments: List<String>
-        get() = _segments.asList()
+    private val oldSegmentId = AtomicLong(1L)
+    private val _activeSegmentBuilder = StringBuilder()
 
-    // full text builder
-    private val _fullText = StringBuilder()
+    private val _completedSegments = mutableObjectListOf<TranscriptionSegmentModel>()
+    private val _finalizedText = StringBuilder()
 
     private val fs = FileSystem.SYSTEM
 
@@ -64,34 +65,60 @@ internal actual class PlatformZipFormerTranscriptionEngine(
         }
     }
 
-    actual override fun process(bytes: ShortArray): TranscriptionState {
+    actual override fun processSegment(bytes: ShortArray, timeStamp: ClosedRange<Duration>): TranscriptionState {
 
         if (!_isSetupDone.load()) {
             Logger.w(tag = TAG) { "SETUP IS MISSING FIRST SET IT UP" }
             return TranscriptionState.Idle
         }
 
-        val zipFormerResult = instance.processFrame(bytes)
-        val segmentId = zipFormerResult?.segmentId ?: -1L
-        val stringSegment = zipFormerResult?.segment ?: ""
+        Logger.d(tag = TAG) { "ENGINE INPUT SIZE :${bytes.size}" }
 
-        val trimmedSegment = stringSegment.trim()
-        if (trimmedSegment.isNotEmpty()) {
-            _segments.add(trimmedSegment)
-            if (_fullText.isNotEmpty()) _fullText.append(" ")
-            _fullText.append(trimmedSegment)
+        val zipFormerResult = instance.processFrame(bytes)
+            ?: run {
+                // build the rest of the script but mark it as no result
+                return TranscriptionState.Success(
+                    text = buildFullTranscript(),
+                    segments = getCurrentSegments(
+                        activeSegmentId = oldSegmentId.load(),
+                        startTime = timeStamp.start,
+                        endTime = timeStamp.endInclusive,
+                    ),
+                )
+            }
+
+        val segmentId = zipFormerResult.segmentId
+        val cumulativeHypothesis = zipFormerResult.segment.trim()
+
+        if (cumulativeHypothesis.isNotEmpty()) {
+            val currentOldId = oldSegmentId.load()
+
+            if (currentOldId != segmentId) {
+                commitActiveSegment(currentOldId)
+                oldSegmentId.store(segmentId)
+            }
+
+            _activeSegmentBuilder.setLength(0)
+            _activeSegmentBuilder.append(cumulativeHypothesis)
         }
 
         return TranscriptionState.Success(
-            text = _fullText.toString(),
-            segments = segments.map { TranscriptionSegmentModel(text = it, segmentId = segmentId) },
+            text = buildFullTranscript(),
+            segments = getCurrentSegments(
+                activeSegmentId = segmentId,
+                startTime = timeStamp.start,
+                endTime = timeStamp.endInclusive,
+            ),
         )
     }
 
     actual override fun reset() {
         if (!_isSetupDone.load()) return
-        // setup is ready to work with
+
         instance.reset()
+        val currentId = oldSegmentId.load()
+        commitActiveSegment(currentId)
+        Logger.d(tag = TAG) { "TRANSCRIPTION ENGINE RESET COMPLETED FOR SEGMENT $currentId" }
     }
 
     actual override fun cleanUp() {
@@ -99,10 +126,55 @@ internal actual class PlatformZipFormerTranscriptionEngine(
             Logger.d(tag = TAG) { "AUDIO TRANSCRIPTION SETUP CLOSED" }
             instance.close()
         }
-        Logger.d(tag = TAG) { "SEGMENTS SETUP CLEANED" }
-        // reset the fields
-        _segments.clear()
-        _fullText.setLength(0)
+
+        _completedSegments.clear()
+        _finalizedText.setLength(0)
+        _activeSegmentBuilder.setLength(0)
+        oldSegmentId.store(1L)
+    }
+
+    private fun commitActiveSegment(segmentId: Long) {
+        if (_activeSegmentBuilder.isEmpty()) return
+
+        val activeText = _activeSegmentBuilder.toString()
+
+        if (_finalizedText.isNotEmpty()) _finalizedText.append(" ")
+        _finalizedText.append(activeText)
+
+        _completedSegments.add(TranscriptionSegmentModel(text = activeText, segmentId = segmentId))
+        _activeSegmentBuilder.setLength(0)
+    }
+
+    private fun buildFullTranscript(): String {
+        return when {
+            _finalizedText.isEmpty() -> _activeSegmentBuilder.toString()
+            _activeSegmentBuilder.isEmpty() -> _finalizedText.toString()
+            else -> "$_finalizedText $_activeSegmentBuilder"
+        }
+    }
+
+    private fun getCurrentSegments(
+        activeSegmentId: Long,
+        startTime: Duration = 0.seconds,
+        endTime: Duration = 0.seconds,
+    ): List<TranscriptionSegmentModel> {
+        val totalSize = _completedSegments.size + if (_activeSegmentBuilder.isNotEmpty()) 1 else 0
+        val resultList = ArrayList<TranscriptionSegmentModel>(totalSize)
+
+        for (i in 0 until _completedSegments.size)
+            resultList.add(_completedSegments[i])
+
+        if (_activeSegmentBuilder.isNotEmpty()) {
+            resultList.add(
+                TranscriptionSegmentModel(
+                    text = _activeSegmentBuilder.toString(),
+                    segmentId = activeSegmentId,
+                    startTimeMs = startTime,
+                    endTime = endTime,
+                ),
+            )
+        }
+        return resultList
     }
 
     private fun checkAndFetchFileMap(path: Path): ZipFormerModelPath {
@@ -133,6 +205,6 @@ internal actual class PlatformZipFormerTranscriptionEngine(
     }
 
     companion object {
-        private const val TAG = "ZIP_FORMER_TRANSCRIPTION_ENGINE"
+        private const val TAG = "ZIPFORMER_ASR_ENGINE"
     }
 }

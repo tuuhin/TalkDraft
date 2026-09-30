@@ -10,5 +10,12 @@ interface ITranscriberResultsProvider {
 
     fun transcribe(audioFrame: Flow<ReadOnlyShortBuffer>): Flow<TranscriptionState>
 
-    fun setConfig(config: TranscriberConfig?, engine: TranscriberEngine = TranscriberEngine.WHISPER)
+    suspend fun setConfig(
+        config: TranscriberConfig,
+        engine: TranscriberEngine = TranscriberEngine.WHISPER,
+    ): Result<Boolean>
+
+    fun clearConfig()
+
+    suspend fun reset()
 }

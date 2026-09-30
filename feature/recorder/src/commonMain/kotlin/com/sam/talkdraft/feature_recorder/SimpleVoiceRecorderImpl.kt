@@ -81,7 +81,7 @@ class SimpleVoiceRecorderImpl(
 
     override fun close() {
         // transcription engine cleanup
-        transcriber.setConfig(null)
+        transcriber.clearConfig()
         // release the recorder
         _recorder.release()
         // cleans up the recorder scope

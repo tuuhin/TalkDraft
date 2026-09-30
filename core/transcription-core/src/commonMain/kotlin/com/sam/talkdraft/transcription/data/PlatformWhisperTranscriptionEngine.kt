@@ -3,6 +3,7 @@ package com.sam.talkdraft.transcription.data
 import com.sam.talkdraft.transcription.domain.ITranscriptionEngine
 import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
 import com.sam.talkdraft.transcription.domain.model.TranscriptionState
+import kotlin.time.Duration
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Named
 
@@ -10,7 +11,8 @@ import org.koin.core.annotation.Named
 @Named(value = "whisper_engine")
 internal expect class PlatformWhisperTranscriptionEngine : ITranscriptionEngine {
     override suspend fun warmUp(request: TranscriberConfig)
-    override fun process(bytes: ShortArray): TranscriptionState
+    override fun processSegment(bytes: ShortArray, timeStamp: ClosedRange<Duration>): TranscriptionState
+
     override fun reset()
     override fun cleanUp()
 }
