@@ -56,9 +56,6 @@ import kotlinx.coroutines.launch
 internal fun OnBoardingScreen(
     state: OnboardingScreenState,
     onEvent: (OnboardingEvents) -> Unit,
-    onNavigateToModelDownload: () -> Unit,
-    onNavigateToRecorder: () -> Unit,
-    onNavigateToHome: () -> Unit,
     modifier: Modifier = Modifier,
     initialScene: OnboardingScene = OnboardingScene.WELCOME_SCREEN,
 ) {
@@ -98,10 +95,7 @@ internal fun OnBoardingScreen(
     Scaffold(
         topBar = {
             OnBoardingScreenTopBar(
-                onSkipFullTour = {
-                    onEvent(OnboardingEvents.OnSkipOnboarding(currentScene))
-                    onNavigateToHome()
-                },
+                onSkipFullTour = { onEvent(OnboardingEvents.OnSkipOnboarding(currentScene)) },
                 onPreviousScreen = {
                     scope.launch {
                         val current = pager.currentPage
@@ -168,12 +162,9 @@ internal fun OnBoardingScreen(
                         recommendModel = state.recommended,
                         platform = state.platform,
                         permissions = state.permissionsState,
-                        onNavigateToModelDownload = onNavigateToModelDownload,
-                        onNavigateToRecorder = onNavigateToRecorder,
-                        onNavigateToHome = {
-                            onEvent(OnboardingEvents.OnOnboardingCompleted)
-                            onNavigateToHome()
-                        },
+                        onNavigateToModelDownload = { onEvent(OnboardingEvents.OnNavigateToModelDownloader) },
+                        onNavigateToRecorder = { onEvent(OnboardingEvents.OnNavigateToRecorder) },
+                        onNavigateToHome = { onEvent(OnboardingEvents.OnOnboardingCompleted) },
                         onUpdateCaptureIdea = { onEvent(OnboardingEvents.OnAddToCaptureItems(it)) },
                         onOpenAppSettings = { onEvent(OnboardingEvents.RequestOpenAppSettings) },
                         onRequestPermissions = { onEvent(OnboardingEvents.RequestPermissions) },
@@ -219,9 +210,6 @@ private fun OnboardingScreenPreview(
             ),
         ),
         onEvent = {},
-        onNavigateToHome = {},
-        onNavigateToRecorder = {},
-        onNavigateToModelDownload = {},
         initialScene = initialState,
     )
 }

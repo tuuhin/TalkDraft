@@ -3,7 +3,6 @@ package com.sam.talkdraft.onboarding
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
-import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.sam.talkdraft.designsystem.components.UIEventsSideEffect
 import com.sam.talkdraft.navigation.NavDestinationBuilder
@@ -14,9 +13,7 @@ import org.koin.core.annotation.Singleton
 @Singleton(binds = [NavDestinationBuilder::class])
 internal class OnboardingNavEntry : NavDestinationBuilder {
 
-    override fun EntryProviderScope<NavKey>.navEntry(
-        backStack: NavBackStack<NavKey>,
-    ) = entry<NavDestinations.OnBoardingScreen> {
+    override fun EntryProviderScope<NavKey>.navEntry() = entry<NavDestinations.OnBoardingScreen> {
 
         val viewmodel = koinViewModel<OnBoardingViewmodel>()
         val screenState by viewmodel.screenSate.collectAsStateWithLifecycle()
@@ -28,15 +25,6 @@ internal class OnboardingNavEntry : NavDestinationBuilder {
             state = screenState,
             initialScene = initialScene,
             onEvent = viewmodel::onEvent,
-            onNavigateToModelDownload = {
-                val recommended = screenState.recommended
-                if (recommended != null) {
-                    val modelId = recommended.id
-                    backStack.add(NavDestinations.RecommendedDownloadModelScreen(modelId))
-                }
-            },
-            onNavigateToRecorder = { backStack.add(NavDestinations.CaptureFirstRecording) },
-            onNavigateToHome = { backStack.add(NavDestinations.HomeScreen) },
         )
     }
 }

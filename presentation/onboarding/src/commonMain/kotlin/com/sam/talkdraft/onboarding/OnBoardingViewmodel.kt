@@ -12,6 +12,8 @@ import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionType
 import com.sam.talkdraft.model_manager.domain.repository.IRecommendedModelProvider
 import com.sam.talkdraft.model_manager.domain.repository.ITranscriptionModelsRepo
+import com.sam.talkdraft.navigation.NavDestinations
+import com.sam.talkdraft.navigation.navigator.AppNavigator
 import com.sam.talkdraft.onboarding.models.CaptureIdeaOption
 import com.sam.talkdraft.onboarding.models.OnboardingEvents
 import com.sam.talkdraft.onboarding.models.OnboardingScene
@@ -46,6 +48,7 @@ internal class OnBoardingViewmodel(
     private val analytics: IAnalyticsProvider,
     private val appTargetProvider: IPlatformTargetProvider,
     private val savedState: SavedStateHandle,
+    private val navigator: AppNavigator,
 ) : ViewModel() {
 
     private val _recommendedModel = MutableStateFlow<TranscriptionModel?>(null)
@@ -82,28 +85,32 @@ internal class OnBoardingViewmodel(
 
     fun onEvent(event: OnboardingEvents) {
         when (event) {
-            is OnboardingEvents.OnSkipOnboarding -> analytics.track(
-                AnalyticsEvent.OnboardingSkipped,
-                buildMap {
-                    put("from_screen", event.screen.name)
-                    put("screen_index", event.screen.index)
-                },
-            )
-
+            is OnboardingEvents.OnSkipOnboarding -> onSkipOnboarding(event.screen)
             is OnboardingEvents.SendAnalyticsEvent -> onIncomingSceneAnalyticsEvent(event.screen, event.extras)
 
-            OnboardingEvents.OnOnboardingCompleted ->
+            OnboardingEvents.OnOnboardingCompleted -> viewModelScope.launch {
+                navigator.updateBackStack(listOf(NavDestinations.HomeScreen))
                 analytics.track(AnalyticsEvent.OnboardingCompleted)
-
-            is OnboardingEvents.OnAddToCaptureItems -> {
-                _captureIdeas.update { old ->
-                    if (event.item in old) old.filter { it != event.item }
-                    else old + event.item
-                }
             }
 
+            is OnboardingEvents.OnAddToCaptureItems -> updateIdeas(event.item)
             OnboardingEvents.RequestOpenAppSettings -> openAppSettings()
             OnboardingEvents.RequestPermissions -> requestPermissions()
+            OnboardingEvents.OnNavigateToModelDownloader -> viewModelScope.launch {
+                val model = _recommendedModel.value ?: return@launch
+                navigator.navigateTo(NavDestinations.RecommendedDownloadModelScreen(model.id))
+            }
+
+            OnboardingEvents.OnNavigateToRecorder -> viewModelScope.launch {
+                navigator.navigateTo(NavDestinations.CaptureFirstRecording)
+            }
+        }
+    }
+
+    private fun updateIdeas(idea: CaptureIdeaOption) {
+        _captureIdeas.update { old ->
+            if (idea in old) old.filter { it != idea }
+            else old + idea
         }
     }
 
@@ -159,6 +166,17 @@ internal class OnBoardingViewmodel(
                 putAll(extras)
             },
         )
+    }
+
+    private fun onSkipOnboarding(screen: OnboardingScene) = viewModelScope.launch {
+        analytics.track(
+            AnalyticsEvent.OnboardingSkipped,
+            buildMap {
+                put("from_screen", screen.name)
+                put("screen_index", screen.index)
+            },
+        )
+        navigator.updateBackStack(listOf(NavDestinations.HomeScreen))
     }
 
     companion object {
