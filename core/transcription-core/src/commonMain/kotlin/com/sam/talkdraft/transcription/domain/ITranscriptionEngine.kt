@@ -1,14 +1,12 @@
 package com.sam.talkdraft.transcription.domain
 
 import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
-import com.sam.talkdraft.transcription.domain.model.TranscriptionState
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
+import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
 
 internal interface ITranscriptionEngine {
 
     suspend fun warmUp(request: TranscriberConfig)
-    fun processSegment(bytes: ShortArray, timeStamp: ClosedRange<Duration> = 0.seconds..0.seconds): TranscriptionState
+    fun processSegment(bytes: ShortArray): TranscriptionResult
     fun reset()
     fun cleanUp()
 }

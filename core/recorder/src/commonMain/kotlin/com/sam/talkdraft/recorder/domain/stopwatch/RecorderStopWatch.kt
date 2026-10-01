@@ -66,7 +66,7 @@ internal class RecorderStopWatch(
     }
 
     fun cancel() {
-        _state.update { RecorderState.CANCELLED }
+        _state.update { RecorderState.IDLE }
         _elapsedTime.update { Duration.ZERO }
     }
 

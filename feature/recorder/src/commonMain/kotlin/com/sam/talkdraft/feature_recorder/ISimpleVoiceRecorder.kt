@@ -2,7 +2,7 @@ package com.sam.talkdraft.feature_recorder
 
 import com.sam.talkdraft.common.model.ReadOnlyFloatBuffer
 import com.sam.talkdraft.recorder.domain.models.RecorderState
-import com.sam.talkdraft.transcription.domain.model.TranscriptionState
+import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
 import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
 
@@ -21,7 +21,7 @@ interface ISimpleVoiceRecorder : AutoCloseable {
     val waveform: Flow<ReadOnlyFloatBuffer?>
 
     /** Current transcription status and output text. */
-    val transcription: Flow<TranscriptionState>
+    val transcriptionResult: Flow<TranscriptionResult>
 
     /** Stream of non-fatal errors during recording or transcription. */
     val errors: Flow<Exception>
@@ -40,6 +40,8 @@ interface ISimpleVoiceRecorder : AutoCloseable {
 
     /** Resumes a paused recording. */
     suspend fun resume(): Result<Unit>
+
+    suspend fun onSave(): Result<Unit>
 
     /** Cancels the recording and deletes any temporary files. */
     suspend fun cancel(): Result<Unit>

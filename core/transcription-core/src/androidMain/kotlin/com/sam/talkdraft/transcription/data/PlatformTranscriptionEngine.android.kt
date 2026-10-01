@@ -7,14 +7,13 @@ import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.transcription.domain.ITranscriptionEngine
 import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
 import com.sam.talkdraft.transcription.domain.model.TranscriptionError
+import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
 import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
-import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import com.sam.talkdraft.transcription_android.NativeWhisper
 import com.sam.talkdraft.transcription_android.models.ProcessingState
 import com.sam.talkdraft.transcription_android.models.WhisperErrorCode
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.time.Duration
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -46,31 +45,30 @@ internal actual class PlatformWhisperTranscriptionEngine(
         }
     }
 
-    actual override fun processSegment(bytes: ShortArray, timeStamp: ClosedRange<Duration>): TranscriptionState {
+    actual override fun processSegment(bytes: ShortArray): TranscriptionResult {
 
         if (!_isSetupDone.load()) {
             Logger.w(tag = TAG) { "SETUP IS MISSING FIRST SET IT UP" }
-            return TranscriptionState.Idle
+            return TranscriptionResult.Idle
         }
 
         return when (val result = instance.processSamples(bytes)) {
             is ProcessingState.Buffering -> {
                 Logger.d(tag = TAG) { "BUFFERING" }
-                TranscriptionState.Preparing
+                TranscriptionResult.Preparing
             }
 
             is ProcessingState.Error -> {
                 Logger.d(tag = TAG) { "FAILED TO PROCESS THE SAMPLES ERROR CODE:${result.errorCode}" }
-                TranscriptionState.Failed(result.errorCode?.toDomainError() ?: TranscriptionError.TranscriptionFailed)
+                TranscriptionResult.Failed(result.errorCode?.toDomainError() ?: TranscriptionError.TranscriptionFailed)
             }
 
             is ProcessingState.Success -> {
                 val state = instance.readState()
-                    ?: return TranscriptionState.Failed(TranscriptionError.TranscriptionFailed)
+                    ?: return TranscriptionResult.Failed(TranscriptionError.TranscriptionFailed)
                 Logger.d(tag = TAG) { "GOT SOME SAMPLE RESULT :$state" }
-                TranscriptionState.Success(
-                    text = state.text,
-                    segments = state.segments.map { TranscriptionSegmentModel(text = it.text, segmentId = 0) },
+                TranscriptionResult.Success(
+                    segment = TranscriptionSegmentModel(segmentId = 0L, state.text),
                 )
             }
         }

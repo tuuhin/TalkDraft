@@ -5,8 +5,7 @@ enum class RecorderState {
     PREPARING,
     RECORDING,
     PAUSED,
-    COMPLETED,
-    CANCELLED;
+    COMPLETED;
 
     val isRecording: Boolean
         get() = this == RECORDING

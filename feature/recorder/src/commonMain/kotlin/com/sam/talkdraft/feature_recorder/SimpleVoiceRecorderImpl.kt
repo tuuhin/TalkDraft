@@ -2,7 +2,6 @@ package com.sam.talkdraft.feature_recorder
 
 import com.sam.talkdraft.common.model.ReadOnlyFloatBuffer
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
-import com.sam.talkdraft.common.platform.IPlatformFilePathProvider
 import com.sam.talkdraft.model_manager.domain.repository.ISelectedTranscriptionModelStore
 import com.sam.talkdraft.recorder.domain.IVoiceRecorderWithByteReader
 import com.sam.talkdraft.recorder.domain.models.RecorderState
@@ -10,7 +9,7 @@ import com.sam.talkdraft.recorder_visualizer.domain.IAudioDynamicVisualizer
 import com.sam.talkdraft.transcription.domain.ITranscriberResultsProvider
 import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
 import com.sam.talkdraft.transcription.domain.model.TranscriberEngine
-import com.sam.talkdraft.transcription.domain.model.TranscriptionState
+import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
 import kotlin.time.Duration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,7 +29,6 @@ class SimpleVoiceRecorderImpl(
     private val dispatchers: IPlatformCoroutineDispatchers,
     private val transcriber: ITranscriberResultsProvider,
     private val selectedModelProvider: ISelectedTranscriptionModelStore,
-    private val filesProvider: IPlatformFilePathProvider,
 ) : ISimpleVoiceRecorder, KoinComponent {
 
     private val _scope = CoroutineScope(dispatchers.default + SupervisorJob())
@@ -45,7 +43,7 @@ class SimpleVoiceRecorderImpl(
         get() = _ampsReader.waveformFlow(30)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val transcription: Flow<TranscriptionState>
+    override val transcriptionResult: Flow<TranscriptionResult>
         get() = transcriber.transcribe(_recorder.stream)
 
     override val errors: Flow<Exception>
@@ -70,6 +68,8 @@ class SimpleVoiceRecorderImpl(
 
     override suspend fun stop(): Result<Unit> {
         val newPath = withContext(dispatchers.io) { _recorder.stop() }
+        // reset the transcriber
+        transcriber.reset()
         // TODO: handle saving the recording
         return Result.success(Unit)
     }
@@ -77,7 +77,16 @@ class SimpleVoiceRecorderImpl(
     override suspend fun start(): Result<Unit> = runCatching { _recorder.start() }
     override suspend fun pause(): Result<Unit> = runCatching { _recorder.pause() }
     override suspend fun resume(): Result<Unit> = runCatching { _recorder.resume() }
-    override suspend fun cancel(): Result<Unit> = runCatching { _recorder.cancel() }
+    override suspend fun cancel(): Result<Unit> = runCatching {
+        // cancel the recorder
+        _recorder.cancel()
+        // reset the transcriptor
+        transcriber.reset()
+    }
+
+    override suspend fun onSave(): Result<Unit> {
+        TODO("Not yet implemented")
+    }
 
     override fun close() {
         // transcription engine cleanup

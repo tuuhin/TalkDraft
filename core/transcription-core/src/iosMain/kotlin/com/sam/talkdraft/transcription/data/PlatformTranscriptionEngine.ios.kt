@@ -3,12 +3,11 @@ package com.sam.talkdraft.transcription.data
 import com.sam.talkdraft.transcription.domain.ITranscriptionEngine
 import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
 import com.sam.talkdraft.transcription.domain.model.TranscriptionError
+import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
 import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
-import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import com.sam.talkdraft.transcription.ios.IosNativeWhisper
 import com.sam.talkdraft.transcription.ios.exception.WhisperFrameFailedException
 import com.sam.talkdraft.transcription.ios.models.IosWhisperCodeError
-import kotlin.time.Duration
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Named
 
@@ -24,7 +23,7 @@ internal actual class PlatformWhisperTranscriptionEngine : ITranscriptionEngine 
         if (!success) throw IllegalStateException("Failed to initialize NativeWhisper model at ${request.modelPath}")
     }
 
-    actual override fun processSegment(bytes: ShortArray, timeStamp: ClosedRange<Duration>): TranscriptionState {
+    actual override fun processSegment(bytes: ShortArray): TranscriptionResult {
         val processSuccess = try {
             instance.processBytes(bytes, bytes.size)
         } catch (e: WhisperFrameFailedException) {
@@ -34,21 +33,15 @@ internal actual class PlatformWhisperTranscriptionEngine : ITranscriptionEngine 
                 IosWhisperCodeError.Unknown -> TranscriptionError.UnsupportedAudioFormat
                 else -> TranscriptionError.TranscriptionFailed
             }
-            return TranscriptionState.Failed(error)
+            return TranscriptionResult.Failed(error)
         }
-        if (!processSuccess) return TranscriptionState.Failed(TranscriptionError.AudioNotFound)
+        if (!processSuccess) return TranscriptionResult.Failed(TranscriptionError.AudioNotFound)
         // 3. Extract updated state from native wrapper
         val state = instance.readState()
-            ?: return TranscriptionState.Failed(TranscriptionError.TranscriptionFailed)
+            ?: return TranscriptionResult.Failed(TranscriptionError.TranscriptionFailed)
 
-        return TranscriptionState.Success(
-            text = state.fullText,
-            segments = state.segment.mapIndexed { index, it ->
-                TranscriptionSegmentModel(
-                    segmentId = index.toLong(),
-                    text = it.text,
-                )
-            },
+        return TranscriptionResult.Success(
+            TranscriptionSegmentModel(segmentId = 0L, state.fullText),
         )
     }
 

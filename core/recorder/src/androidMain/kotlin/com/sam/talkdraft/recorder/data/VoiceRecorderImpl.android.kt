@@ -3,6 +3,7 @@ package com.sam.talkdraft.recorder.data
 import android.content.Context
 import android.media.MediaRecorder
 import android.os.Build
+import android.text.format.Formatter
 import co.touchlab.kermit.Logger
 import com.sam.talkdraft.common.ext.tryWithLock
 import com.sam.talkdraft.common.model.ReadOnlyShortBuffer
@@ -156,7 +157,11 @@ internal actual class VoiceRecorderImpl(
                 }
                 // delete the current recording
                 withContext(NonCancellable) {
-                    deleteRecordingPath(checkSize = false)
+                    try {
+                        deleteRecordingPath(checkSize = false)
+                    } finally {
+                        _recordingPath = null
+                    }
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
@@ -261,8 +266,15 @@ internal actual class VoiceRecorderImpl(
         withContext(dispatchers.io) {
             val path = _recordingPath ?: return@withContext
             val size = fs.metadataOrNull(path)?.size ?: 0L
-            if (checkSize && size == 0L) fs.delete(path)
-            else if (!checkSize) fs.delete(path)
+
+            if (checkSize && size == 0L) {
+                fs.delete(path)
+                Logger.i(tag = TAG) { "DELETING THE EMPTY FILE" }
+            } else if (!checkSize) {
+                val fileSize = Formatter.formatFileSize(context, size)
+                Logger.w(tag = TAG) { "NEED TO REMOVE THE FILE SIZE:$fileSize" }
+                fs.delete(path)
+            }
         }
     }
 

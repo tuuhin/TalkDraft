@@ -54,6 +54,10 @@ class IosNativeZipFormer : AutoCloseable {
         }
     }
 
+    fun reset() {
+
+    }
+
 
     override fun close() {
         Logger.d(tag = TAG) { "CLEARING UP ZIP FORMER INSTANCE" }

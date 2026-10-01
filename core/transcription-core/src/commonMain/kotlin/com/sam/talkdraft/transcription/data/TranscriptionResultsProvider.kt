@@ -8,7 +8,7 @@ import com.sam.talkdraft.transcription.domain.ITranscriptionEngine
 import com.sam.talkdraft.transcription.domain.IVoiceDetectionProvider
 import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
 import com.sam.talkdraft.transcription.domain.model.TranscriberEngine
-import com.sam.talkdraft.transcription.domain.model.TranscriptionState
+import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -39,11 +39,12 @@ internal class TranscriptionResultsProvider(
         TranscriberEngine.ZIP_FORMER -> zipFormerEngine
     }
 
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun transcribe(audioFrame: Flow<ReadOnlyShortBuffer>): Flow<TranscriptionState> =
+    override fun transcribe(audioFrame: Flow<ReadOnlyShortBuffer>): Flow<TranscriptionResult> =
         _engineType.flatMapLatest { engineType ->
             // in case engine is not setup return idle state
-            if (engineType == null) return@flatMapLatest flowOf(TranscriptionState.Idle)
+            if (engineType == null) return@flatMapLatest flowOf(TranscriptionResult.Idle)
             // otherwise resolve the state and perform operation
             val engine = resolveEngine(engineType)
             audioFrame.runTranscriptionEngine(engine)
@@ -104,7 +105,7 @@ internal class TranscriptionResultsProvider(
     }
 
     private fun Flow<ReadOnlyShortBuffer>.runTranscriptionEngine(engine: ITranscriptionEngine) = channelFlow {
-        trySend(TranscriptionState.Preparing)
+        trySend(TranscriptionResult.Preparing)
 
         // one coroutine will load in the buffers
         launch {
@@ -119,12 +120,18 @@ internal class TranscriptionResultsProvider(
         launch {
             vad.speechSegments.collect { frame ->
                 val frameArray = frame.samples.toShortArray()
-                val state = engine.processSegment(frameArray, frame.timedDuration)
+                val state = engine.processSegment(frameArray)
                 send(state)
-                Logger.d(tag = TAG) { "$state" }
-                if (state is TranscriptionState.Success) {
+                if (state is TranscriptionResult.Success) {
+                    val updatedSegment = state.segment.copy(
+                        startTimeMs = frame.timedDuration.start,
+                        endTime = frame.timedDuration.endInclusive,
+                    )
+                    send(state.copy(segment = updatedSegment))
                     // we need to reset the engine to get only the value of the current block
                     engine.reset()
+                } else {
+                    send(state)
                 }
             }
         }
