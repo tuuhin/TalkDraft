@@ -85,12 +85,10 @@ actual class ModelDownloadRegistrar(private val context: Context) : IModelDownlo
         workManager.cancelWorkById(uuid.toJavaUuid())
     }
 
-    private fun mapWorkInfoToStatus(
-        workInfo: WorkInfo,
-        fallbackModelId: Uuid? = null,
-    ): ModelDownloadStatus? {
+    private fun mapWorkInfoToStatus(workInfo: WorkInfo, fallbackModelId: Uuid? = null): ModelDownloadStatus? {
 
-        Logger.d(tag = TAG) { "WORK INFO: ID:${workInfo.id} STOP_REASON:${workInfo.stopReason}" }
+        val stopReason = if (workInfo.stopReason > 0) workInfo.stopReason else null
+        Logger.d(tag = TAG) { "WORK INFO: ID:${workInfo.id} STOP_REASON:${stopReason}" }
 
         val progressData = workInfo.progress
         val outputData = workInfo.outputData
@@ -127,6 +125,7 @@ actual class ModelDownloadRegistrar(private val context: Context) : IModelDownlo
             WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> DownloadState.Initiated
             WorkInfo.State.RUNNING -> when (statusKey) {
                 WorkParams.TRANSCRIPTION_STATUS_STARTING_DOWNLOAD -> DownloadState.Initiated
+                WorkParams.TRANSCRIPTION_STATUS_EXTRACTING -> DownloadState.Extracting
                 WorkParams.TRANSCRIPTION_STATUS_DOWNLOADING -> {
                     val percentage = progressData.getFloat(WorkParams.TRANSCRIPTION_STATUS_DOWNLOAD_PERCENTAGE, 0f)
                     DownloadState.Downloading(percentage)

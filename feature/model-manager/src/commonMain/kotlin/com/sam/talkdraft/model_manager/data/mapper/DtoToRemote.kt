@@ -1,14 +1,14 @@
 package com.sam.talkdraft.model_manager.data.mapper
 
+import com.sam.talkdraft.model_manager.data.remote.dto.RemoteASRTypeDTO
 import com.sam.talkdraft.model_manager.data.remote.dto.RemoteModelArtifactDTO
 import com.sam.talkdraft.model_manager.data.remote.dto.RemoteModelArtifactTypeDto
 import com.sam.talkdraft.model_manager.data.remote.dto.RemoteModelFamilyDto
 import com.sam.talkdraft.model_manager.data.remote.dto.RemoteModelMetadataDTO
 import com.sam.talkdraft.model_manager.data.remote.dto.RemoteModelStatusDto
-import com.sam.talkdraft.model_manager.data.remote.dto.RemoteTranscriptionTypeDto
 import com.sam.talkdraft.model_manager.domain.model.RemoteModelStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriberFamily
-import com.sam.talkdraft.model_manager.domain.model.TranscriptionMode
+import com.sam.talkdraft.model_manager.domain.model.TranscriptionType
 import com.sam.talkdraft.model_manager.domain.remote.RemoteTranscriptionModel
 
 internal fun List<RemoteModelMetadataDTO>.toDomainModels(
@@ -32,8 +32,8 @@ internal fun List<RemoteModelMetadataDTO>.toDomainModels(
             updatedAt = metadata.updatedAt,
             isDefault = metadata.isDefault,
             transcriptionType = when (metadata.transcriptionType) {
-                RemoteTranscriptionTypeDto.BATCHED -> TranscriptionMode.BATCHED
-                RemoteTranscriptionTypeDto.STREAMING -> TranscriptionMode.STREAMING
+                RemoteASRTypeDTO.BATCHED -> TranscriptionType.BATCHED
+                RemoteASRTypeDTO.STREAMING -> TranscriptionType.STREAMING
             },
             remoteStatus = when (metadata.status) {
                 RemoteModelStatusDto.ACTIVE -> RemoteModelStatus.ACTIVE

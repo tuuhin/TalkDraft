@@ -3,6 +3,7 @@ package com.sam.talkdraft.model_manager.domain.repository
 import com.sam.talkdraft.common.utils.Resource
 import com.sam.talkdraft.model_manager.domain.model.ModelInstallStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
+import com.sam.talkdraft.model_manager.domain.model.TranscriptionType
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.flow.Flow
 
@@ -39,13 +40,23 @@ interface ITranscriptionModelsRepo {
     suspend fun readAllModels(): Result<List<TranscriptionModel>>
 
     /**
+     * Fetches all available transcription models based on the given type
+     * @param type Type of transcription we requested , can be streaming or batched
+     * @return A [Result] containing the list of [TranscriptionModel] instances on success,
+     * or the failure exception.
+     * @see [TranscriptionType]
+     */
+    suspend fun readAllModelByType(type: TranscriptionType): Result<List<TranscriptionModel>>
+
+    /**
      * Retrieves the smallest transcription model whose size does not exceed [maxModelSize].
      *
      * @param maxModelSize The maximum allowed size in bytes for the model.
+     * @param type Reads based on the transcription type , if null then type is not taken care of
      * @return A [Result] containing the matching [TranscriptionModel] on success,
      * or an error if no suitable model is found or the operation fails.
      */
-    suspend fun readSmallestModel(maxModelSize: Long): Result<TranscriptionModel>
+    suspend fun readSmallestModel(maxModelSize: Long, type: TranscriptionType? = null): Result<TranscriptionModel>
 
     /**
      * Fetches a specific transcription model by its unique identifier, and observe it as a flow

@@ -2,12 +2,14 @@ package com.sam.talkdraft.model_manager.data.local
 
 import com.sam.talkdraft.database.dao.LocalTranscriptionEntityDao
 import com.sam.talkdraft.database.enums.DBModelDownloadStatus
+import com.sam.talkdraft.database.enums.DBModelTranscriptionType
 import com.sam.talkdraft.model_manager.data.mapper.toDomain
 import com.sam.talkdraft.model_manager.data.mapper.toEntity
 import com.sam.talkdraft.model_manager.domain.exceptions.LocalDataSourceException
 import com.sam.talkdraft.model_manager.domain.local.IModelLocalDataSource
 import com.sam.talkdraft.model_manager.domain.local.LocalTranscriptionModel
 import com.sam.talkdraft.model_manager.domain.model.ModelInstallStatus
+import com.sam.talkdraft.model_manager.domain.model.TranscriptionType
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -40,8 +42,28 @@ internal class ModelLocalDataSource(
         return dao.readAllModels().map { it.toDomain(timeZone) }
     }
 
+    override suspend fun getAllModelsByType(type: TranscriptionType): List<LocalTranscriptionModel> {
+        val dbType = when (type) {
+            TranscriptionType.BATCHED -> DBModelTranscriptionType.BATCHED
+            TranscriptionType.STREAMING -> DBModelTranscriptionType.STREAMING
+        }
+        return dao.readAllModelsByType(dbType).map { it.toDomain(timeZone) }
+    }
+
     override suspend fun readSmallestModel(maxSizeInBytes: Long): LocalTranscriptionModel {
         return dao.readSmallestModel(maxSizeInBytes)?.toDomain(timeZone)
+            ?: throw LocalDataSourceException.InvalidSourceException()
+    }
+
+    override suspend fun readSmallestModelByType(
+        maxSizeInBytes: Long,
+        type: TranscriptionType,
+    ): LocalTranscriptionModel {
+        val dbType = when (type) {
+            TranscriptionType.BATCHED -> DBModelTranscriptionType.BATCHED
+            TranscriptionType.STREAMING -> DBModelTranscriptionType.STREAMING
+        }
+        return dao.readSmallestModelByType(maxSizeInBytes, dbType)?.toDomain(timeZone)
             ?: throw LocalDataSourceException.InvalidSourceException()
     }
 
@@ -73,7 +95,7 @@ internal class ModelLocalDataSource(
         return dao.getModel(modelId)?.toDomain(timeZone)
     }
 
-    override suspend fun upsertModels(models: List<LocalTranscriptionModel>) {
+    override suspend fun insertOrUpdateModel(models: List<LocalTranscriptionModel>) {
         val entities = models.map { it.toEntity(timeZone) }
         dao.upsertTranscriptionModels(entities)
     }

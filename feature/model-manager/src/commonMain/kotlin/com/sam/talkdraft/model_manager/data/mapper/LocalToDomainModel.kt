@@ -2,7 +2,6 @@ package com.sam.talkdraft.model_manager.data.mapper
 
 import com.sam.talkdraft.model_manager.domain.local.LocalTranscriptionModel
 import com.sam.talkdraft.model_manager.domain.model.ModelArtifactType
-import com.sam.talkdraft.model_manager.domain.model.TranscriptionMode
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 
 internal fun LocalTranscriptionModel.toDomainModel(): TranscriptionModel {
@@ -20,6 +19,7 @@ internal fun LocalTranscriptionModel.toDomainModel(): TranscriptionModel {
         remoteStatus = metadata.remoteStatus,
         status = status,
         cachedAt = metadata.cachedAt,
+        type = metadata.transcriptionType,
     )
 
     // Set internal mutable fields
@@ -44,7 +44,7 @@ internal fun TranscriptionModel.toLocal(): LocalTranscriptionModel = LocalTransc
         version = version,
         displayName = displayName,
         description = description,
-        transcriptionType = TranscriptionMode.BATCHED,
+        transcriptionType = type,
         isDefault = false,
         remoteStorageType = artifactType,
         source = source,

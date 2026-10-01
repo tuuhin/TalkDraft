@@ -14,7 +14,7 @@ internal data class RemoteModelMetadataDTO(
     @SerialName("display_name") val displayName: String = "",
     @SerialName("description") val description: String? = null,
     @SerialName("status") val status: RemoteModelStatusDto = RemoteModelStatusDto.ACTIVE,
-    @SerialName("transcription_type") val transcriptionType: RemoteTranscriptionTypeDto,
+    @SerialName("transcription_type") val transcriptionType: RemoteASRTypeDTO,
     @SerialName("is_default") val isDefault: Boolean = false,
     @SerialName("created_at") val createdAt: Instant,
     @SerialName("updated_at") val updatedAt: Instant,

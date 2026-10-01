@@ -12,7 +12,7 @@ import com.sam.talkdraft.model_manager.domain.model.ModelArtifactType
 import com.sam.talkdraft.model_manager.domain.model.ModelInstallStatus
 import com.sam.talkdraft.model_manager.domain.model.RemoteModelStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriberFamily
-import com.sam.talkdraft.model_manager.domain.model.TranscriptionMode
+import com.sam.talkdraft.model_manager.domain.model.TranscriptionType
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
@@ -41,8 +41,8 @@ internal fun LocalTranscriptionModelWithDownloadInfo.toDomain(timeZone: TimeZone
             displayName = metadata.displayName,
             description = metadata.description,
             transcriptionType = when (metadata.transcriptionType) {
-                DBModelTranscriptionType.STREAMING -> TranscriptionMode.STREAMING
-                DBModelTranscriptionType.BATCHED -> TranscriptionMode.BATCHED
+                DBModelTranscriptionType.STREAMING -> TranscriptionType.STREAMING
+                DBModelTranscriptionType.BATCHED -> TranscriptionType.BATCHED
             },
             isDefault = metadata.isDefault,
             remoteStorageType = when (metadata.artifactType) {
@@ -94,8 +94,8 @@ internal fun LocalTranscriptionModel.toEntity(timeZone: TimeZone = TimeZone.curr
         cachedAt = metadata.cachedAt.toInstant(timeZone),
         lastSync = metadata.lastSync.toInstant(timeZone),
         transcriptionType = when (metadata.transcriptionType) {
-            TranscriptionMode.BATCHED -> DBModelTranscriptionType.BATCHED
-            TranscriptionMode.STREAMING -> DBModelTranscriptionType.STREAMING
+            TranscriptionType.BATCHED -> DBModelTranscriptionType.BATCHED
+            TranscriptionType.STREAMING -> DBModelTranscriptionType.STREAMING
         },
         isDefault = metadata.isDefault,
         artifactType = when (metadata.remoteStorageType) {

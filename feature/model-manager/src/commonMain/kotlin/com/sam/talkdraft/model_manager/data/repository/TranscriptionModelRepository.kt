@@ -5,9 +5,9 @@ import com.sam.talkdraft.model_manager.data.mapper.toDomainModel
 import com.sam.talkdraft.model_manager.data.mapper.toLocal
 import com.sam.talkdraft.model_manager.domain.exceptions.ModelWithGivenIdNotFoundException
 import com.sam.talkdraft.model_manager.domain.local.IModelLocalDataSource
-import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
-
+import com.sam.talkdraft.model_manager.domain.model.ModelInstallStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
+import com.sam.talkdraft.model_manager.domain.model.TranscriptionType
 import com.sam.talkdraft.model_manager.domain.remote.IModelRemoteDataSource
 import com.sam.talkdraft.model_manager.domain.repository.ITranscriptionModelsRepo
 import kotlin.uuid.Uuid
@@ -64,10 +64,19 @@ internal class TranscriptionModelRepository(
         }
     }
 
-    override suspend fun readSmallestModel(maxModelSize: Long): Result<TranscriptionModel> {
+    override suspend fun readAllModelByType(type: TranscriptionType): Result<List<TranscriptionModel>> {
         return runCatching {
             if (!localDataSource.hasLocalData()) refreshModels().getOrThrow()
-            localDataSource.readSmallestModel(maxModelSize).toDomainModel()
+            localDataSource.getAllModelsByType(type).map { it.toDomainModel() }
+        }
+    }
+
+    override suspend fun readSmallestModel(maxModelSize: Long, type: TranscriptionType?): Result<TranscriptionModel> {
+        return runCatching {
+            if (!localDataSource.hasLocalData()) refreshModels().getOrThrow()
+            val finalModel = if (type == null) localDataSource.readSmallestModel(maxModelSize)
+            else localDataSource.readSmallestModelByType(maxModelSize, type)
+            finalModel.toDomainModel()
         }
     }
 
@@ -78,7 +87,7 @@ internal class TranscriptionModelRepository(
         }
     }
 
-    override suspend fun updateModelStatus(modelId: Uuid, status: LocalModelStatus): Result<TranscriptionModel> {
+    override suspend fun updateModelStatus(modelId: Uuid, status: ModelInstallStatus): Result<TranscriptionModel> {
         return runCatching {
             localDataSource.updateModelStatus(modelId, status)?.toDomainModel()
                 ?: throw ModelWithGivenIdNotFoundException(modelId)
@@ -96,7 +105,7 @@ internal class TranscriptionModelRepository(
         return runCatching {
             val remoteModels = remoteDataSource.readRemoteSource().getOrThrow()
             val localModels = remoteModels.map { remote -> remote.toLocal(timeZone) }
-            localDataSource.upsertModels(localModels)
+            localDataSource.insertOrUpdateModel(localModels)
         }
     }
 }

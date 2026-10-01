@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal enum class RemoteTranscriptionTypeDto {
+internal enum class RemoteASRTypeDTO {
 
     @SerialName("BATCHED")
     BATCHED,

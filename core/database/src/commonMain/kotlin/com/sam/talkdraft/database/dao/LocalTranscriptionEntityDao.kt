@@ -8,6 +8,7 @@ import androidx.room3.Upsert
 import com.sam.talkdraft.database.entities.DownloadedTranscriptionModelEntity
 import com.sam.talkdraft.database.entities.TranscriptionModelEntity
 import com.sam.talkdraft.database.enums.DBModelDownloadStatus
+import com.sam.talkdraft.database.enums.DBModelTranscriptionType
 import com.sam.talkdraft.database.relations.LocalTranscriptionModelWithDownloadInfo
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -21,12 +22,23 @@ interface LocalTranscriptionEntityDao {
     fun observeModels(): Flow<List<LocalTranscriptionModelWithDownloadInfo>>
 
     @Transaction
+    @Query("SELECT * FROM transciption_model_table WHERE transcription_type=:type ORDER BY display_name ASC")
+    suspend fun readAllModelsByType(type: DBModelTranscriptionType): List<LocalTranscriptionModelWithDownloadInfo>
+
+    @Transaction
     @Query("SELECT * FROM transciption_model_table ORDER BY display_name ASC")
     suspend fun readAllModels(): List<LocalTranscriptionModelWithDownloadInfo>
 
     @Transaction
     @Query("SELECT * FROM transciption_model_table WHERE total_size_in_bytes <= :maxModelSize ORDER BY total_size_in_bytes ASC LIMIT 1")
     suspend fun readSmallestModel(maxModelSize: Long): LocalTranscriptionModelWithDownloadInfo?
+
+    @Transaction
+    @Query("SELECT * FROM transciption_model_table WHERE transcription_type=:type AND total_size_in_bytes <= :maxModelSize ORDER BY total_size_in_bytes ASC LIMIT 1")
+    suspend fun readSmallestModelByType(
+        maxModelSize: Long,
+        type: DBModelTranscriptionType,
+    ): LocalTranscriptionModelWithDownloadInfo?
 
     @Transaction
     @Query("SELECT * FROM transciption_model_table WHERE _id=:id")

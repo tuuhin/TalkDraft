@@ -2,7 +2,7 @@ package com.sam.talkdraft.model_manager.domain.remote
 
 import com.sam.talkdraft.model_manager.domain.model.RemoteModelStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriberFamily
-import com.sam.talkdraft.model_manager.domain.model.TranscriptionMode
+import com.sam.talkdraft.model_manager.domain.model.TranscriptionType
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
@@ -14,7 +14,7 @@ internal data class RemoteTranscriptionModel(
     val description: String?,
     val isDefault: Boolean,
     val modelFamily: TranscriberFamily,
-    val transcriptionType: TranscriptionMode,
+    val transcriptionType: TranscriptionType,
     val remoteStatus: RemoteModelStatus,
     val createdAt: Instant,
     val updatedAt: Instant,

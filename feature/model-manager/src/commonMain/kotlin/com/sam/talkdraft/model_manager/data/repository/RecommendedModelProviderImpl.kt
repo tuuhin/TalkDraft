@@ -1,6 +1,7 @@
 package com.sam.talkdraft.model_manager.data.repository
 
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
+import com.sam.talkdraft.model_manager.domain.model.TranscriptionType
 import com.sam.talkdraft.model_manager.domain.repository.IRecommendedModelProvider
 import com.sam.talkdraft.model_manager.domain.repository.ITranscriptionModelsRepo
 import com.sam.talkdraft.platform_capability.IPlatformCapabilitiesProvider
@@ -13,16 +14,23 @@ internal class RecommendedModelProviderImpl(
     private val repository: ITranscriptionModelsRepo,
 ) : IRecommendedModelProvider {
 
-    override suspend fun recommendedModel(): Result<TranscriptionModel> {
+    override suspend fun recommendedModel(type: TranscriptionType): Result<TranscriptionModel> {
         return runCatching {
 
+            // read in the capabilities
             val capabilities = provider.getCapabilities().getOrThrow()
-            val recommendedModel = repository.readAllModels().getOrThrow()
+            // read all the recommended model
+            val recommendedModel = repository.readAllModelByType(type).getOrThrow()
+                .sortedBy { it.sizeInBytes }
                 .firstOrNull { canRunLargeModel(it, capabilities) }
 
-            val fallback = repository.readSmallestModel(readEmptySpace())
+            // if recommended is  good then allow
+            if (recommendedModel != null) return@runCatching recommendedModel
+
+            // otherwise fallback to model based on storage
+            val availableStorage = readEmptySpace()
+            return@runCatching repository.readSmallestModel(maxModelSize = availableStorage, type = type)
                 .getOrThrow()
-            recommendedModel ?: fallback
         }
     }
 
@@ -37,6 +45,7 @@ internal class RecommendedModelProviderImpl(
     }
 
     companion object {
-        private const val MEDIUM_MIN_MEMORY_BYTES = 4L * 1024 * 1024 * 1024
+        // 3GB RAM requirements for now
+        private const val MEDIUM_MIN_MEMORY_BYTES = 3L * 1024 * 1024 * 1024
     }
 }

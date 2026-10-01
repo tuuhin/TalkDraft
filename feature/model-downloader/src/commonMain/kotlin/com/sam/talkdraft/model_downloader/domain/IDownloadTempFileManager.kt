@@ -1,14 +1,14 @@
 package com.sam.talkdraft.model_downloader.domain
 
+import io.ktor.utils.io.ByteReadChannel
 import okio.Path
-import okio.Source
 
 internal interface IDownloadTempFileManager {
 
     /**
      * Streams incoming network data into a temporary cache location.
      */
-    suspend fun saveToCache(source: Source, fileName: String? = null): Result<Path>
+    suspend fun saveToCache(channel: ByteReadChannel, fileName: String? = null): Result<Path>
 
     /**
      * Cleans up temporary or corrupted download files.
