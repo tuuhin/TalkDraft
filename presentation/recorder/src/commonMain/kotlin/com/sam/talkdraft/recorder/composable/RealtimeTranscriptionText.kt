@@ -36,25 +36,24 @@ import com.sam.talkdraft.designs.CommonResources
 import com.sam.talkdraft.designs.ic_error_simple
 import com.sam.talkdraft.designs.ic_listener
 import com.sam.talkdraft.designsystem.theme.montserrat
+import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
 import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
-import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
 internal fun RealtimeTranscriptionText(
-    state: TranscriptionState,
+    state: TranscriptionResult,
     modifier: Modifier = Modifier,
 ) {
     val uiState by remember(state) {
         derivedStateOf {
             when (state) {
-                is TranscriptionState.Failed -> UIRealtimeTranscriptionMode.Error
-                TranscriptionState.Idle -> UIRealtimeTranscriptionMode.Idle
-                TranscriptionState.Preparing -> UIRealtimeTranscriptionMode.Preparing
-                TranscriptionState.Ready -> UIRealtimeTranscriptionMode.Ready
-                is TranscriptionState.Success -> {
-                    val id = state.segments.lastOrNull()?.segmentId
-                        ?: return@derivedStateOf UIRealtimeTranscriptionMode.Ready
+                is TranscriptionResult.Failed -> UIRealtimeTranscriptionMode.Error
+                TranscriptionResult.Idle -> UIRealtimeTranscriptionMode.Idle
+                TranscriptionResult.Preparing -> UIRealtimeTranscriptionMode.Preparing
+                TranscriptionResult.Ready -> UIRealtimeTranscriptionMode.Ready
+                is TranscriptionResult.Success -> {
+                    val id = state.segment.segmentId
                     UIRealtimeTranscriptionMode.Success(segmentId = id)
                 }
             }
@@ -82,15 +81,15 @@ internal fun RealtimeTranscriptionText(
                 is UIRealtimeTranscriptionMode.Preparing -> PreparingEngineContainer()
                 is UIRealtimeTranscriptionMode.Ready -> EngineReadyIndicator()
                 is UIRealtimeTranscriptionMode.Success -> {
-                    val transcription = state as? TranscriptionState.Success
+                    val transcription = state as? TranscriptionResult.Success
                     GrowingTranscriptionText(
-                        segmentModel = transcription?.segments?.lastOrNull(),
+                        segmentModel = transcription?.segment,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
 
                 is UIRealtimeTranscriptionMode.Error -> {
-                    val failed = state as? TranscriptionState.Failed
+                    val failed = state as? TranscriptionResult.Failed
                     val failedMessage = failed?.message ?: failed?.error?.uiMessage ?: "Unable to process"
                     TranscriptionEngineFailed(error = failedMessage)
                 }

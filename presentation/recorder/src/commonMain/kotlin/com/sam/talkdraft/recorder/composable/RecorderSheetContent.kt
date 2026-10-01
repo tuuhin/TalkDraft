@@ -32,8 +32,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sam.talkdraft.recorder.domain.models.RecorderState
-import com.sam.talkdraft.recorder.model.RecorderScreenState
 import com.sam.talkdraft.recorder.model.RecorderSetupFailedReason
+import com.sam.talkdraft.recorder.model.RecorderSheetState
 import org.jetbrains.compose.resources.painterResource
 import talkdraft.presentation.recorder.generated.resources.Res
 import talkdraft.presentation.recorder.generated.resources.ic_no_record_audio_permission
@@ -42,19 +42,20 @@ import talkdraft.presentation.recorder.generated.resources.ic_transcription_comp
 
 @Composable
 internal fun RecorderSheetContent(
-    state: RecorderScreenState = RecorderScreenState(),
+    state: RecorderSheetState = RecorderSheetState(),
     modifier: Modifier = Modifier,
     recordingUI: @Composable () -> Unit,
+    completedUI: @Composable () -> Unit,
 ) {
 
     val semiState by remember(state) {
         derivedStateOf {
-            if (!state.isLoaded) return@derivedStateOf SheetContentState.GetStarted
+            if (!state.isRecorderReady) return@derivedStateOf SheetContentState.GetStarted
             when (state.failedReason) {
                 is RecorderSetupFailedReason.FailedTranscriptionModelSetup -> SheetContentState.FailedModel(state.failedReason.errorMessage)
                 RecorderSetupFailedReason.MissingPermission -> SheetContentState.MissingPermission
                 RecorderSetupFailedReason.None -> when (state.recorderState) {
-                    RecorderState.IDLE, RecorderState.PREPARING, RecorderState.CANCELLED -> SheetContentState.GetStarted
+                    RecorderState.IDLE, RecorderState.PREPARING -> SheetContentState.GetStarted
                     RecorderState.RECORDING, RecorderState.PAUSED -> SheetContentState.OngoingRecording
                     RecorderState.COMPLETED -> SheetContentState.CaptureCompleted()
                 }
@@ -88,15 +89,6 @@ internal fun RecorderSheetContent(
                     text = "Say it out loud and see your thoughts turn into text",
                 )
 
-                is SheetContentState.CaptureCompleted ->
-                    OneImageTwoTextLayout(
-                        painter = painterResource(Res.drawable.ic_transcription_completed),
-                        title = "Your thought is captured",
-                        text = contentState.transcript ?: "Your words are saved and ready to revisit",
-                        isFailed = contentState.transcript != null,
-                    )
-
-                SheetContentState.OngoingRecording -> recordingUI()
                 is SheetContentState.FailedModel -> OneImageTwoTextLayout(
                     painter = painterResource(Res.drawable.ic_transcription_completed),
                     title = "Missing access to mic",
@@ -108,6 +100,9 @@ internal fun RecorderSheetContent(
                     title = "Missing access to mic",
                     text = "Cannot access the device microphone please make sure you got permissions",
                 )
+
+                is SheetContentState.CaptureCompleted -> completedUI()
+                SheetContentState.OngoingRecording -> recordingUI()
             }
         }
     }

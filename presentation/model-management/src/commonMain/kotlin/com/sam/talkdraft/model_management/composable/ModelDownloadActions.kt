@@ -30,9 +30,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.sam.talkdraft.designs.CommonResources
+import com.sam.talkdraft.designs.ic_cancel
 import org.jetbrains.compose.resources.painterResource
 import talkdraft.presentation.model_management.generated.resources.Res
-import talkdraft.presentation.model_management.generated.resources.ic_cancel
 import talkdraft.presentation.model_management.generated.resources.ic_download
 import talkdraft.presentation.model_management.generated.resources.ic_filled_checked
 import talkdraft.presentation.model_management.generated.resources.ic_offline
@@ -172,7 +173,7 @@ internal fun ModelDownloadActions(
                         modifier = Modifier.heightIn(ButtonDefaults.MediumContainerHeight).fillMaxWidth(),
                     ) {
                         Icon(
-                            painter = painterResource(Res.drawable.ic_cancel),
+                            painter = painterResource(CommonResources.drawable.ic_cancel),
                             contentDescription = "Cancel download",
                             modifier = Modifier.size(ButtonDefaults.iconSizeFor(ButtonDefaults.MediumContainerHeight)),
                         )

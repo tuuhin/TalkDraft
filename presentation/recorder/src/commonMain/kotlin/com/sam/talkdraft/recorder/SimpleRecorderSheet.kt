@@ -12,19 +12,16 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.sam.talkdraft.common.model.ReadOnlyFloatBuffer
-import com.sam.talkdraft.designsystem.annotations.DarkThemedPreview
 import com.sam.talkdraft.designsystem.annotations.LightThemedPreview
 import com.sam.talkdraft.designsystem.components.SheetTitleBar
 import com.sam.talkdraft.designsystem.utils.Dimensions
+import com.sam.talkdraft.recorder.composable.CapturedTranscriptionContent
 import com.sam.talkdraft.recorder.composable.RealtimeTranscriptionText
 import com.sam.talkdraft.recorder.composable.RecorderDynamicVisualizer
 import com.sam.talkdraft.recorder.composable.RecorderSheetActions
@@ -32,9 +29,10 @@ import com.sam.talkdraft.recorder.composable.RecorderSheetContent
 import com.sam.talkdraft.recorder.composable.RecorderTimerText
 import com.sam.talkdraft.recorder.domain.models.RecorderState
 import com.sam.talkdraft.recorder.events.RecordingScreenEvent
-import com.sam.talkdraft.recorder.model.RecorderScreenState
+import com.sam.talkdraft.recorder.model.RecorderSheetState
+import com.sam.talkdraft.recorder.model.RecorderUIState
+import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
 import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
-import com.sam.talkdraft.transcription.domain.model.TranscriptionState
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -43,16 +41,11 @@ import kotlin.time.Duration.Companion.seconds
 internal fun SimpleRecorderSheet(
     recordingDuration: () -> Duration,
     audioWaveForm: () -> ReadOnlyFloatBuffer,
-    screenState: RecorderScreenState = RecorderScreenState(),
+    screenState: RecorderSheetState = RecorderSheetState(),
     onAction: (RecordingScreenEvent) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-
-    val isRecording by remember(screenState) {
-        derivedStateOf { screenState.recorderState == RecorderState.RECORDING }
-    }
-
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -65,63 +58,88 @@ internal fun SimpleRecorderSheet(
         Spacer(modifier = Modifier.height(20.dp))
         RecorderSheetContent(
             state = screenState,
-            modifier = Modifier.fillMaxWidth()
-                .heightIn(min = Dimensions.MODAL_SHEET_MIN_HEIGHT),
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                RecorderTimerText(
-                    duration = recordingDuration,
+            modifier = Modifier.heightIn(min = Dimensions.MODAL_SHEET_MIN_HEIGHT),
+            recordingUI = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    RecorderTimerText(
+                        duration = recordingDuration,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    RecorderDynamicVisualizer(
+                        audioWaveForm = audioWaveForm,
+                        modifier = Modifier.widthIn(max = 380.dp)
+                            .fillMaxWidth(.8f)
+                            .height(100.dp),
+                    )
+                    // transcription text
+                    RealtimeTranscriptionText(
+                        state = screenState.transcriptionResult,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            completedUI = {
+                CapturedTranscriptionContent(
+                    transcriptionText = screenState.finalizedTranscriptionText,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                RecorderDynamicVisualizer(
-                    audioWaveForm = audioWaveForm,
-                    modifier = Modifier.widthIn(max = 380.dp)
-                        .fillMaxWidth(.8f)
-                        .height(120.dp),
-                )
-                // transcription text
-                RealtimeTranscriptionText(
-                    state = screenState.transcriptions,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
+            },
+        )
+        // actions will be updated later
         RecorderSheetActions(
-            isRecording = isRecording,
+            isRecording = screenState.recorderState == RecorderState.RECORDING,
+            isRecordingCompleted = screenState.recorderState == RecorderState.COMPLETED,
+            isSavingRecording = screenState.isSavingRecording && screenState.finalizedTranscriptionText != null,
+            onCancelRecording = { onAction(RecordingScreenEvent.OnCancelRecording) },
+            onSave = { onAction(RecordingScreenEvent.OnSaveTranscription) },
+            onResetRecording = { onAction(RecordingScreenEvent.OnResetRecording) },
             onRecording = { onAction(RecordingScreenEvent.StartRecording) },
             onStopRecording = { onAction(RecordingScreenEvent.StopRecording) },
-            modifier = Modifier.fillMaxWidth(.75f),
+            modifier = Modifier.fillMaxWidth(.85f),
         )
     }
 }
 
 
-private class SimpleRecorderPreviewScreenState : PreviewParameterProvider<RecorderScreenState> {
-    override val values: Sequence<RecorderScreenState>
+private class SimpleRecorderPreviewScreenState : PreviewParameterProvider<RecorderSheetState> {
+    override val values: Sequence<RecorderSheetState>
         get() = sequenceOf(
-            RecorderScreenState(
-                recorderState = RecorderState.RECORDING,
-                transcriptions = TranscriptionState.Success(
-                    "Hello how are you doing",
-                    listOf(TranscriptionSegmentModel(segmentId = 1, "Hello how are you doing")),
+            RecorderSheetState(
+                state = RecorderUIState(
+                    recorderState = RecorderState.RECORDING,
+                    transcriptions = TranscriptionResult.Success(
+                        TranscriptionSegmentModel(segmentId = 1, "Hello how are you doing"),
+                    ),
                 ),
             ),
-            RecorderScreenState(
-                recorderState = RecorderState.IDLE,
-                transcriptions = TranscriptionState.Success(
-                    "Hello how are you doing",
-                    listOf(TranscriptionSegmentModel(segmentId = 1, "Hello how are you doing")),
+            RecorderSheetState(
+                state = RecorderUIState(
+                    recorderState = RecorderState.IDLE,
+                    transcriptions = TranscriptionResult.Success(
+                        TranscriptionSegmentModel(segmentId = 1, "Hello how are you doing"),
+                    ),
                 ),
             ),
-            RecorderScreenState(
-                recorderState = RecorderState.COMPLETED,
-                transcriptions = TranscriptionState.Success(
-                    "Hello how are you doing",
-                    listOf(TranscriptionSegmentModel(segmentId = 1, "Hello how are you doing")),
+            RecorderSheetState(
+                finalizedTranscriptionText = "Hello how are you doing these days".repeat(3),
+                state = RecorderUIState(
+                    recorderState = RecorderState.COMPLETED,
+                    transcriptions = TranscriptionResult.Success(
+                        TranscriptionSegmentModel(segmentId = 1, "Hello how are you doing"),
+                    ),
+                ),
+            ),
+            RecorderSheetState(
+                finalizedTranscriptionText = null,
+                state = RecorderUIState(
+                    recorderState = RecorderState.COMPLETED,
+                    transcriptions = TranscriptionResult.Success(
+                        TranscriptionSegmentModel(segmentId = 1, "Hello how are you doing"),
+                    ),
                 ),
             ),
         )
@@ -129,11 +147,11 @@ private class SimpleRecorderPreviewScreenState : PreviewParameterProvider<Record
 
 @OptIn(ExperimentalMaterial3Api::class)
 @LightThemedPreview
-@DarkThemedPreview
+//@DarkThemedPreview
 @Composable
 private fun SimpleRecorderSheetPreview(
     @PreviewParameter(SimpleRecorderPreviewScreenState::class)
-    state: RecorderScreenState,
+    state: RecorderSheetState,
 ) = Surface(
     shape = BottomSheetDefaults.ExpandedShape,
     color = BottomSheetDefaults.ContainerColor,
