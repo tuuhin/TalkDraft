@@ -34,9 +34,9 @@ internal fun RecommendModelCard(
 
     val modelSize = remember(formatter) { formatter.formatToString(model.sizeInBytes) }
     val supportedLocales = remember(model) {
-        val containAsterisks = model.languages.contains("*")
+        val containAsterisks = model.supportedLanguages.contains("*")
         if (containAsterisks) listOf("English")
-        else model.languages.filter { it != "*" }
+        else model.supportedLanguages.filter { it != "*" }
     }
 
 
@@ -86,7 +86,7 @@ internal fun RecommendModelCard(
 private fun InfoBadge(
     text: String,
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.secondary,
+    color: Color = MaterialTheme.colorScheme.secondaryContainer,
     shape: Shape = MaterialTheme.shapes.extraLarge,
 ) {
     Surface(

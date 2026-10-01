@@ -2,6 +2,7 @@ package com.sam.talkdraft.navigation
 
 import androidx.compose.runtime.Stable
 import androidx.navigation3.runtime.NavKey
+import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
 
 @Stable
@@ -15,7 +16,7 @@ sealed interface NavDestinations : NavKey {
     data object HomeScreen : NavDestinations
 
     @Serializable
-    data object RecommendedDownloadModelScreen : NavDestinations
+    data class RecommendedDownloadModelScreen(val modelId: Uuid) : NavDestinations
 
     @Serializable
     data object CaptureFirstRecording : NavDestinations

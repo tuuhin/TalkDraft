@@ -103,14 +103,14 @@ internal fun ModelDownloadStatusContainer(
             DownloadArtWorkState.NotInstalledOrNotStarted -> Image(
                 painter = painterResource(CommonResources.drawable.ic_model_absent),
                 contentDescription = "Model absent",
-                modifier = Modifier.size(120.dp),
+                modifier = Modifier.size(160.dp),
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.tertiary),
             )
 
             DownloadArtWorkState.ModelInstalledAndReady -> Image(
                 painter = painterResource(CommonResources.drawable.ic_model_present),
                 contentDescription = "Model Present",
-                modifier = Modifier.size(120.dp),
+                modifier = Modifier.size(160.dp),
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
             )
 
@@ -135,7 +135,7 @@ internal fun ModelDownloadStatusContainer(
                 Image(
                     painter = painterResource(CommonResources.drawable.ic_model_absent),
                     contentDescription = "Model absent",
-                    modifier = Modifier.size(120.dp),
+                    modifier = Modifier.size(160.dp),
                     colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.error),
                 )
                 Text(
@@ -146,7 +146,7 @@ internal fun ModelDownloadStatusContainer(
             }
 
             DownloadArtWorkState.Extracting -> Box(
-                modifier = Modifier.size(200.dp),
+                modifier = Modifier.size(180.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularWavyProgressIndicator(
@@ -161,7 +161,7 @@ internal fun ModelDownloadStatusContainer(
             }
 
             DownloadArtWorkState.InstallDownloadProgressive -> Box(
-                modifier = Modifier.size(200.dp),
+                modifier = Modifier.size(180.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularWavyProgressIndicator(

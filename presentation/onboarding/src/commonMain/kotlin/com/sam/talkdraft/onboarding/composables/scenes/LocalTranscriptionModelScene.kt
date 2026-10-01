@@ -18,7 +18,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.sam.talkdraft.model_manager.domain.model.LocalModelStatus
+import com.sam.talkdraft.model_manager.domain.model.ModelInstallStatus
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 import com.sam.talkdraft.onboarding.composables.OnboardingContextAction
 
@@ -39,7 +39,7 @@ internal fun LocalTranscriptionModelScene(
 
     val isModelInstalled by remember(recommendModel) {
         derivedStateOf {
-            recommendModel?.modelStatus == LocalModelStatus.INSTALLED
+            recommendModel?.status == ModelInstallStatus.INSTALLED
                 && recommendModel.modelPath != null
         }
     }
@@ -65,7 +65,7 @@ internal fun LocalTranscriptionModelScene(
         Spacer(modifier = Modifier.height(8.dp))
         OnboardingContextAction(
             title = if (isModelInstalled) "Model Already Present" else "Get Models Now",
-            enabled = recommendedModelExists && !isModelInstalled,
+            enabled = recommendedModelExists,
             onClick = onNavigateToModelDownload,
             containerColor = MaterialTheme.colorScheme.primaryContainer,
         )

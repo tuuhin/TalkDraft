@@ -33,6 +33,8 @@ kotlin {
             // koin
             implementation(libs.bundles.koin.common)
             implementation(libs.bundles.koin.compose)
+            // kotlin
+            implementation(libs.bundles.kotlinx.common)
             // local
             implementation(project(":core:common"))
             implementation(project(":core:background-jobs"))

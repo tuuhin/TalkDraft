@@ -12,6 +12,7 @@ import com.sam.talkdraft.navigation.NavDestinations
 import com.sam.talkdraft.navigation.scenes.BottomSheetSceneStrategy
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.Singleton
+import org.koin.core.parameter.parametersOf
 
 @Singleton(binds = [NavDestinationBuilder::class])
 internal class RecommendedModelNavEntry : NavDestinationBuilder {
@@ -20,9 +21,9 @@ internal class RecommendedModelNavEntry : NavDestinationBuilder {
     override fun EntryProviderScope<NavKey>.navEntry(backStack: NavBackStack<NavKey>) =
         entry<NavDestinations.RecommendedDownloadModelScreen>(
             metadata = BottomSheetSceneStrategy.bottomSheet(isSkipPartiallyExpanded = true),
-        ) {
+        ) { entry ->
 
-            val viewmodel = koinViewModel<RecommendedModelViewmodel>()
+            val viewmodel = koinViewModel<RecommendedModelViewmodel>(parameters = { parametersOf(entry.modelId) })
             val screenState by viewmodel.screenState.collectAsStateWithLifecycle()
 
             UIEventsSideEffect(eventsFlow = viewmodel::uiEvents)
