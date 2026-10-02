@@ -13,14 +13,16 @@ set(WHISPER_OPENMP OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
         whisper
         GIT_REPOSITORY https://github.com/ggml-org/whisper.cpp.git
-        GIT_TAG v1.9.3
+        GIT_TAG v1.9.4
 )
 FetchContent_MakeAvailable(whisper)
 
 add_library(
         native_whisper
         SHARED
-        src/transcription_jni.cpp
+        src/whisper_engine.cpp
+        src/whisper_engine_manager.cpp
+        src/whisper_transcription_jni.cpp
 )
 
 target_include_directories(

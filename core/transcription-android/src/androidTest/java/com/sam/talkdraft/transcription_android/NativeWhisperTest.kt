@@ -5,6 +5,8 @@ import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
+import assertk.assertions.isGreaterThan
+import assertk.assertions.isGreaterThanOrEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
@@ -17,6 +19,7 @@ import com.sam.talkdraft.transcription_android.models.ProcessingState
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -79,7 +82,9 @@ class NativeWhisperTest : KoinTest {
 
         whisper.initialize(modelPath = modelPath)
 
-        assertFailure { whisper.initialize(modelPath = modelPath) }.isInstanceOf(IllegalStateException::class)
+        assertFailure { whisper.initialize(modelPath = modelPath) }.isInstanceOf(
+            IllegalStateException::class,
+        )
             .hasMessage("A instance of whisper is already running")
     }
 
@@ -174,6 +179,74 @@ class NativeWhisperTest : KoinTest {
                 assertThat(init2).isTrue()
             }
         }
+    }
+
+    @Test
+    fun test_multiple_instances_can_process_independently() = runTest {
+        val modelPath = prepareWhisperModelFile()
+
+        NativeWhisper().use { whisper1 ->
+            NativeWhisper().use { whisper2 ->
+
+                assertThat(
+                    whisper1.initialize(modelPath, "en", false),
+                ).isTrue()
+
+                assertThat(
+                    whisper2.initialize(modelPath, "en", false),
+                ).isTrue()
+
+                val audio = ShortArray(16_000)
+
+                assertThat(whisper1.processSamples(audio))
+                    .isEqualTo(ProcessingState.Success)
+
+                assertThat(whisper2.processSamples(audio))
+                    .isEqualTo(ProcessingState.Success)
+            }
+        }
+    }
+
+    @Test
+    fun test_whisper_returns_valid_segment_timing() = runTest {
+        val modelPath = prepareWhisperModelFile()
+
+        whisper.initialize(modelPath = modelPath, language = "auto", useGpu = false)
+
+        val tempFolder = tempDirectory.newFolder()
+        val audioFile = fileProvider.convertToFile("test_wavs/0.wav", tempFolder)
+
+        val pcmShorts = audioFile.inputStream().use { stream ->
+            val fileBytes = stream.readBytes()
+            val headerSize = 44
+            val audioBytes = fileBytes.copyOfRange(headerSize, fileBytes.size)
+
+            ShortArray(audioBytes.size / 2) { i ->
+                val low = audioBytes[i * 2].toInt() and 0xFF
+                val high = audioBytes[i * 2 + 1].toInt()
+                ((high shl 8) or low).toShort()
+            }
+        }
+
+        val chunkSize = 16_000
+        var offset = 0
+        var lastState: ProcessingState = ProcessingState.Buffering
+
+        while (offset < pcmShorts.size) {
+            val end = minOf(offset + chunkSize, pcmShorts.size)
+            val frame = pcmShorts.copyOfRange(offset, end)
+
+            lastState = whisper.processSamples(frame)
+            offset += chunkSize
+        }
+
+        assertThat(lastState).isEqualTo(ProcessingState.Success)
+        val segment = whisper.readState()
+
+        assertThat(segment).isNotNull()
+        assertThat(segment?.text).isNotNull().isNotEmpty()
+        assertThat(segment?.startTime).isNotNull().isGreaterThanOrEqualTo(0.seconds)
+        assertThat(segment?.endTime).isNotNull().isGreaterThan(segment?.startTime ?: 0.seconds)
     }
 
     private suspend fun prepareWhisperModelFile(): String = coroutineScope {

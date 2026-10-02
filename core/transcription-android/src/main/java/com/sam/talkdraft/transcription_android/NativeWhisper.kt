@@ -1,14 +1,17 @@
 package com.sam.talkdraft.transcription_android
 
 import android.util.Log
+import com.sam.talkdraft.transcription_android.models.AndroidWhisperSegment
+import com.sam.talkdraft.transcription_android.models.JniWhisperSegment
 import com.sam.talkdraft.transcription_android.models.ProcessingState
 import com.sam.talkdraft.transcription_android.models.WhisperErrorCode
-import com.sam.talkdraft.transcription_android.models.WhisperState
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 
 @OptIn(ExperimentalAtomicApi::class)
@@ -70,9 +73,14 @@ class NativeWhisper : AutoCloseable {
     }
 
 
-    fun readState(): WhisperState? = synchronized(lock) {
+    fun readState(): AndroidWhisperSegment? = synchronized(lock) synchronize@{
         if (!_isInitialized.load()) return null
-        return readStateNative(_nativeHandle.load())
+        val jniSegment = readStateNative(_nativeHandle.load()) ?: return@synchronize null
+        AndroidWhisperSegment(
+            startTime = jniSegment.startTimeMs.toDuration(DurationUnit.MILLISECONDS),
+            endTime = jniSegment.endTimeMs.toDuration(DurationUnit.MILLISECONDS),
+            text = jniSegment.text,
+        )
     }
 
     fun readError(): WhisperErrorCode? = synchronized(lock) {
@@ -93,7 +101,7 @@ class NativeWhisper : AutoCloseable {
 
     private external fun initializeNative(modelPath: String, language: String, useGpu: Boolean): Long
     private external fun processNativeDirectBuffer(handle: Long, buffer: ByteBuffer, length: Int): Boolean
-    private external fun readStateNative(handle: Long): WhisperState?
+    private external fun readStateNative(handle: Long): JniWhisperSegment?
     private external fun readErrorNative(handle: Long): Int
     private external fun destroyNative(handle: Long)
 

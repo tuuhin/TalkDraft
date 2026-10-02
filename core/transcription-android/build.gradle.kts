@@ -11,6 +11,7 @@ android {
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
         testInstrumentationRunner = "com.sam.talkdraft.testing.InstrumentTestRunner"
+        consumerProguardFiles("consumer-rules.keep")
 
         externalNativeBuild {
             cmake {

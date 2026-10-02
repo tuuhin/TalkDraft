@@ -6,28 +6,49 @@
     native <methods>;
 }
 
-# Preserve Native Engine Wrappers (VAD & Whisper)
+# Preserve Native Engine Wrappers (VAD, Whisper, & ZipFormer)
 -keep class com.sam.talkdraft.transcription_android.NativeVoiceActivityDetector { *; }
 -keep class com.sam.talkdraft.transcription_android.NativeWhisper { *; }
+-keep class com.sam.talkdraft.transcription_android.NativeZipFormer { *; }
 -keep class com.sam.talkdraft.transcription_android.** { native <methods>; }
 
-# Preserve Data Models instantiated reflectively via C++ JNI (e.g. env->FindClass / NewObject)
--keep class com.sam.talkdraft.transcription_android.models.WhisperState { *; }
--keep class com.sam.talkdraft.transcription_android.models.WhisperSegment { *; }
+# ==============================================================================
+# 2. Preserve Data Models & Configs Instantiated/Accessed via C++ JNI
+# ==============================================================================
+# Whisper Models & State
+-keep class com.sam.talkdraft.transcription_android.models.AndroidWhisperSegment { *; }
+-keep class com.sam.talkdraft.transcription_android.models.JniWhisperSegment {
+    <init>(java.lang.String, long, long);
+    <fields>;
+}
 -keep class com.sam.talkdraft.transcription_android.models.WhisperErrorCode { *; }
+-keep class com.sam.talkdraft.transcription_android.models.ProcessingState { *; }
+
+# ZipFormer Models
+-keep class com.sam.talkdraft.transcription_android.models.ZipFormerSegment {
+    <init>(long, java.lang.String);
+    <fields>;
+}
+
+# VAD Configs & Models (Fields accessed via env->GetFieldID in vad_onnx_jni.cpp)
+-keep class com.sam.talkdraft.transcription_android.vad.AndroidVadConfig {
+    <fields>;
+    <init>();
+}
+-keep class com.sam.talkdraft.transcription_android.vad.JniVadSegment {
+    <init>(double, double, float[]);
+    <fields>;
+}
+-keep class com.sam.talkdraft.transcription_android.vad.AndroidVadSegment { *; }
+-keep class com.sam.talkdraft.transcription_android.vad.AndroidVADResult { *; }
 
 # ==============================================================================
-# 2. Keep ONNX Runtime Native Dependencies
+# 3. Keep ONNX Runtime Native Dependencies
 # ==============================================================================
-# Preserve ONNX Runtime Java binding classes and suppress missing optional warnings
 -keep class ai.onnxruntime.** { *; }
 -dontwarn ai.onnxruntime.**
 
 # ==============================================================================
-# 3. Preserve Native Library Loading & Debugging Metadata
+# 4. Preserve Metadata, Attributes & Debugging Information
 # ==============================================================================
-# Retain method parameters, exceptions, and line numbers for demangled stack traces
--keepattributes *Annotation*, Signature, InnerClasses, EnclosingMethod, Exceptions, LineNumberTable, SourceFile
-
-# Prevent R8/Proguard from obfuscating JNI entry point attributes
--keepattributes RuntimeVisible*Annotations*
+-keepattributes *Annotation*, Signature, InnerClasses, EnclosingMethod, Exceptions, LineNumberTable, SourceFile, RuntimeVisible*Annotations*

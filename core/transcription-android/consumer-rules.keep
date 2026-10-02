@@ -1,0 +1,54 @@
+# ==============================================================================
+# 1. Keep Native Methods & JNI Bridge Classes
+# ==============================================================================
+# Retain all native method signatures across the entire application
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+# Preserve Native Engine Wrappers (VAD, Whisper, & ZipFormer)
+-keep class com.sam.talkdraft.transcription_android.NativeVoiceActivityDetector { *; }
+-keep class com.sam.talkdraft.transcription_android.NativeWhisper { *; }
+-keep class com.sam.talkdraft.transcription_android.NativeZipFormer { *; }
+-keep class com.sam.talkdraft.transcription_android.** { native <methods>; }
+
+# ==============================================================================
+# 2. Preserve Data Models & Configs Instantiated/Accessed via C++ JNI
+# ==============================================================================
+# Whisper Models & State
+-keep class com.sam.talkdraft.transcription_android.models.AndroidWhisperSegment { *; }
+-keep class com.sam.talkdraft.transcription_android.models.JniWhisperSegment {
+    <init>(java.lang.String, long, long);
+    <fields>;
+}
+-keep class com.sam.talkdraft.transcription_android.models.WhisperErrorCode { *; }
+-keep class com.sam.talkdraft.transcription_android.models.ProcessingState { *; }
+
+# ZipFormer Models
+-keep class com.sam.talkdraft.transcription_android.models.ZipFormerSegment {
+    <init>(long, java.lang.String);
+    <fields>;
+}
+
+# VAD Configs & Models (Fields accessed via env->GetFieldID in vad_onnx_jni.cpp)
+-keep class com.sam.talkdraft.transcription_android.vad.AndroidVadConfig {
+    <fields>;
+    <init>();
+}
+-keep class com.sam.talkdraft.transcription_android.vad.JniVadSegment {
+    <init>(double, double, float[]);
+    <fields>;
+}
+-keep class com.sam.talkdraft.transcription_android.vad.AndroidVadSegment { *; }
+-keep class com.sam.talkdraft.transcription_android.vad.AndroidVADResult { *; }
+
+# ==============================================================================
+# 3. Keep ONNX Runtime Native Dependencies
+# ==============================================================================
+-keep class ai.onnxruntime.** { *; }
+-dontwarn ai.onnxruntime.**
+
+# ==============================================================================
+# 4. Preserve Metadata, Attributes & Debugging Information
+# ==============================================================================
+-keepattributes Signature, InnerClasses, EnclosingMethod, Exceptions
