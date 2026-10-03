@@ -9,6 +9,10 @@ TabWidth: 4
 UseTab: Never
 ColumnLimit: 120 # 80 is a bit tight for modern screens; 100 is a sweet spot
 
+# Parameter & Bracket Formatting
+AlignAfterOpenBracket: true
+BinPackParameters: BinPack         # Prevents clang-format from putting multiple parameters on a single line
+
 # Alignment & Spacing
 PointerAlignment: Left
 AccessModifierOffset: -4 # Standard practice: aligns 'public:' with 'class'
@@ -17,7 +21,7 @@ AlignTrailingComments: true
 
 # Braces & Flow
 BreakBeforeBraces: Attach
-AllowShortIfStatementsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: Always
 AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: All
 

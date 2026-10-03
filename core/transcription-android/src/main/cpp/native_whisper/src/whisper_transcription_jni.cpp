@@ -125,7 +125,7 @@ JNIEXPORT jint JNICALL Java_com_sam_talkdraft_transcription_1android_NativeWhisp
                                                                                                    jlong handle) {
     auto engine = whisper_engine_manager::instance().read_engine_from_handle(handle);
     if (!engine) return -1;
-    return engine->lastError();
+    return static_cast<jint>(engine->lastError());
 }
 
 JNIEXPORT void JNICALL Java_com_sam_talkdraft_transcription_1android_NativeWhisper_destroyNative(JNIEnv* env,

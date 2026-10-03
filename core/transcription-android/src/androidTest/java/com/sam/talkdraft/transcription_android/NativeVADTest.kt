@@ -12,6 +12,8 @@ import assertk.assertions.isTrue
 import com.sam.talkdraft.testing.annotations.RunWithPlatform
 import com.sam.talkdraft.testing.di.TestPlatformModule
 import com.sam.talkdraft.transcription_android.assets.AssetsToFileConvertor
+import com.sam.talkdraft.transcription_android.utils.sampleReader
+import com.sam.talkdraft.transcription_android.utils.wavFileToShortArray
 import com.sam.talkdraft.transcription_android.vad.AndroidVadConfig
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -141,28 +143,16 @@ class NativeVADTest : KoinTest {
         val tempFolder = tempDirectory.newFolder()
         val audioFile = fileProvider.convertToFile("test_wavs/0.wav", tempFolder)
 
-        val pcmShorts = audioFile.inputStream().use { stream ->
-            val fileBytes = stream.readBytes()
-            val headerSize = 44
-            val audioBytes = fileBytes.copyOfRange(headerSize, fileBytes.size)
-
-            ShortArray(audioBytes.size / 2) { i ->
-                val low = audioBytes[i * 2].toInt() and 0xFF
-                val high = audioBytes[i * 2 + 1].toInt()
-                ((high shl 8) or low).toShort()
-            }
-        }
-
-        val windowSize = 640
+        val pcmShorts = audioFile.wavFileToShortArray()
         var containsSpeech = false
-        var offset = 0
-
-        while (offset + windowSize <= pcmShorts.size) {
-            val frame = pcmShorts.copyOfRange(offset, offset + windowSize)
-            val result = vad.processFrame(frame)
-            println(result)
+        sampleReader(
+            initialState = false,
+            chunkSize = 640,
+            fullContentArray = pcmShorts,
+            totalSize = pcmShorts.size,
+        ) {
+            val result = vad.processFrame(it)
             if (result.isSpeech) containsSpeech = true
-            offset += windowSize
         }
         assertThat(containsSpeech).isTrue()
     }
@@ -174,17 +164,7 @@ class NativeVADTest : KoinTest {
         val tempFolder = tempDirectory.newFolder()
         val audioFile = fileProvider.convertToFile("test_wavs/0.wav", tempFolder)
 
-        val pcmShorts = audioFile.inputStream().use { stream ->
-            val fileBytes = stream.readBytes()
-            val headerSize = 44
-            val audioBytes = fileBytes.copyOfRange(headerSize, fileBytes.size)
-
-            ShortArray(audioBytes.size / 2) { i ->
-                val low = audioBytes[i * 2].toInt() and 0xFF
-                val high = audioBytes[i * 2 + 1].toInt()
-                ((high shl 8) or low).toShort()
-            }
-        }
+        val pcmShorts = audioFile.wavFileToShortArray()
 
         val segments = mutableListOf<FloatArray>()
         val collectJob = launch(Dispatchers.IO) {
@@ -192,14 +172,14 @@ class NativeVADTest : KoinTest {
                 segments.add(segment.samples)
             }
         }
+        sampleReader(
+            initialState = 0,
+            fullContentArray = pcmShorts,
+            chunkSize = 640,
+            totalSize = pcmShorts.size,
+            processSample = vad::processFrame,
+        )
 
-        val windowSize = 640
-        var offset = 0
-        while (offset + windowSize <= pcmShorts.size) {
-            val frame = pcmShorts.copyOfRange(offset, offset + windowSize)
-            vad.processFrame(frame)
-            offset += windowSize
-        }
         vad.flushSpeechSegments()
 
         delay(100.milliseconds)

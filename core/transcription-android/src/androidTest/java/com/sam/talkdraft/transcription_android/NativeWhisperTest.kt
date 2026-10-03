@@ -16,6 +16,8 @@ import com.sam.talkdraft.testing.annotations.RunWithPlatform
 import com.sam.talkdraft.testing.di.TestPlatformModule
 import com.sam.talkdraft.transcription_android.assets.AssetsToFileConvertor
 import com.sam.talkdraft.transcription_android.models.ProcessingState
+import com.sam.talkdraft.transcription_android.utils.sampleReader
+import com.sam.talkdraft.transcription_android.utils.wavFileToShortArray
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -125,33 +127,15 @@ class NativeWhisperTest : KoinTest {
         whisper.initialize(modelPath = modelPath, language = "auto", useGpu = false)
 
         val tempFolder = tempDirectory.newFolder()
-        val audioFile = fileProvider.convertToFile("test_wavs/0.wav", tempFolder)
+        val audioFile = fileProvider.convertToFile("test_wavs/IS1009a_combined.wav", tempFolder)
 
-        // Read WAV audio payload (skipping the 44-byte header) into ShortArray PCM
-        val pcmShorts = audioFile.inputStream().use { stream ->
-            val fileBytes = stream.readBytes()
-            val headerSize = 44
-            val audioBytes = fileBytes.copyOfRange(headerSize, fileBytes.size)
-
-            ShortArray(audioBytes.size / 2) { i ->
-                val low = audioBytes[i * 2].toInt() and 0xFF
-                val high = audioBytes[i * 2 + 1].toInt()
-                ((high shl 8) or low).toShort()
-            }
-        }
-
-        // Send 16,000 sample (1 second) frames sequentially to trigger inference
-        val chunkSize = 16_000
-        var offset = 0
-        var lastState: ProcessingState = ProcessingState.Buffering
-
-        while (offset < pcmShorts.size) {
-            val end = minOf(offset + chunkSize, pcmShorts.size)
-            val frame = pcmShorts.copyOfRange(offset, end)
-
-            lastState = whisper.processSamples(frame)
-            offset += chunkSize
-        }
+        val pcmShorts = audioFile.wavFileToShortArray()
+        val lastState = sampleReader(
+            initialState = ProcessingState.Buffering,
+            fullContentArray = pcmShorts,
+            totalSize = pcmShorts.size,
+            processSample = whisper::processSamples,
+        )
 
         assertThat(lastState).isEqualTo(ProcessingState.Success)
 
@@ -216,29 +200,13 @@ class NativeWhisperTest : KoinTest {
         val tempFolder = tempDirectory.newFolder()
         val audioFile = fileProvider.convertToFile("test_wavs/0.wav", tempFolder)
 
-        val pcmShorts = audioFile.inputStream().use { stream ->
-            val fileBytes = stream.readBytes()
-            val headerSize = 44
-            val audioBytes = fileBytes.copyOfRange(headerSize, fileBytes.size)
-
-            ShortArray(audioBytes.size / 2) { i ->
-                val low = audioBytes[i * 2].toInt() and 0xFF
-                val high = audioBytes[i * 2 + 1].toInt()
-                ((high shl 8) or low).toShort()
-            }
-        }
-
-        val chunkSize = 16_000
-        var offset = 0
-        var lastState: ProcessingState = ProcessingState.Buffering
-
-        while (offset < pcmShorts.size) {
-            val end = minOf(offset + chunkSize, pcmShorts.size)
-            val frame = pcmShorts.copyOfRange(offset, end)
-
-            lastState = whisper.processSamples(frame)
-            offset += chunkSize
-        }
+        val pcmShorts = audioFile.wavFileToShortArray()
+        val lastState = sampleReader(
+            initialState = ProcessingState.Buffering,
+            fullContentArray = pcmShorts,
+            totalSize = pcmShorts.size,
+            processSample = whisper::processSamples,
+        )
 
         assertThat(lastState).isEqualTo(ProcessingState.Success)
         val segment = whisper.readState()
@@ -256,4 +224,5 @@ class NativeWhisperTest : KoinTest {
         }
         op.await()
     }
+
 }

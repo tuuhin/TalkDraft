@@ -12,6 +12,8 @@ import assertk.assertions.isTrue
 import com.sam.talkdraft.testing.annotations.RunWithPlatform
 import com.sam.talkdraft.testing.di.TestPlatformModule
 import com.sam.talkdraft.transcription_android.assets.AssetsToFileConvertor
+import com.sam.talkdraft.transcription_android.models.ZipFormerSegment
+import com.sam.talkdraft.transcription_android.utils.wavFileToShortArray
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -214,30 +216,16 @@ class NativeZipFormerTest : KoinTest {
         val tempFolder = tempDirectory.newFolder()
         val audioFile = fileProvider.convertToFile("test_wavs/1.wav", tempFolder)
 
-        val pcmShorts = audioFile.inputStream().use { stream ->
-            val fileBytes = stream.readBytes()
-            val headerSize = 44
-            val audioBytes = fileBytes.copyOfRange(headerSize, fileBytes.size)
-
-            ShortArray(audioBytes.size / 2) { i ->
-                val low = audioBytes[i * 2].toInt() and 0xFF
-                val high = audioBytes[i * 2 + 1].toInt()
-                ((high shl 8) or low).toShort()
-            }
-        }
+        val pcmShorts = audioFile.wavFileToShortArray()
 
         val chunkSize = 16_000
         var offset = 0
-        var finalTranscript: String? = null
+        var finalTranscript: ZipFormerSegment? = null
 
         while (offset < pcmShorts.size) {
             val end = minOf(offset + chunkSize, pcmShorts.size)
             val frame = pcmShorts.copyOfRange(offset, end)
-
-            val result = zipFormer.processFrame(frame)
-            if (result != null) {
-                finalTranscript = result.segment
-            }
+            finalTranscript = zipFormer.processFrame(frame)
             offset += chunkSize
         }
         assertThat(finalTranscript).isNotNull()
