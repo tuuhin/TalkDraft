@@ -47,6 +47,7 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
             destroyNative(handle)
             throw IllegalStateException("VoiceActivityDetector was initialized on another thread.")
         }
+        _sampleRate.compareAndSet(0, config.sampleRate)
         _nativeHandle.store(handle)
         return true
     }
@@ -77,8 +78,6 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
         check(handle != 0L) { "Voice detector native handle is invalid." }
 
         val sampleCount = audioFrame.size
-        // if the sample rate is 0 or undefined set it to sample count
-        _sampleRate.compareAndSet(0, sampleCount)
 
         floatBuffer.clear()
         for (i in audioFrame.indices)
@@ -89,17 +88,18 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
         floatBuffer.limit(sampleCount * Float.SIZE_BYTES)
 
         val isSpeech = processNativeDirectBuffer(handle, _audioByteBuffer, sampleCount)
-        drainNativeSegments(handle, sampleCount)
+        drainNativeSegments(handle)
 
         return AndroidVADResult(isSpeech = isSpeech)
     }
 
-    private fun drainNativeSegments(handle: Long, sampleRate: Int) {
+    private fun drainNativeSegments(handle: Long) {
         while (true) {
             // try to extract out the segment if any available
             val segment = popNativeSegmentFromSpeech(handle) ?: break
 
             if (segment.samples.isNotEmpty()) {
+                val sampleRate = _sampleRate.load()
                 val startDuration = (segment.startSample / sampleRate).toDuration(DurationUnit.SECONDS)
                 val endDuration = (segment.endSample / sampleRate).toDuration(DurationUnit.SECONDS)
                 val vadSegment = AndroidVadSegment(
@@ -131,14 +131,13 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
         val handle = _nativeHandle.load()
         check(handle != 0L) { "Voice detector native handle is invalid." }
         flushNative(handle)
-        drainNativeSegments(handle, _sampleRate.load())
+        drainNativeSegments(handle)
     }
 
     override fun close() {
         if (!_isInitialized.compareAndSet(expectedValue = true, newValue = false)) return
         val handle = _nativeHandle.fetchAndUpdate { 0L }
         if (handle != 0L) destroyNative(handle)
-        _segmentChannel.close()
         _sampleRate.store(0)
     }
 

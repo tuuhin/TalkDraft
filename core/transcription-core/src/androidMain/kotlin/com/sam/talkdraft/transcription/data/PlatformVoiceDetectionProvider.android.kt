@@ -11,10 +11,11 @@ import com.sam.talkdraft.transcription_android.NativeVoiceActivityDetector
 import com.sam.talkdraft.transcription_android.vad.AndroidVadConfig
 import com.sam.talkdraft.transcription_android.vad.AndroidVadSegment
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.withContext
@@ -34,7 +35,9 @@ internal actual class PlatformVoiceDetectionProvider(
     @OptIn(ExperimentalCoroutinesApi::class)
     actual override val speechSegments: Flow<TimedVoiceDetectionSegment>
         get() = _isInstanceReady.flatMapLatest { isReady ->
-            if (!isReady) emptyFlow()
+            // keep the flow running but without any values
+            if (!isReady) flow { awaitCancellation() }
+            // segments out
             else instance.segments.map { segment: AndroidVadSegment ->
                 val sample = ReadOnlyFloatBuffer.wrap(segment.samples, segment.samples.size)
                 TimedVoiceDetectionSegment(samples = sample, timedDuration = segment.duration)
@@ -53,7 +56,7 @@ internal actual class PlatformVoiceDetectionProvider(
                     minSpeechInSeconds = 0.05f,
                 ),
             )
-            Logger.d(tag = TAG) { "VAD SETUP COMPLETED SUCCESSFULLY" }
+            Logger.d(tag = TAG) { "VAD SETUP COMPLETED SUCCESSFULLY?: $success" }
             _isInstanceReady.updateAndGet { success }
         }
     }

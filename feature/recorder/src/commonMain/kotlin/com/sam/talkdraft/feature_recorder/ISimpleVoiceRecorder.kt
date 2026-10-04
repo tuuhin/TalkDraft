@@ -35,11 +35,6 @@ interface ISimpleVoiceRecorder : AutoCloseable {
     /** Stops recording and saves the audio file. */
     suspend fun stop(): Result<Unit>
 
-    /** Temporarily pauses the active recording. */
-    suspend fun pause(): Result<Unit>
-
-    /** Resumes a paused recording. */
-    suspend fun resume(): Result<Unit>
 
     suspend fun onSave(): Result<Unit>
 

@@ -39,14 +39,16 @@ JNIEXPORT jobject JNICALL Java_com_sam_talkdraft_transcription_1android_NativeZi
     transcription_result result = instance->ProcessPCM(samples, length);
     if (result.is_empty()) return nullptr;
 
-    jclass klass = env->FindClass("com/sam/talkdraft/transcription_android/models/ZipFormerSegment");
+    jclass klass = env->FindClass("com/sam/talkdraft/transcription_android/models/JniZipFormerSegment");
     if (klass == nullptr) return nullptr;
 
-    jmethodID init = env->GetMethodID(klass, "<init>", "(JLjava/lang/String;)V");
+    jmethodID init = env->GetMethodID(klass, "<init>", "(JLjava/lang/String;JJ)V");
     if (init == nullptr) return nullptr;
 
-    jstring j_text        = env->NewStringUTF(result.text.c_str());
-    jobject return_result = env->NewObject(klass, init, static_cast<jlong>(result.segment_id), j_text);
+    jstring j_text = env->NewStringUTF(result.text.c_str());
+    jobject return_result =
+        env->NewObject(klass, init, static_cast<jlong>(result.segment_id), j_text,
+                       static_cast<jlong>(result.start_time_millis), static_cast<jlong>(result.end_time_millis));
 
     env->DeleteLocalRef(j_text);
     return return_result;

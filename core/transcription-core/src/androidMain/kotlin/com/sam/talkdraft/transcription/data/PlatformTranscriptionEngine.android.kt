@@ -6,9 +6,8 @@ import co.touchlab.kermit.Logger
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.transcription.domain.ITranscriptionEngine
 import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
+import com.sam.talkdraft.transcription.domain.model.TranscriptionEngineOutput
 import com.sam.talkdraft.transcription.domain.model.TranscriptionError
-import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
-import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
 import com.sam.talkdraft.transcription_android.NativeWhisper
 import com.sam.talkdraft.transcription_android.models.ProcessingState
 import com.sam.talkdraft.transcription_android.models.WhisperErrorCode
@@ -38,37 +37,36 @@ internal actual class PlatformWhisperTranscriptionEngine(
             }
             val language = request.language ?: "auto"
             val success = withContext(dispatcher.default) {
-                instance.initialize(request.modelPath, "en")
+                instance.initialize(request.modelPath, language)
             }
             _isSetupDone.compareAndSet(expectedValue = false, success)
             Logger.d(tag = TAG) { "AUDIO TRANSCRIPTION SETUP COMPLETED :$success" }
         }
     }
 
-    actual override fun processSegment(bytes: ShortArray): TranscriptionResult {
-
+    actual override fun processSegment(bytes: ShortArray): TranscriptionEngineOutput {
         if (!_isSetupDone.load()) {
             Logger.w(tag = TAG) { "SETUP IS MISSING FIRST SET IT UP" }
-            return TranscriptionResult.Idle
+            return TranscriptionEngineOutput.InvalidResult(error = TranscriptionError.ModelSetupAbsent)
         }
 
         return when (val result = instance.processSamples(bytes)) {
-            is ProcessingState.Buffering -> {
-                Logger.d(tag = TAG) { "BUFFERING" }
-                TranscriptionResult.Preparing
-            }
+            is ProcessingState.Buffering -> TranscriptionEngineOutput.Buffering
 
             is ProcessingState.Error -> {
                 Logger.d(tag = TAG) { "FAILED TO PROCESS THE SAMPLES ERROR CODE:${result.errorCode}" }
-                TranscriptionResult.Failed(result.errorCode?.toDomainError() ?: TranscriptionError.TranscriptionFailed)
+                TranscriptionEngineOutput.InvalidResult(result.errorCode?.toDomainError() ?: TranscriptionError.Unknown)
             }
 
             is ProcessingState.Success -> {
                 val state = instance.readState()
-                    ?: return TranscriptionResult.Failed(TranscriptionError.TranscriptionFailed)
+                    ?: return TranscriptionEngineOutput.InvalidResult(TranscriptionError.Unknown)
                 Logger.d(tag = TAG) { "GOT SOME SAMPLE RESULT :$state" }
-                TranscriptionResult.Success(
-                    segment = TranscriptionSegmentModel(segmentId = 0L, state.text),
+                TranscriptionEngineOutput.Segment(
+                    segmentId = 0L,
+                    text = state.text,
+                    startTime = state.startTime,
+                    endTime = state.endTime,
                 )
             }
         }

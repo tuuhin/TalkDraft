@@ -83,7 +83,7 @@ bool sherpa_vad::pop_segment(std::vector<float>& out, int32_t& start_sample, int
     start_sample = seg->start;
     end_sample   = seg->start + seg->n;
 
-    LOG_I("POPPED SEGMENT: START=%d, END=%d", seg->start, seg->start + seg->n);
+    LOG_D("POPPED SEGMENT: START=%d, END=%d", seg->start, seg->start + seg->n);
 
     SherpaOnnxDestroySpeechSegment(seg);
     SherpaOnnxVoiceActivityDetectorPop(_vad);

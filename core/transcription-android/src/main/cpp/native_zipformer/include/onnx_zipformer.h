@@ -8,6 +8,8 @@
 struct transcription_result {
     uint64_t segment_id{0};
     std::string text;
+    u_long start_time_millis{0};
+    u_long end_time_millis{0};
     [[nodiscard]] bool is_empty() const { return text.empty(); }
 };
 

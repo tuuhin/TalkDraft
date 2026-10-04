@@ -41,4 +41,7 @@ data class TranscriptionModel(
 
     val isAllLanguageSupported: Boolean
         get() = supportedLanguages.size == 1 && supportedLanguages.contains("*")
+
+    val isAvailable: Boolean
+        get() = status == ModelInstallStatus.INSTALLED && modelPath != null
 }

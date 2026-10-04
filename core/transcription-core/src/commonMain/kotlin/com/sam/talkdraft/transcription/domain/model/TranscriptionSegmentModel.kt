@@ -1,14 +1,12 @@
 package com.sam.talkdraft.transcription.domain.model
 
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 data class TranscriptionSegmentModel(
     val segmentId: Long,
     val text: String,
-    val startTimeMs: Duration = 0.seconds,
-    val endTime: Duration = 0.seconds,
+    val durationRange: ClosedRange<Duration> = Duration.ZERO..Duration.ZERO,
 ) {
     val isValid: Boolean
-        get() = text.isNotBlank() && endTime - startTimeMs > Duration.ZERO
+        get() = text.isNotBlank() && durationRange.endInclusive - durationRange.start > Duration.ZERO
 }

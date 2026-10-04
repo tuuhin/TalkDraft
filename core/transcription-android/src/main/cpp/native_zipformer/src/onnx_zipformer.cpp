@@ -148,9 +148,20 @@ transcription_result zip_former::ProcessPCM(const float* pcm_data, int sample_co
     }
 
     std::string new_text;
+    u_long start_time = 0;
+    u_long end_time   = 0;
+    std::vector<float> token_timestamps;
+
     const auto* result = SherpaOnnxGetOnlineStreamResult(_online_recognizer, _online_stream);
     if (result) {
-        if (result->text && std::strlen(result->text) > 0) new_text = result->text;
+        if (result->text && std::strlen(result->text) > 0) {
+            new_text = result->text;
+            if (result->timestamps && result->count > 0) {
+                token_timestamps.assign(result->timestamps, result->timestamps + result->count);
+                start_time = static_cast<u_long>(token_timestamps.front() * 1000);
+                end_time   = static_cast<u_long>(token_timestamps.back() * 1000);
+            }
+        }
         // clean the result
         SherpaOnnxDestroyOnlineRecognizerResult(result);
     }
@@ -158,10 +169,10 @@ transcription_result zip_former::ProcessPCM(const float* pcm_data, int sample_co
     if (!new_text.empty() && new_text != _current_segment) {
         _current_segment = new_text;
 
-        LOG_D("[SEGMENT %d HYPOTHESIS UPDATE='%s' | LENGTH=%zu", _segment_id, _current_segment.c_str(),
-              _current_segment.length());
+        LOG_D("[SEGMENT %d HYPOTHESIS UPDATE='%s' | LENGTH=%zu DURATION:(%d - %d)", _segment_id,
+              _current_segment.c_str(), _current_segment.length(), start_time, end_time);
 
-        return {_segment_id, _current_segment};
+        return {_segment_id, _current_segment, start_time, end_time};
     }
     return {};
 }

@@ -1,6 +1,7 @@
 package com.sam.talkdraft.transcription_android
 
 import android.util.Log
+import com.sam.talkdraft.transcription_android.models.JniZipFormerSegment
 import com.sam.talkdraft.transcription_android.models.ZipFormerSegment
 import java.io.File
 import java.nio.ByteBuffer
@@ -8,7 +9,9 @@ import java.nio.ByteOrder
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.time.DurationUnit
 import kotlin.time.measureTimedValue
+import kotlin.time.toDuration
 
 @OptIn(ExperimentalAtomicApi::class)
 class NativeZipFormer : AutoCloseable {
@@ -82,7 +85,7 @@ class NativeZipFormer : AutoCloseable {
         val handle = _nativeHandle.load()
         check(handle != 0L) { "NATIVE HANDLE IS NOT SET" }
 
-        var latestResult: ZipFormerSegment? = null
+        var latestResult: JniZipFormerSegment? = null
         var offset = 0
 
         while (offset < audioFrame.size) {
@@ -97,14 +100,17 @@ class NativeZipFormer : AutoCloseable {
             audioBuffer.limit(chunkLen * Float.SIZE_BYTES)
 
             val result = processNativeDirectBuffer(handle, audioBuffer, chunkLen)
-            if (result != null) {
-                latestResult = result
-            }
-
+            if (result != null) latestResult = result
             offset += chunkLen
         }
 
-        return latestResult
+        if (latestResult == null) return@synchronized null
+
+        return@synchronized ZipFormerSegment(
+            segmentId = latestResult.segmentId, latestResult.segment,
+            start = latestResult.startMs.toDuration(DurationUnit.MILLISECONDS),
+            end = latestResult.endMs.toDuration(DurationUnit.MILLISECONDS),
+        )
     }
 
     fun reset(): Unit = synchronized(lock) {
@@ -124,7 +130,7 @@ class NativeZipFormer : AutoCloseable {
     }
 
     private external fun initializeNative(encoder: String, decoder: String, joiner: String, tokenPath: String): Long
-    private external fun processNativeDirectBuffer(handle: Long, buffer: ByteBuffer, length: Int): ZipFormerSegment?
+    private external fun processNativeDirectBuffer(handle: Long, buffer: ByteBuffer, length: Int): JniZipFormerSegment?
     private external fun destroyNative(handle: Long)
     private external fun resetNative(handle: Long)
 
