@@ -41,12 +41,16 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
+            implementation(libs.androidx.core.ktx)
             implementation(libs.androidx.media3.exoplayer)
             implementation(libs.androidx.media3.exoplayer.dash)
+            implementation(libs.androidx.media3.inspector)
+            implementation(libs.androidx.concurrent)
         }
         commonMain.dependencies {
             implementation(libs.bundles.koin.common)
             implementation(libs.androidx.datastore.preferences)
+            implementation(libs.kotlinx.datetime)
             // local
             implementation(project(":core:datastore"))
             implementation(project(":core:common"))

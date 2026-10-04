@@ -5,7 +5,7 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 import com.sam.talkdraft.database.utils.DBConstants
 
-internal object RenamedEnumEntries_1_2 : Migration(1, 2) {
+internal class RenamedEnumEntriesMigrationF1T2 : Migration(1, 2) {
     override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL(
             """

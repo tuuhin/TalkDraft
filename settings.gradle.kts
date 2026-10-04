@@ -66,6 +66,7 @@ include(":feature:model-manager")
 include(":feature:model-downloader")
 include(":feature:onboarding")
 include(":feature:recorder")
+include(":feature:recordings")
 // ui layers
 include(":presentation:design-system")
 include(":presentation:onboarding")

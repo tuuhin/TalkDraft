@@ -49,7 +49,7 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.bundles.compose.ui)
             implementation(libs.bundles.koin.compose)
-
+            // core modules
             api(project(":core:common"))
             api(project(":core:analytics"))
             api(project(":core:crashlytics"))
@@ -67,13 +67,12 @@ kotlin {
             api(project(":core:remote-config"))
             api(project(":core:permissions"))
             api(project(":core:archive-core"))
-
             // feature modules
             implementation(project(":feature:model-manager"))
             implementation(project(":feature:model-downloader"))
             implementation(project(":feature:recorder"))
             implementation(project(":feature:onboarding"))
-
+            implementation(project(":feature:recordings"))
             // presentation module
             implementation(project(":presentation:design-system"))
             implementation(project(":presentation:navigation"))

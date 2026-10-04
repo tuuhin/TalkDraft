@@ -12,7 +12,7 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
     android {
-        namespace = "com.sam.talkdraft.feature_recorder"
+        namespace = "com.sam.talkdraft.feature_recordings"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
@@ -26,20 +26,17 @@ kotlin {
             implementation(libs.bundles.kotlinx.common)
             implementation(libs.bundles.koin.common)
             implementation(libs.okio)
-
+            // local
             implementation(project(":core:common"))
-            implementation(project(":core:recorder"))
-            implementation(project(":core:transcription-core"))
-            implementation(project(":core:recorder-visualizer"))
-
+            implementation(project(":core:database"))
+            implementation(project(":core:player"))
+            // feature
             implementation(project(":feature:model-manager"))
-            implementation(project(":feature:recordings"))
         }
         commonTest.dependencies {
+            implementation(project(":core:testing"))
             implementation(libs.bundles.testing.common)
             implementation(libs.turbine)
-
-            implementation(project(":core:testing"))
         }
     }
 

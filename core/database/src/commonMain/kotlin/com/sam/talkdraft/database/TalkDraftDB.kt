@@ -31,7 +31,7 @@ import com.sam.talkdraft.database.entities.RecordingEntity
 import com.sam.talkdraft.database.entities.TranScriptEntity
 import com.sam.talkdraft.database.entities.TranScriptSegmentsEntity
 import com.sam.talkdraft.database.entities.TranscriptionModelEntity
-import com.sam.talkdraft.database.migrations.RenamedEnumEntries_1_2
+import com.sam.talkdraft.database.migrations.RenamedEnumEntriesMigrationF1T2
 import com.sam.talkdraft.database.utils.TalkDraftDbConstructor
 import kotlinx.atomicfu.atomic
 
@@ -96,7 +96,7 @@ internal abstract class TalkDraftDB : RoomDatabase() {
 
             val instance = builder
                 .addAppTypeConvertors()
-                .addMigrations(RenamedEnumEntries_1_2)
+                .addMigrations(RenamedEnumEntriesMigrationF1T2())
                 .build()
 
             // if db is not set the db
