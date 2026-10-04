@@ -28,7 +28,7 @@ import talkdraft.presentation.recorder.generated.resources.ic_transcription_comp
 
 @Composable
 internal fun CapturedTranscriptionContent(
-    transcriptionText: String? = null,
+    transcriptionText: String?,
     modifier: Modifier = Modifier,
 ) {
     val quoteFontFamily = googleSansFlexFont(

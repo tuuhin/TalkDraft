@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
@@ -50,8 +49,8 @@ internal fun RealtimeTranscriptionText(
             when (state) {
                 is TranscriptionResult.Failed -> UIRealtimeTranscriptionMode.Error
                 TranscriptionResult.Idle -> UIRealtimeTranscriptionMode.Idle
-                TranscriptionResult.Preparing -> UIRealtimeTranscriptionMode.Preparing
                 TranscriptionResult.Ready -> UIRealtimeTranscriptionMode.Ready
+                is TranscriptionResult.Success if state.segment.text.isBlank() -> UIRealtimeTranscriptionMode.Ready
                 is TranscriptionResult.Success -> {
                     val id = state.segment.segmentId
                     UIRealtimeTranscriptionMode.Success(segmentId = id)
@@ -78,11 +77,10 @@ internal fun RealtimeTranscriptionText(
             contentAlignment = Alignment.Center,
         ) { targetState ->
             when (targetState) {
-                is UIRealtimeTranscriptionMode.Preparing -> PreparingEngineContainer()
                 is UIRealtimeTranscriptionMode.Ready -> EngineReadyIndicator()
                 is UIRealtimeTranscriptionMode.Success -> {
                     val transcription = state as? TranscriptionResult.Success
-                    GrowingTranscriptionText(
+                    WordsSegmentTranscriptionText(
                         segmentModel = transcription?.segment,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -102,7 +100,6 @@ internal fun RealtimeTranscriptionText(
 
 private sealed class UIRealtimeTranscriptionMode {
     data object Idle : UIRealtimeTranscriptionMode()
-    data object Preparing : UIRealtimeTranscriptionMode()
     data object Ready : UIRealtimeTranscriptionMode()
 
     // segment id differentiate a segment not the message
@@ -111,7 +108,7 @@ private sealed class UIRealtimeTranscriptionMode {
 }
 
 @Composable
-private fun GrowingTranscriptionText(
+private fun WordsSegmentTranscriptionText(
     segmentModel: TranscriptionSegmentModel?,
     modifier: Modifier = Modifier,
     fontFamily: FontFamily = montserrat(),
@@ -188,24 +185,4 @@ private fun EngineReadyIndicator(modifier: Modifier = Modifier) {
             labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ),
     )
-}
-
-@Composable
-private fun PreparingEngineContainer(modifier: Modifier = Modifier) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier,
-    ) {
-        LoadingIndicator(
-            modifier = Modifier.size(24.dp),
-            color = MaterialTheme.colorScheme.outlineVariant,
-        )
-        Text(
-            text = "Initializing engine...",
-            fontWeight = FontWeight.SemiBold,
-            style = MaterialTheme.typography.bodyMediumEmphasized,
-            color = MaterialTheme.colorScheme.tertiary,
-        )
-    }
 }

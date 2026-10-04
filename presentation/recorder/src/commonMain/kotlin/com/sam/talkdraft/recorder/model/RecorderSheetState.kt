@@ -7,8 +7,8 @@ import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
 @Stable
 internal data class RecorderSheetState(
     val state: RecorderUIState = RecorderUIState(),
-    val failedReason: RecorderSetupFailedReason = RecorderSetupFailedReason.None,
-    val isRecorderReady: Boolean = true,
+    val failedReason: RecorderFailedReason = RecorderFailedReason.None,
+    val isModelSetupRunning: Boolean = false,
     val finalizedTranscriptionText: String? = null,
     val isSavingRecording: Boolean = false,
 ) {

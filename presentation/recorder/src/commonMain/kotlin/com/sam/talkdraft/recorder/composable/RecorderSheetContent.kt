@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,7 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sam.talkdraft.recorder.domain.models.RecorderState
-import com.sam.talkdraft.recorder.model.RecorderSetupFailedReason
+import com.sam.talkdraft.recorder.model.RecorderFailedReason
 import com.sam.talkdraft.recorder.model.RecorderSheetState
 import org.jetbrains.compose.resources.painterResource
 import talkdraft.presentation.recorder.generated.resources.Res
@@ -42,19 +43,19 @@ import talkdraft.presentation.recorder.generated.resources.ic_transcription_comp
 
 @Composable
 internal fun RecorderSheetContent(
-    state: RecorderSheetState = RecorderSheetState(),
     modifier: Modifier = Modifier,
+    state: RecorderSheetState = RecorderSheetState(),
     recordingUI: @Composable () -> Unit,
     completedUI: @Composable () -> Unit,
 ) {
 
-    val semiState by remember(state) {
+    val screenState by remember(state) {
         derivedStateOf {
-            if (!state.isRecorderReady) return@derivedStateOf SheetContentState.GetStarted
             when (state.failedReason) {
-                is RecorderSetupFailedReason.FailedTranscriptionModelSetup -> SheetContentState.FailedModel(state.failedReason.errorMessage)
-                RecorderSetupFailedReason.MissingPermission -> SheetContentState.MissingPermission
-                RecorderSetupFailedReason.None -> when (state.recorderState) {
+                is RecorderFailedReason.GenericError -> SheetContentState.CaptureOrSetupFailed(state.failedReason.errorMessage)
+                RecorderFailedReason.MissingPermission -> SheetContentState.MissingPermission
+                RecorderFailedReason.None if state.isModelSetupRunning -> SheetContentState.PreparingForRecording
+                else -> when (state.recorderState) {
                     RecorderState.IDLE, RecorderState.PREPARING -> SheetContentState.GetStarted
                     RecorderState.RECORDING, RecorderState.PAUSED -> SheetContentState.OngoingRecording
                     RecorderState.COMPLETED -> SheetContentState.CaptureCompleted()
@@ -68,7 +69,7 @@ internal fun RecorderSheetContent(
         contentAlignment = Alignment.Center,
     ) {
         AnimatedContent(
-            targetState = semiState,
+            targetState = screenState,
             transitionSpec = {
                 fadeIn(animationSpec = tween(150, easing = LinearOutSlowInEasing)) +
                     scaleIn(initialScale = 0.96f, animationSpec = tween(150)) togetherWith
@@ -89,7 +90,7 @@ internal fun RecorderSheetContent(
                     text = "Say it out loud and see your thoughts turn into text",
                 )
 
-                is SheetContentState.FailedModel -> OneImageTwoTextLayout(
+                is SheetContentState.CaptureOrSetupFailed -> OneImageTwoTextLayout(
                     painter = painterResource(Res.drawable.ic_transcription_completed),
                     title = "Missing access to mic",
                     text = "Cannot access the device microphone please make sure you got permissions",
@@ -100,6 +101,15 @@ internal fun RecorderSheetContent(
                     title = "Missing access to mic",
                     text = "Cannot access the device microphone please make sure you got permissions",
                 )
+
+                SheetContentState.PreparingForRecording -> Column(
+                    modifier = modifier.wrapContentSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    LoadingIndicator()
+                    Text(text = "Preparing models and recorder")
+                }
 
                 is SheetContentState.CaptureCompleted -> completedUI()
                 SheetContentState.OngoingRecording -> recordingUI()
@@ -148,7 +158,9 @@ private fun OneImageTwoTextLayout(
 private sealed class SheetContentState {
     data object GetStarted : SheetContentState()
     data object OngoingRecording : SheetContentState()
-    data class CaptureCompleted(val transcript: String? = null) : SheetContentState()
-    data class FailedModel(val message: String? = null) : SheetContentState()
     data object MissingPermission : SheetContentState()
+    data object PreparingForRecording : SheetContentState()
+
+    data class CaptureCompleted(val transcript: String? = null) : SheetContentState()
+    data class CaptureOrSetupFailed(val message: String? = null) : SheetContentState()
 }

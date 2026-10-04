@@ -41,7 +41,7 @@ import kotlin.time.Duration.Companion.seconds
 internal fun SimpleRecorderSheet(
     recordingDuration: () -> Duration,
     audioWaveForm: () -> ReadOnlyFloatBuffer,
-    screenState: RecorderSheetState = RecorderSheetState(),
+    screenState: RecorderSheetState,
     onAction: (RecordingScreenEvent) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
@@ -94,6 +94,7 @@ internal fun SimpleRecorderSheet(
             isRecording = screenState.recorderState == RecorderState.RECORDING,
             isRecordingCompleted = screenState.recorderState == RecorderState.COMPLETED,
             isSavingRecording = screenState.isSavingRecording && screenState.finalizedTranscriptionText != null,
+            isAllButtonDisabled = screenState.isModelSetupRunning,
             onCancelRecording = { onAction(RecordingScreenEvent.OnCancelRecording) },
             onSave = { onAction(RecordingScreenEvent.OnSaveTranscription) },
             onResetRecording = { onAction(RecordingScreenEvent.OnResetRecording) },
@@ -119,10 +120,15 @@ private class SimpleRecorderPreviewScreenState : PreviewParameterProvider<Record
             RecorderSheetState(
                 state = RecorderUIState(
                     recorderState = RecorderState.IDLE,
-                    transcriptions = TranscriptionResult.Success(
-                        TranscriptionSegmentModel(segmentId = 1, "Hello how are you doing"),
-                    ),
+                    transcriptions = TranscriptionResult.Idle,
                 ),
+            ),
+            RecorderSheetState(
+                state = RecorderUIState(
+                    recorderState = RecorderState.IDLE,
+                    transcriptions = TranscriptionResult.Idle,
+                ),
+                isModelSetupRunning = true,
             ),
             RecorderSheetState(
                 finalizedTranscriptionText = "Hello how are you doing these days".repeat(3),

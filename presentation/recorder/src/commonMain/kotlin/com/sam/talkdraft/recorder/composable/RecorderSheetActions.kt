@@ -62,6 +62,7 @@ internal fun RecorderSheetActions(
     isRecordingCompleted: Boolean = false,
     isRecording: Boolean = false,
     isSavingRecording: Boolean = false,
+    isAllButtonDisabled: Boolean = false,
 ) {
 
     val type by remember(isRecordingCompleted, isRecording) {
@@ -102,12 +103,14 @@ internal fun RecorderSheetActions(
                         ActionType.StartRecording -> StartRecordingUI(
                             onRecording = onRecording,
                             isRecording = isRecording,
+                            isActionEnabled = !isAllButtonDisabled,
                         )
 
                         ActionType.StopOrCancelRecording -> StopOrCancelRecordingUI(
                             onCancelRecording = onCancelRecording,
                             onStopRecording = onStopRecording,
                             isRecording = isRecording,
+                            isActionEnabled = !isAllButtonDisabled,
                         )
 
                         ActionType.SaveOrResetRecording -> SaveOrResetRecording(
@@ -115,6 +118,7 @@ internal fun RecorderSheetActions(
                             onResetRecording = onResetRecording,
                             isRecordingCompleted = isRecordingCompleted,
                             isSaving = isSavingRecording,
+                            isActionEnabled = !isAllButtonDisabled,
                         )
 
                     }
@@ -128,9 +132,10 @@ internal fun RecorderSheetActions(
 private fun SaveOrResetRecording(
     onResetRecording: () -> Unit,
     onSaveRecording: () -> Unit,
+    modifier: Modifier = Modifier,
     isSaving: Boolean = false,
     isRecordingCompleted: Boolean = false,
-    modifier: Modifier = Modifier,
+    isActionEnabled: Boolean = true,
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -139,7 +144,7 @@ private fun SaveOrResetRecording(
     ) {
         FilledTonalButton(
             onClick = onResetRecording,
-            enabled = !isSaving,
+            enabled = !isSaving && isActionEnabled,
             contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.MediumContainerHeight),
             shapes = ButtonDefaults.shapes(shape = ButtonDefaults.filledTonalShape),
             colors = ButtonDefaults.filledTonalButtonColors(
@@ -184,7 +189,7 @@ private fun SaveOrResetRecording(
                     shape = MaterialTheme.shapes.extraLarge,
                     pressedShape = MaterialTheme.shapes.large,
                 ),
-                enabled = !isSaving,
+                enabled = !isSaving && isActionEnabled,
                 contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.MediumContainerHeight, true),
                 modifier = Modifier
                     .sharedBoundsWrapper(
@@ -208,8 +213,9 @@ private fun SaveOrResetRecording(
 private fun StopOrCancelRecordingUI(
     onCancelRecording: () -> Unit,
     onStopRecording: () -> Unit,
-    isRecording: Boolean = false,
     modifier: Modifier = Modifier,
+    isRecording: Boolean = false,
+    isActionEnabled: Boolean = true,
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -224,6 +230,7 @@ private fun StopOrCancelRecordingUI(
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
             ),
+            enabled = isActionEnabled,
             modifier = Modifier.sharedBoundsWrapper(
                 key = SharedTransitionKeys.SECONDARY_ACTION_BUTTON,
                 enter = scaleIn(MaterialTheme.motionScheme.defaultSpatialSpec()),
@@ -262,6 +269,7 @@ private fun StopOrCancelRecordingUI(
                     shape = MaterialTheme.shapes.extraLarge,
                     pressedShape = MaterialTheme.shapes.large,
                 ),
+                enabled = isActionEnabled,
                 contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.MediumContainerHeight, true),
                 modifier = Modifier
                     .sharedBoundsWrapper(
@@ -290,8 +298,9 @@ private fun StopOrCancelRecordingUI(
 @Composable
 private fun StartRecordingUI(
     onRecording: () -> Unit,
-    isRecording: Boolean = false,
     modifier: Modifier = Modifier,
+    isActionEnabled: Boolean = true,
+    isRecording: Boolean = false,
 ) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
@@ -320,6 +329,7 @@ private fun StartRecordingUI(
                 shape = MaterialTheme.shapes.extraLarge,
                 pressedShape = MaterialTheme.shapes.large,
             ),
+            enabled = isActionEnabled,
             contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.MediumContainerHeight, true),
             modifier = Modifier.heightIn(ButtonDefaults.MediumContainerHeight)
                 .sharedBoundsWrapper(

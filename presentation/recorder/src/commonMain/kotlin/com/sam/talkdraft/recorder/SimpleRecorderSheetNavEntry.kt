@@ -26,7 +26,7 @@ internal class SimpleRecorderSheetNavEntry : NavDestinationBuilder {
             val viewmodel = koinViewModel<SimpleRecorderViewmodel>()
             val navigator = koinInject<AppNavigator>()
 
-            val state by viewmodel.sheetState.collectAsStateWithLifecycle()
+            val state by viewmodel.uiState.collectAsStateWithLifecycle()
             val waveForm by viewmodel.recorderWaveform.collectAsStateWithLifecycle()
             val duration by viewmodel.recorderDuration.collectAsStateWithLifecycle()
 
