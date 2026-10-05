@@ -34,10 +34,15 @@ bool hasBzip2Header(const std::string& path) {
 
 } // namespace
 
-Result compression_engine::compressBzip2(const std::string& inputPath, const std::string& outputPath) {
+Result compression_engine::compressBzip2(const std::string& inputPath, const std::string& outputPath,
+                                         const std::function<void(float)>& progressCallback) {
     std::ifstream input(inputPath, std::ios::binary);
 
     if (!input.is_open()) return Result::Failure("Failed to open input file: " + inputPath);
+
+    uintmax_t totalSize = 0;
+    std::error_code ec;
+    totalSize = std::filesystem::file_size(inputPath, ec);
 
     struct archive* archive = archive_write_new();
 
@@ -97,6 +102,7 @@ Result compression_engine::compressBzip2(const std::string& inputPath, const std
     }
 
     char buffer[ARCHIVE_BUFFER_SIZE];
+    uintmax_t processedBytes = 0;
 
     while (input.good()) {
         input.read(buffer, sizeof(buffer));
@@ -122,6 +128,17 @@ Result compression_engine::compressBzip2(const std::string& inputPath, const std
 
             return Result::Failure("Incomplete write while compressing");
         }
+
+        processedBytes += static_cast<size_t>(bytesRead);
+
+        if (progressCallback && totalSize > 0) {
+            if (processedBytes > totalSize) {
+                processedBytes = totalSize;
+            }
+            float percentage = static_cast<float>(processedBytes) * 100.0f / static_cast<float>(totalSize);
+            if (percentage > 100.0f) percentage = 100.0f;
+            progressCallback(percentage);
+        }
     }
 
     if (input.bad()) {
@@ -142,11 +159,19 @@ Result compression_engine::compressBzip2(const std::string& inputPath, const std
 
     archive_write_free(archive);
 
+    if (progressCallback) progressCallback(100.0f);
+
     return Result::Success();
 }
 
-Result compression_engine::decompressBzip2(const std::string& inputPath, const std::string& outputPath) {
+Result compression_engine::decompressBzip2(const std::string& inputPath, const std::string& outputPath,
+                                           const std::function<void(float)>& progressCallback) {
+
     if (!hasBzip2Header(inputPath)) return Result::Failure("Input file is not a valid BZip2 stream");
+
+    uintmax_t totalSize = 0;
+    std::error_code ec;
+    totalSize = std::filesystem::file_size(inputPath, ec);
 
     struct archive* archive = archive_read_new();
 
@@ -219,8 +244,8 @@ Result compression_engine::decompressBzip2(const std::string& inputPath, const s
             archive_read_free(archive);
             output.close();
 
-            std::error_code ec;
-            std::filesystem::remove(outputPath, ec);
+            std::error_code ecRemove;
+            std::filesystem::remove(outputPath, ecRemove);
 
             return Result::Failure("Failed to finalize empty BZip2 decompression: " + error);
         }
@@ -229,10 +254,14 @@ Result compression_engine::decompressBzip2(const std::string& inputPath, const s
         output.close();
 
         if (!output.good()) {
-            std::error_code ec;
-            std::filesystem::remove(outputPath, ec);
+            std::error_code ecRemove;
+            std::filesystem::remove(outputPath, ecRemove);
             return Result::Failure("Failed to finalize output file");
         }
+
+        // eof reached progress is 100
+        if (progressCallback) progressCallback(100.0f);
+
         return Result::Success();
     }
 
@@ -243,8 +272,8 @@ Result compression_engine::decompressBzip2(const std::string& inputPath, const s
         archive_read_free(archive);
         output.close();
 
-        std::error_code ec;
-        std::filesystem::remove(outputPath, ec);
+        std::error_code ecRemove;
+        std::filesystem::remove(outputPath, ecRemove);
 
         return Result::Failure("Failed to read archive header: " + error);
     }
@@ -263,8 +292,8 @@ Result compression_engine::decompressBzip2(const std::string& inputPath, const s
 
             output.close();
 
-            std::error_code ec;
-            std::filesystem::remove(outputPath, ec);
+            std::error_code ecRemove;
+            std::filesystem::remove(outputPath, ecRemove);
 
             return Result::Failure("Failed while decompressing: " + error);
         }
@@ -277,10 +306,21 @@ Result compression_engine::decompressBzip2(const std::string& inputPath, const s
 
             output.close();
 
-            std::error_code ec;
-            std::filesystem::remove(outputPath, ec);
+            std::error_code ecRemove;
+            std::filesystem::remove(outputPath, ecRemove);
 
             return Result::Failure("Failed while writing decompressed output");
+        }
+
+        if (progressCallback && totalSize > 0) {
+            auto processedBytes = archive_filter_bytes(archive, 0);
+            if (processedBytes < 0) processedBytes = 0;
+            if (static_cast<uintmax_t>(processedBytes) > totalSize) {
+                processedBytes = static_cast<la_int64_t>(totalSize);
+            }
+            float percentage = static_cast<float>(processedBytes) * 100.0f / static_cast<float>(totalSize);
+            if (percentage > 100.0f) percentage = 100.0f;
+            progressCallback(percentage);
         }
     }
 
@@ -290,8 +330,8 @@ Result compression_engine::decompressBzip2(const std::string& inputPath, const s
 
         archive_read_free(archive);
         output.close();
-        std::error_code ec;
-        std::filesystem::remove(outputPath, ec);
+        std::error_code ecRemove;
+        std::filesystem::remove(outputPath, ecRemove);
 
         return Result::Failure("Failed to finalize BZip2 decompression: " + error);
     }
@@ -300,11 +340,12 @@ Result compression_engine::decompressBzip2(const std::string& inputPath, const s
     output.close();
 
     if (!output.good()) {
-        std::error_code ec;
-        std::filesystem::remove(outputPath, ec);
-
+        std::error_code ecRemove;
+        std::filesystem::remove(outputPath, ecRemove);
         return Result::Failure("Failed to finalize output file");
     }
 
+    // all done send a 100% complete
+    if (progressCallback) progressCallback(100.0f);
     return Result::Success();
 }

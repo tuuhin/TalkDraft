@@ -2,6 +2,7 @@ package com.sam.talkdraft.achive
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isGreaterThanOrEqualTo
 import assertk.assertions.isLessThan
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
@@ -264,5 +265,61 @@ class BZip2CompressionTest {
         )
 
         assertThat(output.readBytes()).isEqualTo(original)
+    }
+
+    @Test
+    fun decompress_reports_progress_monotonically() {
+        val input = tempDirectory.newFile("input.bin")
+        val compressed = tempDirectory.root.resolve("input.bz2")
+        val output = tempDirectory.root.resolve("output.bin")
+
+        val original = ByteArray(500_000) { index ->
+            ((index * 17 + 5) and 0xFF).toByte()
+        }
+
+        input.writeBytes(original)
+        compressor.compress(input.toOkioPath(), compressed.toOkioPath())
+
+        val progressValues = mutableListOf<Float>()
+        compressor.decompress(
+            compressed.toOkioPath(),
+            output.toOkioPath(),
+            onProgress = { progress ->
+                progressValues.add(progress)
+            },
+        )
+
+        assertThat(progressValues).isNotEmpty()
+        assertThat(progressValues.last()).isEqualTo(100.0f)
+        for (i in 1 until progressValues.size) {
+            assertThat(progressValues[i]).isGreaterThanOrEqualTo(progressValues[i - 1])
+        }
+    }
+
+    @Test
+    fun compress_reports_progress_monotonically() {
+        val input = tempDirectory.newFile("input.bin")
+        val compressed = tempDirectory.root.resolve("input.bz2")
+
+        val original = ByteArray(500_000) { index ->
+            ((index * 17 + 5) and 0xFF).toByte()
+        }
+
+        input.writeBytes(original)
+
+        val progressValues = mutableListOf<Float>()
+        compressor.compress(
+            input.toOkioPath(),
+            compressed.toOkioPath(),
+            onProgress = { progress ->
+                progressValues.add(progress)
+            },
+        )
+
+        assertThat(progressValues).isNotEmpty()
+        assertThat(progressValues.last()).isEqualTo(100.0f)
+        for (i in 1 until progressValues.size) {
+            assertThat(progressValues[i]).isGreaterThanOrEqualTo(progressValues[i - 1])
+        }
     }
 }

@@ -2,21 +2,20 @@
 #include <string>
 
 class scoped_jni_string {
-    JNIEnv* env_;
-    jstring jstr_;
-    const char* chars_;
+    JNIEnv* _env;
+    jstring _jString;
+    const char* _chars;
 
 public:
-    scoped_jni_string(JNIEnv* env, jstring jstr) : env_(env), jstr_(jstr), chars_(nullptr) {
-        if (jstr != nullptr) {
-            chars_ = env_->GetStringUTFChars(jstr, nullptr);
-        }
+    scoped_jni_string(JNIEnv* env, jstring jstr) : _env(env), _jString(jstr), _chars(nullptr) {
+        if (jstr == nullptr) return;
+        _chars = _env->GetStringUTFChars(jstr, nullptr);
     }
     ~scoped_jni_string() {
-        if (chars_ != nullptr && jstr_ != nullptr) {
-            env_->ReleaseStringUTFChars(jstr_, chars_);
-        }
+        if (_chars == nullptr || _jString == nullptr) return;
+        _env->ReleaseStringUTFChars(_jString, _chars);
     }
-    [[nodiscard]] const char* get() const { return chars_; }
-    operator bool() const { return chars_ != nullptr; }
+
+    [[nodiscard]] const char* get() const { return _chars; }
+    operator bool() const { return _chars != nullptr; }
 };

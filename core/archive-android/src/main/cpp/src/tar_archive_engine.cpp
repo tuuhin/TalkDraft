@@ -48,8 +48,25 @@ bool sanitizeEntryPath(const char* raw, fs::path& out) {
     return true;
 }
 
+// Calculates total size of regular files in input path (file or directory).
+uintmax_t calculateDirectorySize(const fs::path& path) {
+    uintmax_t size = 0;
+    std::error_code ec;
+    if (fs::is_regular_file(path, ec)) return fs::file_size(path, ec);
+    if (fs::is_directory(path, ec)) {
+        for (const auto& entry :
+             fs::recursive_directory_iterator(path, fs::directory_options::skip_permission_denied, ec)) {
+            if (!fs::is_regular_file(entry.path(), ec)) continue;
+            size += fs::file_size(entry.path(), ec);
+        }
+    }
+    return size;
+}
+
 // Copies entry data from a TAR reader to the disk writer (preserves sparse offsets).
-bool copyDataToDisk(struct archive* in, struct archive* out, std::string& error) {
+bool copyDataToDisk(struct archive* in, struct archive* out, std::string& error,
+                    const std::function<void(float)>& progressCallback, uintmax_t totalSize,
+                    struct archive* inputArchive) {
     const void* buffer = nullptr;
     size_t size        = 0;
     la_int64_t offset  = 0;
@@ -67,12 +84,24 @@ bool copyDataToDisk(struct archive* in, struct archive* out, std::string& error)
             error = "Failed to write extracted data: " + archiveError(out);
             return false;
         }
+
+        if (progressCallback && totalSize > 0 && inputArchive != nullptr) {
+            auto bytesRead = archive_filter_bytes(inputArchive, 0);
+            if (bytesRead < 0) bytesRead = 0;
+            if (static_cast<uintmax_t>(bytesRead) > totalSize) {
+                bytesRead = static_cast<la_int64_t>(totalSize);
+            }
+            float percentage = static_cast<float>(bytesRead) * 100.0f / static_cast<float>(totalSize);
+            if (percentage > 100.0f) percentage = 100.0f;
+            progressCallback(percentage);
+        }
     }
 }
 
 // rootName is empty when archiving a directory (contents are stored relative to it),
 // or the file name when archiving a single file.
-Result writeTar(const fs::path& rootPath, const fs::path& rootName, const std::string& outputPath) {
+Result writeTar(const fs::path& rootPath, const fs::path& rootName, const std::string& outputPath,
+                const std::function<void(float)>& progressCallback, uintmax_t totalSize) {
     WritePtr output(archive_write_new());
     if (!output) return Result::Failure("Failed to create TAR writer");
 
@@ -91,6 +120,7 @@ Result writeTar(const fs::path& rootPath, const fs::path& rootName, const std::s
     if (result != ARCHIVE_OK) return Result::Failure("Failed to open input path: " + archiveError(disk.get()));
 
     std::unique_ptr<char[]> buffer(new char[ARCHIVE_BUFFER_SIZE]);
+    uintmax_t processedBytes = 0;
 
     while (true) {
         struct archive_entry* entry = nullptr;
@@ -142,6 +172,14 @@ Result writeTar(const fs::path& rootPath, const fs::path& rootName, const std::s
                     archive_write_data(output.get(), buffer.get(), static_cast<size_t>(bytesRead));
                 if (bytesWritten != bytesRead)
                     return Result::Failure("Failed to write file data: " + archiveError(output.get()));
+
+                if (progressCallback && totalSize > 0) {
+                    processedBytes += static_cast<size_t>(bytesRead);
+                    if (processedBytes > totalSize) processedBytes = totalSize;
+                    float percentage = static_cast<float>(processedBytes) * 100.0f / static_cast<float>(totalSize);
+                    if (percentage > 100.0f) percentage = 100.0f;
+                    progressCallback(percentage);
+                }
             }
         }
 
@@ -162,12 +200,14 @@ Result writeTar(const fs::path& rootPath, const fs::path& rootName, const std::s
     result = archive_write_close(output.get());
     if (isFatal(result)) return Result::Failure("Failed to finalize TAR: " + archiveError(output.get()));
 
+    if (progressCallback) progressCallback(100.0f);
     return Result::Success();
 }
 
 } // namespace
 
-Result tar_archive_engine::createTar(const std::string& inputPath, const std::string& outputPath) {
+Result tar_archive_engine::createTar(const std::string& inputPath, const std::string& outputPath,
+                                     const std::function<void(float)>& progressCallback) {
     std::error_code ec;
 
     if (!fs::exists(inputPath, ec) || ec) return Result::Failure("Input path does not exist: " + inputPath);
@@ -181,6 +221,7 @@ Result tar_archive_engine::createTar(const std::string& inputPath, const std::st
     fs::path rootName;
     if (!fs::is_directory(rootPath, ec)) rootName = rootPath.filename();
 
+    uintmax_t totalSize = calculateDirectorySize(rootPath);
     // Make sure the output directory exists.
     fs::path outParent = fs::path(outputPath).parent_path();
     if (!outParent.empty()) {
@@ -188,7 +229,7 @@ Result tar_archive_engine::createTar(const std::string& inputPath, const std::st
         if (ec) return Result::Failure("Failed to create output directory: " + ec.message());
     }
 
-    Result res = writeTar(rootPath, rootName, outputPath);
+    Result res = writeTar(rootPath, rootName, outputPath, progressCallback, totalSize);
 
     if (!res.success) {
         std::error_code rmEc;
@@ -197,10 +238,13 @@ Result tar_archive_engine::createTar(const std::string& inputPath, const std::st
     return res;
 }
 
-Result tar_archive_engine::extractTar(const std::string& inputPath, const std::string& outputPath) {
+Result tar_archive_engine::extractTar(const std::string& inputPath, const std::string& outputPath,
+                                      const std::function<void(float)>& progressCallback) {
     std::error_code ec;
 
     if (!fs::is_regular_file(inputPath, ec) || ec) return Result::Failure("TAR file does not exist: " + inputPath);
+
+    uintmax_t totalSize = fs::file_size(inputPath, ec);
 
     fs::create_directories(outputPath, ec);
     if (ec) return Result::Failure("Failed to create output directory: " + ec.message());
@@ -258,7 +302,8 @@ Result tar_archive_engine::extractTar(const std::string& inputPath, const std::s
 
         if (archive_entry_size(entry) > 0) {
             std::string error;
-            if (!copyDataToDisk(input.get(), output.get(), error)) return Result::Failure(error);
+            if (!copyDataToDisk(input.get(), output.get(), error, progressCallback, totalSize, input.get()))
+                return Result::Failure(error);
         }
 
         result = archive_write_finish_entry(output.get());
@@ -271,5 +316,6 @@ Result tar_archive_engine::extractTar(const std::string& inputPath, const std::s
     result = archive_read_close(input.get());
     if (isFatal(result)) return Result::Failure("Failed to close TAR: " + archiveError(input.get()));
 
+    if (progressCallback) progressCallback(100.0f);
     return Result::Success();
 }

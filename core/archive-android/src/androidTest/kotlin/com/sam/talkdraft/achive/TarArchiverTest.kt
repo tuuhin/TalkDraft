@@ -4,6 +4,8 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isGreaterThan
+import assertk.assertions.isGreaterThanOrEqualTo
+import assertk.assertions.isNotEmpty
 import assertk.assertions.isTrue
 import com.sam.talkdraft.archive_android.NativeTarArchiver
 import com.sam.talkdraft.testing.annotations.RunWithPlatform
@@ -484,5 +486,64 @@ class TarArchiverTest {
         assertThat(
             destination.resolve("empty").isDirectory,
         ).isTrue()
+    }
+
+    @Test
+    fun create_tar_reports_progress_monotonically() {
+        val source = tempDirectory.root.resolve("source")
+        val archive = tempDirectory.root.resolve("archive.tar")
+
+        source.mkdirs()
+        source.resolve("large.bin").writeBytes(
+            ByteArray(200_000) { index ->
+                (index % 256).toByte()
+            },
+        )
+
+        val progressValues = mutableListOf<Float>()
+        val result = archiver.createTar(
+            source.toOkioPath(),
+            archive.toOkioPath(),
+            onProgress = { progress ->
+                progressValues.add(progress)
+            },
+        )
+
+        assertThat(progressValues).isNotEmpty()
+        assertThat(progressValues.last()).isEqualTo(100.0f)
+        for (i in 1 until progressValues.size) {
+            assertThat(progressValues[i]).isGreaterThanOrEqualTo(progressValues[i - 1])
+        }
+    }
+
+    @Test
+    fun extract_tar_reports_progress_monotonically() {
+        val source = tempDirectory.root.resolve("source")
+        val archive = tempDirectory.root.resolve("archive.tar")
+        val destination = tempDirectory.root.resolve("destination")
+
+        source.mkdirs()
+        source.resolve("large.bin").writeBytes(
+            ByteArray(200_000) { index ->
+                (index % 256).toByte()
+            },
+        )
+
+        archiver.createTar(source.toOkioPath(), archive.toOkioPath()).getOrThrow()
+
+        val progressValues = mutableListOf<Float>()
+        val result = archiver.extractTar(
+            archive.toOkioPath(),
+            destination.toOkioPath(),
+            onProgress = { progress ->
+                progressValues.add(progress)
+            },
+        )
+
+        assertThat(progressValues).isNotEmpty()
+        assertThat(progressValues.last()).isEqualTo(100.0f)
+        for (i in 1 until progressValues.size) {
+            assertThat(progressValues[i]).isGreaterThanOrEqualTo(progressValues[i - 1])
+        }
     }
 }
