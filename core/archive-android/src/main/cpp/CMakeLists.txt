@@ -4,7 +4,7 @@ if (POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
 endif ()
 
-project(android_archiver)
+project(android_archiver C CXX)
 include(FetchContent)
 
 set(CMAKE_C_STANDARD 11)
@@ -16,14 +16,23 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BUILD_SHARED_LIBS ON)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -g0")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -g0")
+
+foreach (cfg RELEASE MINSIZEREL RELWITHDEBINFO)
+    set(CMAKE_C_FLAGS_${cfg} "-Os -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_${cfg} "-Os -DNDEBUG")
+endforeach ()
+
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--strip-all -Wl,-z,max-page-size=16384")
+
 set(ENABLE_TEST OFF CACHE BOOL "" FORCE)
-set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
+set(ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+set(ENABLE_WERROR OFF CACHE BOOL "" FORCE)
 set(ENABLE_TAR OFF CACHE BOOL "" FORCE)
 set(ENABLE_CPIO OFF CACHE BOOL "" FORCE)
 set(ENABLE_CAT OFF CACHE BOOL "" FORCE)
-set(ENABLE_BSDCAT OFF CACHE BOOL "" FORCE)
-set(ENABLE_BSDCPIO OFF CACHE BOOL "" FORCE)
-set(ENABLE_BSdtar OFF CACHE BOOL "" FORCE)
+set(ENABLE_UNZIP OFF CACHE BOOL "" FORCE)
 set(ENABLE_ZLIB ON CACHE BOOL "" FORCE)
 set(ENABLE_BZip2 ON CACHE BOOL "" FORCE)
 set(ENABLE_LZ4 OFF CACHE BOOL "" FORCE)
@@ -36,25 +45,6 @@ set(ENABLE_EXPAT OFF CACHE BOOL "" FORCE)
 set(ENABLE_ICONV OFF CACHE BOOL "" FORCE)
 set(ENABLE_ACL OFF CACHE BOOL "" FORCE)
 set(ENABLE_XATTR OFF CACHE BOOL "" FORCE)
-
-# Disable unused libarchive read/write formats to minimize binary size
-set(ENABLE_READ_FORMAT_CAB OFF CACHE BOOL "" FORCE)
-set(ENABLE_READ_FORMAT_CPIO OFF CACHE BOOL "" FORCE)
-set(ENABLE_READ_FORMAT_ISO9660 OFF CACHE BOOL "" FORCE)
-set(ENABLE_READ_FORMAT_LHA OFF CACHE BOOL "" FORCE)
-set(ENABLE_READ_FORMAT_MTREE OFF CACHE BOOL "" FORCE)
-set(ENABLE_READ_FORMAT_RAR OFF CACHE BOOL "" FORCE)
-set(ENABLE_READ_FORMAT_ZIP OFF CACHE BOOL "" FORCE)
-set(ENABLE_READ_FORMAT_7Z OFF CACHE BOOL "" FORCE)
-set(ENABLE_READ_FORMAT_AR OFF CACHE BOOL "" FORCE)
-set(ENABLE_READ_FORMAT_SHAR OFF CACHE BOOL "" FORCE)
-set(ENABLE_READ_FORMAT_XAR OFF CACHE BOOL "" FORCE)
-set(ENABLE_READ_FORMAT_WARC OFF CACHE BOOL "" FORCE)
-set(ENABLE_WRITE_FORMAT_CPIO OFF CACHE BOOL "" FORCE)
-set(ENABLE_WRITE_FORMAT_ISO9660 OFF CACHE BOOL "" FORCE)
-set(ENABLE_WRITE_FORMAT_MTREE OFF CACHE BOOL "" FORCE)
-set(ENABLE_WRITE_FORMAT_SHAR OFF CACHE BOOL "" FORCE)
-set(ENABLE_WRITE_FORMAT_ZIP OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
         bzip2
@@ -83,26 +73,22 @@ add_library(android_archiver SHARED
         src/tar_archive_engine.cpp src/tar_archive_jni.cpp
         src/cpp_result.cpp)
 
-target_include_directories(android_archiver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(android_archiver PRIVATE bz2 archive)
+target_include_directories(android_archiver PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${libarchive_SOURCE_DIR}/libarchive
+        ${bzip2_SOURCE_DIR})
+
+target_link_libraries(android_archiver PRIVATE archive bz2)
 target_compile_features(android_archiver PRIVATE cxx_std_20)
 
-# ABI-specific and target optimizations applied strictly to our wrapper library
-if (${ANDROID_ABI} STREQUAL "arm64-v8a")
-    target_compile_options(android_archiver PRIVATE -Os -flto=thin -march=armv8-a+fp16+dotprod -fvisibility=hidden -fvisibility-inlines-hidden)
-elseif (${ANDROID_ABI} STREQUAL "armeabi-v7a")
-    target_compile_options(android_archiver PRIVATE -Os -flto=thin -mfpu=neon-vfpv4 -mfloat-abi=softfp -fvisibility=hidden -fvisibility-inlines-hidden)
-elseif (${ANDROID_ABI} STREQUAL "x86_64")
-    target_compile_options(android_archiver PRIVATE -Os -flto=thin -fvisibility=hidden -fvisibility-inlines-hidden)
-elseif (${ANDROID_ABI} STREQUAL "x86")
-    target_compile_options(android_archiver PRIVATE -Os -flto=thin -fvisibility=hidden -fvisibility-inlines-hidden)
-else ()
-    target_compile_options(android_archiver PRIVATE -Os -flto=thin -fvisibility=hidden -fvisibility-inlines-hidden)
-endif ()
+target_compile_options(android_archiver PRIVATE
+        -fvisibility=hidden -fvisibility-inlines-hidden
+        -flto=thin)
 
 target_link_options(android_archiver PRIVATE
-        -flto=thin
+        -Wl,--exclude-libs,ALL
         -Wl,--gc-sections
         -Wl,--icf=safe
-        -Wl,--exclude-libs,ALL
+        -Wl,--build-id=none
+        -Wl,--strip-all
 )
