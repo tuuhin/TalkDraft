@@ -57,6 +57,7 @@ class SimpleVoiceRecorderImpl(
         .transcribe(_recorder.stream)
         .onEach { result ->
             if (result !is TranscriptionResult.Success) return@onEach
+            if (!result.isBlockResult) return@onEach
             // lock the array
             _lock.withLock { _segmentsCollector.add(result) }
         }
@@ -140,7 +141,7 @@ class SimpleVoiceRecorderImpl(
             val segmentBlocks = _lock.withLock { _segmentsCollector.toList() }
 
             // Save the segments and ensure the recording path is copied to a corrected
-            // file path and cleared
+            // file path deleted then
             // TODO: Save the segments and path
 
         } finally {

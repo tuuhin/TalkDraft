@@ -6,6 +6,7 @@ import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.transcription.domain.ITranscriberResultsProvider
 import com.sam.talkdraft.transcription.domain.ITranscriptionEngine
 import com.sam.talkdraft.transcription.domain.IVoiceDetectionProvider
+import com.sam.talkdraft.transcription.domain.model.TimedVoiceDetectionSegment
 import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
 import com.sam.talkdraft.transcription.domain.model.TranscriberEngine
 import com.sam.talkdraft.transcription.domain.model.TranscriptionEngineOutput
@@ -13,17 +14,23 @@ import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
 import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
 import kotlin.time.Duration
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.selects.select
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Named
 
@@ -128,17 +135,19 @@ internal class TranscriptionResultsProvider(
         // ready
         trySend(TranscriptionResult.Ready)
 
-        // one coroutine will load in the buffers
+        // we will be buffering the frames and unlimited segments channel as segment generation is slower
+        val frames = Channel<ShortArray>(Channel.BUFFERED)
+        val segments = Channel<TimedVoiceDetectionSegment>(Channel.UNLIMITED)
+
+        // read the values to the vad processor
         launch {
             try {
                 this@runTranscriptionEngine.collect { frame ->
-                    val frameArray = frame.toShortArray()
-                    // marking them as finalized means we don't want to save them
-                    val state = engine.processSegment(frameArray)
-                    val transcriptionState = state.toTranscriptionResult(null)
-                    trySend(transcriptionState)
-                    // responsible to load in the buffers into the vad
-                    vad.processAudioBuffer(frameArray)
+                    val arr = frame.toShortArray()
+                    // mark the vad to process the frame and send the frame to the channel
+                    vad.processAudioBuffer(arr)
+                    // send to frame buffer channel
+                    frames.send(arr)
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
@@ -146,51 +155,84 @@ internal class TranscriptionResultsProvider(
             }
         }
 
-        // another coroutine to send the segments to the engine for recognization
-        launch {
+        // reading the speech segments from the vad itself
+        launch(start = CoroutineStart.UNDISPATCHED) {
             try {
-                vad.speechSegments.collect { frame ->
-                    // finalized segments with data
-                    val frameArray = frame.samples.toShortArray()
-                    val state = engine.processSegment(frameArray)
-                    // in case it's a missed state or idc state then pass it though
-                    val finalState = state.toTranscriptionResult(frame.timedDuration)
-                    send(finalState)
-                    // then again another reset to do new segment
-                    engine.reset()
+                vad.speechSegments.collect(segments::send)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Logger.e(tag = TAG, throwable = e) { "FAILED TO FEED THE SEGMENTS TO ENGINE" }
+            }
+        }
+
+        // now the channel lopper
+        launch(context = dispatchers.io) {
+            try {
+                while (isActive) {
+                    select {
+                        // priority to segments first
+                        segments.onReceive { vadTimedSegment ->
+                            // if a segment is found we will clear the whole frames channel
+                            // clear all the audio frames as we are doing segments so these will not interfere
+                            while (isActive) {
+                                if (!frames.tryReceive().isSuccess) break
+                            }
+                            // reset the engine then process the segments
+                            engine.reset()
+                            // then process the current segment from scratch
+                            val state = engine.processSegment(vadTimedSegment.samples.toShortArray())
+                            send(state.toTranscriptionResult(vadTimedSegment.timedDuration))
+                            // then again reset so the new data will get a new process segment block for new buffers
+                            engine.reset()
+                        }
+
+                        // send plain buffers to the
+                        frames.onReceive { audioBuffer ->
+                            val state = engine.processSegment(audioBuffer)
+                            send(state.toTranscriptionResult(null))
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                Logger.e(tag = TAG, throwable = e) { "FAILED TO DEED THE SEGMENTS TO ENGINE" }
+                Logger.e(tag = TAG, throwable = e) { "ENGINE LOOP FAILED" }
             }
         }
-    }
-        .flowOn(dispatchers.io)
+
+        awaitClose {
+            // close the channels
+            frames.close()
+            segments.close()
+            Logger.d(tag = TAG) { "CLOSING IN TRANSCRIPTION FLOW" }
+        }
+    }.flowOn(dispatchers.io)
+        .distinctUntilChanged()
 
     private fun resolveEngine(engineType: TranscriberEngine): ITranscriptionEngine = when (engineType) {
         TranscriberEngine.WHISPER -> whisperEngine
         TranscriberEngine.ZIP_FORMER -> zipFormerEngine
     }
 
-    private fun TranscriptionEngineOutput.toTranscriptionResult(timedDuration: ClosedRange<Duration>? = null): TranscriptionResult {
+    private fun TranscriptionEngineOutput.toTranscriptionResult(blockDuration: ClosedRange<Duration>? = null): TranscriptionResult {
         return when (this) {
             is TranscriptionEngineOutput.InvalidResult -> TranscriptionResult.Failed(error = error, message = message)
-            is TranscriptionEngineOutput.Segment if (timedDuration != null) -> TranscriptionResult.Success(
-                segment = TranscriptionSegmentModel(segmentId = segmentId, text = text, timedDuration),
-                isFinalBlock = true,
+            is TranscriptionEngineOutput.Segment if text.isBlank() -> TranscriptionResult.Listening
+            is TranscriptionEngineOutput.Segment if (blockDuration != null) -> TranscriptionResult.Success(
+                segment = TranscriptionSegmentModel(segmentId = segmentId, text = text, blockDuration = blockDuration),
+                isBlockResult = true,
             )
 
             is TranscriptionEngineOutput.Segment -> TranscriptionResult.Success(
-                segment = TranscriptionSegmentModel(segmentId = segmentId, text = text),
-                isFinalBlock = false,
+                segment = TranscriptionSegmentModel(segmentId = segmentId, text = text, blockDuration = null),
+                isBlockResult = false,
             )
 
-            TranscriptionEngineOutput.Buffering -> TranscriptionResult.Ready
+            TranscriptionEngineOutput.Buffering -> TranscriptionResult.Listening
         }
     }
 
     companion object {
-        const val TAG = "TRANSCRIPTOR_RESULTS_PROVIDER"
+        private const val TAG = "TRANSCRIPTOR_RESULTS_PROVIDER"
     }
 }
 

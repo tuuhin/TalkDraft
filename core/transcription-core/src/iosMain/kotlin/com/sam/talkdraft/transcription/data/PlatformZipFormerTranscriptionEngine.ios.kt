@@ -8,6 +8,7 @@ import com.sam.talkdraft.transcription.data.models.ZipFormerModelPath
 import com.sam.talkdraft.transcription.domain.ITranscriptionEngine
 import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
 import com.sam.talkdraft.transcription.domain.model.TranscriptionEngineOutput
+import com.sam.talkdraft.transcription.domain.model.TranscriptionError
 import com.sam.talkdraft.transcription.ios.IosNativeZipFormer
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicLong
@@ -64,13 +65,17 @@ internal actual class PlatformZipFormerTranscriptionEngine(
 
         if (!_isSetupDone.load()) {
             Logger.w(tag = TAG) { "SETUP IS MISSING FIRST SET IT UP" }
-            return TranscriptionEngineOutput.InvalidResult(exception = IllegalStateException("Setup missing cannot process segment without setup"))
+            return TranscriptionEngineOutput.InvalidResult(error = TranscriptionError.ModelSetupAbsent)
         }
 
         Logger.d(tag = TAG) { "ENGINE INPUT SIZE :${bytes.size}" }
 
         val zipFormerResult = instance.processFrame(bytes)
-            ?: return TranscriptionEngineOutput.InvalidResult(exception = Exception("No output from engine"))
+            ?: return TranscriptionEngineOutput.Segment(
+                segmentId = _segmentId.load(),
+                text = _activeSegmentBuilder.toString(),
+                isPlaceholder = true,
+            )
 
         val segmentId = zipFormerResult.segmentId
         val cumulativeHypothesis = zipFormerResult.segment.trim()
