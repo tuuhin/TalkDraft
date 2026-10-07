@@ -12,7 +12,9 @@ import com.sam.talkdraft.recorder.domain.IRecordPermissionChecker
 import com.sam.talkdraft.recorder.domain.exception.RecorderInitMissingException
 import com.sam.talkdraft.recorder.domain.models.RecorderState
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -64,7 +66,7 @@ internal actual class AudioPCMReaderImpl(
                 Logger.d(tag = TAG) { "GRANTED A BUFFER SIZE OF :$_pcmBufferSize" }
 
                 _recorder = AudioRecord(
-                    MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                    MediaRecorder.AudioSource.MIC,
                     SAMPLE_RATE,
                     CHANNEL_CONFIG,
                     AUDIO_FORMAT,
@@ -128,7 +130,7 @@ internal actual class AudioPCMReaderImpl(
     actual override fun readRecorderRawBytes(state: RecorderState): Flow<ReadOnlyShortBuffer> {
         return flow {
             // reset the state based on the state
-            if (!state.canReadAmplitudes) {
+            if (!state.canReadAmplitudes || state != RecorderState.RECORDING) {
                 Logger.d(tag = TAG) { "INVALID STATE TO EXPOSE DATA: $state" }
                 emit(ReadOnlyShortBuffer.empty())
                 return@flow
@@ -139,17 +141,36 @@ internal actual class AudioPCMReaderImpl(
             }
 
             try {
-                val pcmBuffer = ShortArray(_pcmBufferSize)
-                var shortsRead: Int
+                val bufferSize = if (_pcmBufferSize > 0) _pcmBufferSize else CHUNK_SAMPLE_COUNT
+                val pcmBuffer = ShortArray(bufferSize)
 
-                Logger.d(tag = TAG) { "STARING READING AMPLITUDE DATA" }
+                Logger.i(tag = TAG) { "WAITING FOR THE RECORDER TO MOVE TO RECORDING STATE" }
+                // a bit of delay
+                while (recorder.recordingState != AudioRecord.RECORDSTATE_RECORDING && currentCoroutineContext().isActive) {
+                    delay(10.milliseconds)
+                }
 
-                while (state == RecorderState.RECORDING && currentCoroutineContext().isActive) {
-                    // ensure the current coroutine is active otherwise
-                    shortsRead = recorder.read(pcmBuffer, 0, pcmBuffer.size)
-                    if (shortsRead in errorCodes || shortsRead == 0) break
-                    val frameSnapshot = pcmBuffer.copyOf(shortsRead)
-                    emit(ReadOnlyShortBuffer.wrap(frameSnapshot, shortsRead))
+                Logger.i(tag = TAG) { "STARTING READING AMPLITUDE DATA" }
+
+                while (currentCoroutineContext().isActive && recorder.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                    val shortsRead = recorder.read(pcmBuffer, 0, pcmBuffer.size, AudioRecord.READ_NON_BLOCKING)
+                    when {
+                        // in-case we get an empty shorts read
+                        shortsRead == 0 -> delay(10.milliseconds)
+                        // if the error codes are empty
+                        shortsRead in errorCodes -> {
+                            Logger.w(tag = TAG) { "AudioRecord read returned error code: $shortsRead" }
+                            if (shortsRead == AudioRecord.ERROR_INVALID_OPERATION && recorder.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
+                                break
+                            }
+                            delay(10.milliseconds)
+                        }
+                        // if we have the data emit it
+                        shortsRead > 0 -> {
+                            val frameSnapshot = pcmBuffer.copyOf(shortsRead)
+                            emit(ReadOnlyShortBuffer.wrap(frameSnapshot, shortsRead))
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 if (e is CancellationException)

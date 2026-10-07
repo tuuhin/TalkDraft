@@ -18,7 +18,7 @@ import com.sam.talkdraft.recorder.domain.exception.RecorderInvalidConfigurationE
 import com.sam.talkdraft.recorder.domain.models.RecorderState
 import com.sam.talkdraft.recorder.domain.models.RecordingFormats
 import com.sam.talkdraft.recorder.domain.stopwatch.RecorderStopWatch
-import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +29,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.runBlocking
@@ -72,7 +72,11 @@ internal actual class VoiceRecorderImpl(
     @OptIn(ExperimentalCoroutinesApi::class)
     actual override val stream: Flow<ReadOnlyShortBuffer> = _stopWatch.recorderState
         .flatMapLatest(pcmReader::readRecorderRawBytes)
-        .distinctUntilChanged()
+        .catch { e ->
+            if (e is CancellationException) throw e
+            Logger.e(tag = TAG, throwable = e) { "Error in audio PCM stream" }
+            emit(ReadOnlyShortBuffer.empty())
+        }
         .shareIn(scope, SharingStarted.Lazily, 0)
 
     actual override suspend fun start() {
@@ -85,29 +89,41 @@ internal actual class VoiceRecorderImpl(
             Logger.d(tag = TAG) { "PREPARING FILES FOR RECORDING" }
             initRecorder(format = RecordingFormats.FORMAT_M4A)
 
-            Logger.d(tag = TAG) { "PREPARING RECORDER STOP WATCH" }
-            _stopWatch.prepare()
-            // prepare the recorder
-            _recorder?.prepare()
-            Logger.d(tag = TAG) { "RECORDER READY" }
-            // initiate the amplitude reader
-            _stopWatch.startOrResume()
-            pcmReader.start()
-            _recorder?.start()
-            Logger.d(tag = TAG) { "RECORDER STARTED" }
+            if (_recorder == null) {
+                Logger.w(tag = TAG) { "RECORDER INITIALIZATION FAILED" }
+                return@tryWithLock
+            }
+
+            try {
+                Logger.d(tag = TAG) { "PREPARING RECORDER STOP WATCH" }
+                _stopWatch.prepare()
+                // prepare the recorder
+                _recorder?.prepare()
+                Logger.d(tag = TAG) { "RECORDER READY" }
+                // initiate the amplitude reader before setting state to recording
+                pcmReader.start()
+                _recorder?.start()
+                _stopWatch.startOrResume()
+                Logger.d(tag = TAG) { "RECORDER STARTED" }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Logger.e(tag = TAG, throwable = e) { "FAILED TO START RECORDER" }
+                release()
+            }
         }
     }
 
     actual override suspend fun resume() {
         _lock.tryWithLock(this) {
             try {
-                Logger.d(tag = TAG) { "STOP WATCH RESUMED" }
-                _stopWatch.startOrResume()
-                //pause recorder
-                Logger.d(tag = TAG) { "RECORDER IS PAUSED" }
+                Logger.d(tag = TAG) { "RESUMING RECORDER" }
+                pcmReader.start()
                 _recorder?.resume()
-            } catch (e: IOException) {
-                e.printStackTrace()
+                _stopWatch.startOrResume()
+                Logger.d(tag = TAG) { "RECORDER RESUMED" }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Logger.e(tag = TAG, throwable = e) { "FAILED TO RESUME RECORDER" }
             }
         }
     }
@@ -120,8 +136,10 @@ internal actual class VoiceRecorderImpl(
                 //pause recorder
                 Logger.d(tag = TAG) { "RECORDER IS PAUSED" }
                 _recorder?.pause()
-            } catch (e: IOException) {
-                e.printStackTrace()
+                pcmReader.stop()
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Logger.e(tag = TAG, throwable = e) { "FAILED TO PAUSE RECORDER" }
             }
         }
     }
@@ -132,6 +150,12 @@ internal actual class VoiceRecorderImpl(
             // reset the timer
             Logger.d(tag = TAG) { "STOPWATCH STOPPED" }
             _stopWatch.stop()
+            try {
+                pcmReader.stop()
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Logger.w(tag = TAG, throwable = e) { "FAILED TO STOP PCM READER" }
+            }
             //stop the ongoing recording
             try {
                 _recorder?.stop()
@@ -150,6 +174,13 @@ internal actual class VoiceRecorderImpl(
                 Logger.d(tag = TAG) { "STOPPING STOPWATCH" }
                 _stopWatch.cancel()
                 try {
+                    pcmReader.stop()
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    Logger.w(tag = TAG, throwable = e) { "FAILED TO STOP PCM READER" }
+                }
+
+                try {
                     _recorder?.stop()
                     Logger.d(tag = TAG) { "RECORDER STOPPED" }
                 } catch (e: RuntimeException) {
@@ -163,8 +194,9 @@ internal actual class VoiceRecorderImpl(
                         _recordingPath = null
                     }
                 }
-            } catch (e: IOException) {
-                e.printStackTrace()
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Logger.e(tag = TAG, throwable = e) { "FAILED TO CANCEL RECORDER" }
             }
         }
     }
