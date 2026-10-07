@@ -2,13 +2,10 @@ package com.sam.talkdraft.recorder.composable
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,6 +46,8 @@ internal fun RecorderSheetContent(
     completedUI: @Composable () -> Unit,
 ) {
 
+    val motionScheme = MaterialTheme.motionScheme
+
     val screenState by remember(state) {
         derivedStateOf {
             when (state.failedReason) {
@@ -71,13 +70,14 @@ internal fun RecorderSheetContent(
         AnimatedContent(
             targetState = screenState,
             transitionSpec = {
-                fadeIn(animationSpec = tween(150, easing = LinearOutSlowInEasing)) +
-                    scaleIn(initialScale = 0.96f, animationSpec = tween(150)) togetherWith
-                    fadeOut(animationSpec = tween(100, easing = FastOutLinearInEasing)) using
-                    SizeTransform(
-                        clip = false,
-                        sizeAnimationSpec = { _, _ -> tween(durationMillis = 200, easing = FastOutSlowInEasing) },
-                    )
+                scaleIn(initialScale = 0.97f, animationSpec = motionScheme.defaultSpatialSpec()) +
+                    fadeIn(animationSpec = motionScheme.defaultEffectsSpec()) togetherWith
+                    scaleOut(
+                        targetScale = 0.97f, animationSpec = motionScheme.defaultSpatialSpec(),
+                    ) + fadeOut(animationSpec = motionScheme.defaultEffectsSpec()) using SizeTransform(
+                    clip = false,
+                    sizeAnimationSpec = { _, _ -> motionScheme.defaultSpatialSpec() },
+                )
             },
             label = "transition_between_states",
             modifier = Modifier.fillMaxWidth(),
@@ -155,12 +155,12 @@ private fun OneImageTwoTextLayout(
     }
 }
 
-private sealed class SheetContentState {
-    data object GetStarted : SheetContentState()
-    data object OngoingRecording : SheetContentState()
-    data object MissingPermission : SheetContentState()
-    data object PreparingForRecording : SheetContentState()
+private sealed class SheetContentState(val order: Int) {
+    data object GetStarted : SheetContentState(0)
+    data object OngoingRecording : SheetContentState(3)
+    data object MissingPermission : SheetContentState(1)
+    data object PreparingForRecording : SheetContentState(2)
 
-    data class CaptureCompleted(val transcript: String? = null) : SheetContentState()
-    data class CaptureOrSetupFailed(val message: String? = null) : SheetContentState()
+    data class CaptureCompleted(val transcript: String? = null) : SheetContentState(5)
+    data class CaptureOrSetupFailed(val message: String? = null) : SheetContentState(5)
 }

@@ -10,11 +10,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,11 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.sam.talkdraft.designs.CommonResources
@@ -36,7 +32,6 @@ import com.sam.talkdraft.designs.ic_error_simple
 import com.sam.talkdraft.designs.ic_listener
 import com.sam.talkdraft.designsystem.theme.montserrat
 import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
-import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -49,7 +44,7 @@ internal fun RealtimeTranscriptionText(
             when (state) {
                 is TranscriptionResult.Failed -> UIRealtimeTranscriptionMode.Error
                 TranscriptionResult.Idle -> UIRealtimeTranscriptionMode.Idle
-                TranscriptionResult.Ready -> UIRealtimeTranscriptionMode.Ready
+                TranscriptionResult.Ready, TranscriptionResult.Listening -> UIRealtimeTranscriptionMode.Ready
                 is TranscriptionResult.Success if state.segment.text.isBlank() -> UIRealtimeTranscriptionMode.Ready
                 is TranscriptionResult.Success -> {
                     val id = state.segment.segmentId
@@ -80,8 +75,9 @@ internal fun RealtimeTranscriptionText(
                 is UIRealtimeTranscriptionMode.Ready -> EngineReadyIndicator()
                 is UIRealtimeTranscriptionMode.Success -> {
                     val transcription = state as? TranscriptionResult.Success
-                    WordsSegmentTranscriptionText(
+                    TranscriptionSegmentText(
                         segmentModel = transcription?.segment,
+                        fontFamily = montserrat(),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -105,35 +101,6 @@ private sealed class UIRealtimeTranscriptionMode {
     // segment id differentiate a segment not the message
     data class Success(val segmentId: Long) : UIRealtimeTranscriptionMode()
     data object Error : UIRealtimeTranscriptionMode()
-}
-
-@Composable
-private fun WordsSegmentTranscriptionText(
-    segmentModel: TranscriptionSegmentModel?,
-    modifier: Modifier = Modifier,
-    fontFamily: FontFamily = montserrat(),
-) {
-    val words = segmentModel?.text?.trim()?.split("\\s+".toRegex()) ?: emptyList()
-    val segmentId = segmentModel?.segmentId ?: -1
-
-    FlowRow(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.Center,
-        verticalArrangement = Arrangement.Center,
-        maxItemsInEachRow = 8,
-    ) {
-        words.forEachIndexed { index, word ->
-            key("$segmentId\"_${index}_$word") {
-                Text(
-                    text = word,
-                    fontFamily = fontFamily,
-                    style = MaterialTheme.typography.bodyMediumEmphasized,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 2.dp),
-                )
-            }
-        }
-    }
 }
 
 @Composable

@@ -12,6 +12,7 @@ import com.sam.talkdraft.transcription.domain.ITranscriberResultsProvider
 import com.sam.talkdraft.transcription.domain.model.TranscriberConfig
 import com.sam.talkdraft.transcription.domain.model.TranscriberEngine
 import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
+import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
@@ -20,14 +21,16 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import okio.Path
@@ -53,26 +56,32 @@ class SimpleVoiceRecorderImpl(
 
     override val waveform: Flow<ReadOnlyFloatBuffer?> = _ampsReader.waveformFlow(30)
 
-    override val transcriptionResult: Flow<TranscriptionResult> = transcriber
+    override val realtimeTranscription: StateFlow<TranscriptionResult> = transcriber
         .transcribe(_recorder.stream)
         .onEach { result ->
             if (result !is TranscriptionResult.Success) return@onEach
             if (!result.isBlockResult) return@onEach
-            // lock the array
-            _lock.withLock { _segmentsCollector.add(result) }
+            // we have a transcription block result
+            transcriptionSegments.update { old -> old + result.segment }
         }
-        .shareIn(
+        .filterNot { state ->
+            // filter out if the segment is a block result
+            // block results are intended for saving the data not for realtime feed
+            state is TranscriptionResult.Success && state.isBlockResult
+        }
+        .stateIn(
             scope = _scope,
             started = SharingStarted.WhileSubscribed(10_000L),
-            1,
+            initialValue = TranscriptionResult.Idle,
         )
+
+    override val transcriptionSegments: StateFlow<List<TranscriptionSegmentModel>>
+        field = MutableStateFlow<List<TranscriptionSegmentModel>>(emptyList())
 
     private val _errorChannel = Channel<Exception>(capacity = Channel.CONFLATED)
     override val errors: Flow<Exception> = _errorChannel.receiveAsFlow()
 
     private var _recordingPath: Path? = null
-    private val _lock = Mutex()
-    private val _segmentsCollector = ArrayList<TranscriptionResult.Success>()
 
     override suspend fun setup(): Result<Unit> = runCatching {
         // selects the model provider
@@ -95,7 +104,7 @@ class SimpleVoiceRecorderImpl(
         val request = TranscriberConfig(modelPath, language)
         transcriber.setConfig(request, engine)
         // reset collected segments
-        _lock.withLock { _segmentsCollector.clear() }
+        transcriptionSegments.update { emptyList() }
     }
 
 
@@ -107,8 +116,8 @@ class SimpleVoiceRecorderImpl(
     }
 
     override suspend fun start(): Result<Unit> = runCatching {
-        // reset the locks on start
-        _lock.withLock { _segmentsCollector.clear() }
+        // reset collected segments
+        transcriptionSegments.update { emptyList() }
         _recordingPath = null
         // now to start it we need to ensure the transcriber is on
         try {
@@ -125,20 +134,18 @@ class SimpleVoiceRecorderImpl(
 
     override suspend fun cancel(): Result<Unit> = runCatching {
         // cancel the recorder first
-        // if the recorder is running
-        if (_recorder.state.value == RecorderState.RECORDING)
-            _recorder.cancel()
+        _recorder.cancel()
         // clear the transcriptor engine
         transcriber.clearConfig()
-        // clear the segments
-        _lock.withLock { _segmentsCollector.clear() }
+        // reset collected segments
+        transcriptionSegments.update { emptyList() }
     }
 
     override suspend fun onSave(): Result<Unit> = runCatching {
         try {
             // decided to save the transcription results
             val path = _recordingPath ?: throw IllegalStateException("Missing model path to save")
-            val segmentBlocks = _lock.withLock { _segmentsCollector.toList() }
+            val segmentBlocks = transcriptionSegments.value
 
             // Save the segments and ensure the recording path is copied to a corrected
             // file path deleted then
@@ -156,7 +163,7 @@ class SimpleVoiceRecorderImpl(
         // release the recorder
         _recorder.release()
         // clear the segments
-        _segmentsCollector.clear()
+        transcriptionSegments.update { emptyList() }
         // cleans up the recorder scope
         if (_scope.isActive) _scope.cancel()
     }

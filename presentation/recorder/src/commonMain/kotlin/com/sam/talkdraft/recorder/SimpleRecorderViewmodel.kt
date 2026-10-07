@@ -13,25 +13,18 @@ import com.sam.talkdraft.permissions.IPermissionsRequester
 import com.sam.talkdraft.permissions.model.IosPermissionStatus
 import com.sam.talkdraft.permissions.model.PermissionState
 import com.sam.talkdraft.permissions.model.Permissions
-import com.sam.talkdraft.recorder.domain.models.RecorderState
 import com.sam.talkdraft.recorder.events.RecordingScreenEvent
 import com.sam.talkdraft.recorder.model.RecorderFailedReason
 import com.sam.talkdraft.recorder.model.RecorderSheetState
 import com.sam.talkdraft.recorder.model.RecorderUIState
-import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
 import kotlin.time.Duration
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -49,7 +42,16 @@ internal class SimpleRecorderViewmodel(
     private val _isRecorderSetupRunning = MutableStateFlow(false)
     private val _isSavingResult = MutableStateFlow(false)
     private val _failedReason = MutableStateFlow<RecorderFailedReason>(RecorderFailedReason.None)
-    private val _fullTranscriptionBlocks = MutableStateFlow<List<String>>(emptyList())
+
+    private val _recorderUIState: StateFlow<RecorderUIState> = combine(
+        flow = recorder.recorderState,
+        flow2 = recorder.realtimeTranscription,
+        transform = ::RecorderUIState,
+    ).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(10_000L),
+        initialValue = RecorderUIState(),
+    )
 
     val recorderDuration: StateFlow<Duration> = recorder.elapsedTime
         .stateIn(
@@ -66,50 +68,27 @@ internal class SimpleRecorderViewmodel(
             initialValue = ReadOnlyFloatBuffer.wrap(floatArrayOf(), 0),
         )
 
-
-    val uiState: StateFlow<RecorderSheetState>
-        get() = combine(
-            _recorderUIState, _failedReason,
-            _isRecorderSetupRunning, _fullTranscriptionBlocks, _isSavingResult,
-        ) { uiState, failedReason, isSetupRunning, fullBlock, isSavingResult ->
-            RecorderSheetState(
-                state = uiState,
-                failedReason = failedReason,
-                isModelSetupRunning = isSetupRunning,
-                finalizedTranscriptionText = fullBlock.fastJoinToString(),
-                isSavingRecording = isSavingResult,
-            )
-        }.onStart {
-            checkRecordAudioPermission()
-            observeFinalTranscription()
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(10_000L),
-            initialValue = RecorderSheetState(),
+    val uiState: StateFlow<RecorderSheetState> = combine(
+        _recorderUIState, _failedReason,
+        _isRecorderSetupRunning, recorder.transcriptionSegments, _isSavingResult,
+    ) { uiState, failedReason, isSetupRunning, fullBlock, isSavingResult ->
+        RecorderSheetState(
+            state = uiState,
+            failedReason = failedReason,
+            isModelSetupRunning = isSetupRunning,
+            finalizedTranscriptionText = fullBlock.fastJoinToString(separator = ". ") { segment -> segment.text },
+            isSavingRecording = isSavingResult,
         )
+    }.onStart {
+        checkRecordAudioPermission()
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(10_000L),
+        initialValue = RecorderSheetState(),
+    )
 
     val uiEvents: SharedFlow<UIEvents>
         field = MutableSharedFlow<UIEvents>()
-
-    // in case transcription result is a final block don't show this on ui layer
-    private val uiTranscriptionResult = recorder.transcriptionResult
-        .filterNot { state -> state is TranscriptionResult.Success && state.isBlockResult }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(10_000),
-            initialValue = TranscriptionResult.Idle,
-        )
-
-    // ui state transform as combine cant hold values
-    private val _recorderUIState = combine(
-        flow = recorder.recorderState,
-        flow2 = uiTranscriptionResult,
-        transform = ::RecorderUIState,
-    ).stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(10_000L),
-        initialValue = RecorderUIState(),
-    )
 
     fun onEvent(event: RecordingScreenEvent) = viewModelScope.launch {
         when (event) {
@@ -171,28 +150,6 @@ internal class SimpleRecorderViewmodel(
                 _failedReason.update { RecorderFailedReason.GenericError(message) }
             },
         )
-    }
-
-    private fun observeFinalTranscription() {
-
-        val transcriptionBlockFlow = recorder.transcriptionResult
-            .filterIsInstance<TranscriptionResult.Success>()
-            .filter { it.isBlockResult }
-
-        combine(recorder.recorderState, transcriptionBlockFlow) { recorderState, transcriptionResult ->
-            // only if its in idle state clear all the blocks
-            if (recorderState == RecorderState.IDLE) {
-                _fullTranscriptionBlocks.update { emptyList() }
-                return@combine
-            }
-            // update the block segments
-            _fullTranscriptionBlocks.update { old -> old + transcriptionResult.segment.text }
-        }
-            .catch { err ->
-                _failedReason.update {
-                    RecorderFailedReason.GenericError(err.message ?: "Failed to read in blocks")
-                }
-            }.launchIn(viewModelScope)
     }
 
 

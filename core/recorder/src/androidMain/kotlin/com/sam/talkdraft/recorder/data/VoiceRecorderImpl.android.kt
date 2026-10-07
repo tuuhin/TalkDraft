@@ -158,8 +158,11 @@ internal actual class VoiceRecorderImpl(
             }
             //stop the ongoing recording
             try {
-                _recorder?.stop()
-                Logger.d(tag = TAG) { "RECORDER STOPPED" }
+                // only stop the recorder if the recorder state is recording
+                if (state.value == RecorderState.RECORDING) {
+                    _recorder?.stop()
+                    Logger.d(tag = TAG) { "RECORDER STOPPED" }
+                }
             } catch (e: RuntimeException) {
                 Logger.e(tag = TAG, throwable = e) { "FAILED TO STOP RECORDER" }
             }
@@ -179,10 +182,12 @@ internal actual class VoiceRecorderImpl(
                     if (e is CancellationException) throw e
                     Logger.w(tag = TAG, throwable = e) { "FAILED TO STOP PCM READER" }
                 }
-
                 try {
-                    _recorder?.stop()
-                    Logger.d(tag = TAG) { "RECORDER STOPPED" }
+                    // only stop the recorder if the recorder state is recording or prepearing
+                    if (state.value == RecorderState.RECORDING || state.value == RecorderState.PREPARING) {
+                        _recorder?.stop()
+                        Logger.d(tag = TAG) { "RECORDER STOPPED" }
+                    }
                 } catch (e: RuntimeException) {
                     Logger.e(tag = TAG, throwable = e) { "FAILED TO STOP RECORDER" }
                 }

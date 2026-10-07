@@ -66,8 +66,6 @@ internal actual class PlatformZipFormerTranscriptionEngine(
             return TranscriptionEngineOutput.InvalidResult(error = TranscriptionError.ModelSetupAbsent)
         }
 
-        Logger.d(tag = TAG) { "ENGINE INPUT SIZE :${bytes.size}" }
-
         val zipFormerResult = instance.processFrame(bytes)
             ?: return TranscriptionEngineOutput.Segment(
                 segmentId = _segmentId.load(),
