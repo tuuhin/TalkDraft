@@ -43,3 +43,4 @@ add_link_options(
 add_subdirectory(native_whisper)
 add_subdirectory(native_zipformer)
 add_subdirectory(native_vad)
+add_subdirectory(native_punctuations)
