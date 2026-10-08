@@ -6,11 +6,15 @@ import kotlinx.coroutines.flow.Flow
 
 interface IUserAuthManager {
 
-	suspend fun getCurrentUser(): AuthUserModel
+    suspend fun getCurrentUser(): AuthUserModel
 
-	val userFlow: Flow<AuthUserModel?>
+    val userFlow: Flow<AuthUserModel?>
 
-	suspend fun signInWithOAuth(provider: OAuthProviders = OAuthProviders.GOOGLE): Result<AuthUserModel>
+    val supportedOAuthProviders: List<OAuthProviders>
 
-	suspend fun signOut(): Result<Unit>
+    suspend fun signInAnonymously(): Result<AuthUserModel>
+
+    suspend fun signInWithOAuth(provider: OAuthProviders = OAuthProviders.GOOGLE): Result<AuthUserModel>
+
+    suspend fun signOut(): Result<Unit>
 }

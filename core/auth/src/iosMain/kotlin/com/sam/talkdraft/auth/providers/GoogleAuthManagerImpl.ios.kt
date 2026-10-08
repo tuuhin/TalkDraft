@@ -3,6 +3,7 @@ package com.sam.talkdraft.auth.providers
 import co.touchlab.kermit.Logger
 import com.sam.talkdraft.auth.exceptions.GoogleSignInException
 import com.sam.talkdraft.auth.models.GoogleOAuthToken
+import com.sam.talkdraft.auth.util.getTopViewController
 import com.sam.talkdraft.auth.util.toAuthModel
 import com.sam.talkdraft.common.platform.PlatformHashGenerator
 import com.sam.talkdraft.commons.AppSecretProperties
