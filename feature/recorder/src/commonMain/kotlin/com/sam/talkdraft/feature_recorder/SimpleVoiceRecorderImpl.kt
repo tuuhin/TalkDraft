@@ -59,15 +59,14 @@ class SimpleVoiceRecorderImpl(
     override val realtimeTranscription: StateFlow<TranscriptionResult> = transcriber
         .transcribe(_recorder.stream)
         .onEach { result ->
-            if (result !is TranscriptionResult.Success) return@onEach
-            if (!result.isBlockResult) return@onEach
-            // we have a transcription block result
+            if (result !is TranscriptionResult.Success || result.isRealtime) return@onEach
+            // only care about the block results not the realtime segments
             transcriptionSegments.update { old -> old + result.segment }
         }
         .filterNot { state ->
-            // filter out if the segment is a block result
-            // block results are intended for saving the data not for realtime feed
-            state is TranscriptionResult.Success && state.isBlockResult
+            // filter out if the segment is success and not realtime
+            // so blocks are not exposed
+            state is TranscriptionResult.Success && !state.isRealtime
         }
         .stateIn(
             scope = _scope,

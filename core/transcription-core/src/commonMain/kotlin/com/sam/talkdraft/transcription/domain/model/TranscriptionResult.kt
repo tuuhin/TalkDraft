@@ -1,5 +1,7 @@
 package com.sam.talkdraft.transcription.domain.model
 
+import kotlin.time.Duration
+
 sealed interface TranscriptionResult {
 
     data object Idle : TranscriptionResult
@@ -8,7 +10,8 @@ sealed interface TranscriptionResult {
 
     data class Success(
         val segment: TranscriptionSegmentModel,
-        val isBlockResult: Boolean = false,
+        val isRealtime: Boolean = true,
+        val segmentDuration: ClosedRange<Duration>? = null,
     ) : TranscriptionResult
 
     data class Failed(val error: TranscriptionError, val message: String? = null) : TranscriptionResult

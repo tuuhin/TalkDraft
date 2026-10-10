@@ -36,6 +36,7 @@ import com.sam.talkdraft.transcription.domain.model.TranscriptionSegmentModel
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 internal fun SimpleRecorderSheet(
@@ -84,22 +85,18 @@ internal fun SimpleRecorderSheet(
             },
             completedUI = {
                 CapturedTranscriptionContent(
-                    transcriptionText = screenState.finalizedTranscriptionText,
+                    transcriptionText = screenState.finalizedTranscriptions,
                     modifier = Modifier.fillMaxWidth(),
                 )
             },
         )
         // actions will be updated later
         RecorderSheetActions(
-            isRecording = screenState.recorderState == RecorderState.RECORDING,
-            isRecordingCompleted = screenState.recorderState == RecorderState.COMPLETED,
-            isSavingRecording = screenState.isSavingRecording && screenState.finalizedTranscriptionText != null,
-            isAllButtonDisabled = screenState.isModelSetupRunning,
-            onCancelRecording = { onAction(RecordingScreenEvent.OnCancelRecording) },
-            onSave = { onAction(RecordingScreenEvent.OnSaveTranscription) },
-            onResetRecording = { onAction(RecordingScreenEvent.OnResetRecording) },
-            onRecording = { onAction(RecordingScreenEvent.StartRecording) },
-            onStopRecording = { onAction(RecordingScreenEvent.StopRecording) },
+            recorderState = screenState.recorderState,
+            isSavable = screenState.finalizedTranscriptions.isNotEmpty(),
+            isSavingRecording = screenState.isSavingRecording,
+            isModelSetupRunning = screenState.isModelSetupRunning,
+            onAction = onAction,
             modifier = Modifier.fillMaxWidth(.85f),
         )
     }
@@ -131,7 +128,7 @@ private class SimpleRecorderPreviewScreenState : PreviewParameterProvider<Record
                 isModelSetupRunning = true,
             ),
             RecorderSheetState(
-                finalizedTranscriptionText = "Hello how are you doing these days".repeat(3),
+                finalizedTranscriptions = persistentListOf("Hello how are you doing these days", "I am doing oke"),
                 state = RecorderUIState(
                     recorderState = RecorderState.COMPLETED,
                     transcriptions = TranscriptionResult.Success(
@@ -140,7 +137,6 @@ private class SimpleRecorderPreviewScreenState : PreviewParameterProvider<Record
                 ),
             ),
             RecorderSheetState(
-                finalizedTranscriptionText = null,
                 state = RecorderUIState(
                     recorderState = RecorderState.COMPLETED,
                     transcriptions = TranscriptionResult.Success(

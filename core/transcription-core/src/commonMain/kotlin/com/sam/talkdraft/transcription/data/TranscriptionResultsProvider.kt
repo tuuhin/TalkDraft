@@ -217,16 +217,14 @@ internal class TranscriptionResultsProvider(
         return when (this) {
             is TranscriptionEngineOutput.InvalidResult -> TranscriptionResult.Failed(error = error, message = message)
             is TranscriptionEngineOutput.Segment if text.isBlank() -> TranscriptionResult.Listening
-            is TranscriptionEngineOutput.Segment if (blockDuration != null) -> TranscriptionResult.Success(
-                segment = TranscriptionSegmentModel(segmentId = segmentId, text = text, blockDuration = blockDuration),
-                isBlockResult = true,
-            )
-
-            is TranscriptionEngineOutput.Segment -> TranscriptionResult.Success(
-                segment = TranscriptionSegmentModel(segmentId = segmentId, text = text, blockDuration = null),
-                isBlockResult = false,
-            )
-
+            is TranscriptionEngineOutput.Segment -> {
+                val segment = TranscriptionSegmentModel(segmentId = segmentId, text = text)
+                TranscriptionResult.Success(
+                    segment = segment,
+                    isRealtime = blockDuration == null,
+                    segmentDuration = blockDuration,
+                )
+            }
             TranscriptionEngineOutput.Buffering -> TranscriptionResult.Listening
         }
     }

@@ -1,8 +1,8 @@
 package com.sam.talkdraft.recorder
 
-import androidx.compose.ui.util.fastJoinToString
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import com.sam.talkdraft.common.model.ReadOnlyFloatBuffer
 import com.sam.talkdraft.designsystem.utils.UIEvents
 import com.sam.talkdraft.feature_recorder.ISimpleVoiceRecorder
@@ -18,6 +18,7 @@ import com.sam.talkdraft.recorder.model.RecorderFailedReason
 import com.sam.talkdraft.recorder.model.RecorderSheetState
 import com.sam.talkdraft.recorder.model.RecorderUIState
 import kotlin.time.Duration
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -70,18 +72,20 @@ internal class SimpleRecorderViewmodel(
 
     val uiState: StateFlow<RecorderSheetState> = combine(
         _recorderUIState, _failedReason,
-        _isRecorderSetupRunning, recorder.transcriptionSegments, _isSavingResult,
+        _isRecorderSetupRunning,
+        recorder.transcriptionSegments, _isSavingResult,
     ) { uiState, failedReason, isSetupRunning, fullBlock, isSavingResult ->
         RecorderSheetState(
             state = uiState,
             failedReason = failedReason,
             isModelSetupRunning = isSetupRunning,
-            finalizedTranscriptionText = fullBlock.fastJoinToString(separator = ". ") { segment -> segment.text },
+            finalizedTranscriptions = fullBlock.map { it.text }.toImmutableList(),
             isSavingRecording = isSavingResult,
         )
     }.onStart {
         checkRecordAudioPermission()
-    }.stateIn(
+    }.onEach { Logger.d(tag = "SOME_TAG") { "$it" } }
+        .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(10_000L),
         initialValue = RecorderSheetState(),
@@ -151,7 +155,6 @@ internal class SimpleRecorderViewmodel(
             },
         )
     }
-
 
     override fun onCleared() {
         // always close the recorder in any case

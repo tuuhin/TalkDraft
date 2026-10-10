@@ -86,15 +86,15 @@ internal actual class VoiceRecorderImpl(
                 Logger.w(tag = TAG) { "RECORDING FILE URI CANNOT BE EMPTY" }
                 return@tryWithLock
             }
-            Logger.d(tag = TAG) { "PREPARING FILES FOR RECORDING" }
-            initRecorder(format = RecordingFormats.FORMAT_M4A)
-
-            if (_recorder == null) {
-                Logger.w(tag = TAG) { "RECORDER INITIALIZATION FAILED" }
-                return@tryWithLock
-            }
-
             try {
+                Logger.d(tag = TAG) { "PREPARING FILES FOR RECORDING" }
+                initRecorder(format = RecordingFormats.FORMAT_M4A)
+
+                if (_recorder == null) {
+                    Logger.w(tag = TAG) { "RECORDER INITIALIZATION FAILED" }
+                    return@tryWithLock
+                }
+
                 Logger.d(tag = TAG) { "PREPARING RECORDER STOP WATCH" }
                 _stopWatch.prepare()
                 // prepare the recorder
@@ -147,16 +147,23 @@ internal actual class VoiceRecorderImpl(
     actual override suspend fun stop(): Result<Path> {
         return _lock.withLock(this) {
             val file = _recordingPath ?: return Result.failure(RecorderInvalidConfigurationException())
+
             // reset the timer
             Logger.d(tag = TAG) { "STOPWATCH STOPPED" }
             _stopWatch.stop()
+
+            // stop and release the reader
             try {
                 pcmReader.stop()
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 Logger.w(tag = TAG, throwable = e) { "FAILED TO STOP PCM READER" }
+            } finally {
+                Logger.i(tag = TAG) { "RELEASING PCM READER" }
+                pcmReader.releaseReader()
             }
-            //stop the ongoing recording
+
+            // stop and release the recorder instance
             try {
                 // only stop the recorder if the recorder state is recording
                 if (state.value == RecorderState.RECORDING) {
@@ -165,6 +172,9 @@ internal actual class VoiceRecorderImpl(
                 }
             } catch (e: RuntimeException) {
                 Logger.e(tag = TAG, throwable = e) { "FAILED TO STOP RECORDER" }
+            } finally {
+                _recorder?.release()
+                _recorder = null
             }
             Result.success(file)
         }
@@ -176,20 +186,25 @@ internal actual class VoiceRecorderImpl(
                 // cancel the timer watch
                 Logger.d(tag = TAG) { "STOPPING STOPWATCH" }
                 _stopWatch.cancel()
+                // stop the rcm reader
                 try {
                     pcmReader.stop()
                 } catch (e: Exception) {
                     if (e is CancellationException) throw e
                     Logger.w(tag = TAG, throwable = e) { "FAILED TO STOP PCM READER" }
                 }
+                // stop and release the recoder
                 try {
-                    // only stop the recorder if the recorder state is recording or prepearing
+                    // only stop the recorder if the recorder state is recording or preparing
                     if (state.value == RecorderState.RECORDING || state.value == RecorderState.PREPARING) {
                         _recorder?.stop()
                         Logger.d(tag = TAG) { "RECORDER STOPPED" }
                     }
                 } catch (e: RuntimeException) {
                     Logger.e(tag = TAG, throwable = e) { "FAILED TO STOP RECORDER" }
+                } finally {
+                    _recorder?.release()
+                    _recorder = null
                 }
                 // delete the current recording
                 withContext(NonCancellable) {
@@ -218,8 +233,11 @@ internal actual class VoiceRecorderImpl(
         } catch (e: RuntimeException) {
             Logger.e(tag = TAG, throwable = e) { "FAILED TO STOP RECORDER" }
         }
-        _recorder?.release()
-        _recorder = null
+        if (_recorder != null) {
+            Logger.d(tag = TAG) { "RELEASING THE RECORDER" }
+            _recorder?.release()
+            _recorder = null
+        }
         // reset path
         if (_recordingPath != null) runBlocking {
             try {
@@ -239,24 +257,33 @@ internal actual class VoiceRecorderImpl(
     @Suppress("DEPRECATION")
     private fun createRecorder(): Boolean {
         if (!permissions.hasPermission()) {
-            Logger.d(tag = TAG) { "NO AUDIO RECORD PERMISSION FOUND" }
+            Logger.w(tag = TAG) { "NO AUDIO RECORD PERMISSION FOUND" }
             return false
         }
-        if (_recorder != null) {
-            Logger.d(tag = TAG) { "RECORDER IS ALREADY READY" }
-            return false
-        }
-        // set recorder
-        _recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-            MediaRecorder(context)
-        else MediaRecorder()
 
-        _recorder?.setOnErrorListener { _, what, extra ->
-            if (what == MediaRecorder.MEDIA_ERROR_SERVER_DIED) release()
-            Logger.w(tag = TAG) { "SOME ERROR OCCURRED :$what CODE:$extra" }
+        if (_recorder != null) {
+            Logger.d(tag = TAG) { "RECORDER IS ALREDY PRESENT" }
+            return true
         }
-        Logger.d(tag = TAG) { "CREATED RECORDER SUCCESSFULLY" }
-        return true
+
+        return try {
+            _recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                MediaRecorder(context)
+            } else {
+                MediaRecorder()
+            }
+            _recorder?.setOnErrorListener { _, what, extra ->
+                Logger.w(tag = TAG) { "RECORDER ERROR: $what, EXTRA: $extra" }
+                if (what == MediaRecorder.MEDIA_ERROR_SERVER_DIED) release()
+            }
+            true
+        } catch (e: Exception) {
+            Logger.e(tag = TAG, throwable = e) { "FAILED TO CREATE RECORDER" }
+            _recorder?.release()
+            _recorder = null
+            false
+        }
+
     }
 
     private suspend fun initRecorder(format: RecordingFormats) = coroutineScope {
@@ -288,9 +315,9 @@ internal actual class VoiceRecorderImpl(
         pcmReader.initReader()
 
         recorder.apply {
-            setOutputFile(fileDeferred.await())
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(outFormat)
+            setOutputFile(fileDeferred.await())
             setAudioEncoder(encoder)
             setAudioChannels(channelCount)
             setAudioSamplingRate(44_100)
@@ -309,7 +336,7 @@ internal actual class VoiceRecorderImpl(
                 Logger.i(tag = TAG) { "DELETING THE EMPTY FILE" }
             } else if (!checkSize) {
                 val fileSize = Formatter.formatFileSize(context, size)
-                Logger.w(tag = TAG) { "NEED TO REMOVE THE FILE SIZE:$fileSize" }
+                Logger.w(tag = TAG) { "REMOVING FILE OF SIZE:  $fileSize" }
                 fs.delete(path)
             }
         }

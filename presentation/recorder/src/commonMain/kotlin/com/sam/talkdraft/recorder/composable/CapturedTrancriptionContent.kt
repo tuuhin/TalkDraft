@@ -1,14 +1,17 @@
 package com.sam.talkdraft.recorder.composable
 
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
@@ -19,17 +22,25 @@ import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.sam.talkdraft.designsystem.annotations.LightThemedPreview
 import com.sam.talkdraft.designsystem.theme.googleSansFlexFont
+import kotlin.random.Random
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
 import org.jetbrains.compose.resources.painterResource
 import talkdraft.presentation.recorder.generated.resources.Res
 import talkdraft.presentation.recorder.generated.resources.ic_transcription_completed
 
 @Composable
 internal fun CapturedTranscriptionContent(
-    transcriptionText: String?,
+    transcriptionText: ImmutableList<String>,
     modifier: Modifier = Modifier,
+    maxItemToDisplay: Int = 5,
 ) {
     val quoteFontFamily = googleSansFlexFont(
         settings = FontVariation.Settings(
@@ -41,64 +52,117 @@ internal fun CapturedTranscriptionContent(
         ),
     )
 
+    val isResultEmpty by remember(transcriptionText) {
+        derivedStateOf { transcriptionText.isEmpty() }
+    }
+
+    val wrappedResult by remember(transcriptionText, maxItemToDisplay) {
+        derivedStateOf {
+            val texts = if (transcriptionText.size > maxItemToDisplay) transcriptionText.take(maxItemToDisplay)
+            else transcriptionText
+
+            val random = Random.nextInt(5, 10)
+
+            buildAnnotatedString {
+                withStyle(
+                    style = SpanStyle(
+                        fontFamily = quoteFontFamily,
+                        fontSize = 20.sp,
+                        baselineShift = BaselineShift(-0.3f),
+                    ),
+                ) {
+                    append("\u201C")
+                }
+                for ((idx, text) in texts.withIndex()) {
+                    append(".".repeat(random))
+                    append(text)
+                    append(".".random())
+                    if (idx + 1 == texts.size) append("......")
+                    else append(".".random())
+                }
+                withStyle(
+                    style = SpanStyle(
+                        fontFamily = quoteFontFamily,
+                        fontSize = 20.sp,
+                        baselineShift = BaselineShift(-0.3f),
+                    ),
+                ) {
+                    append("\u201D")
+                }
+            }
+        }
+    }
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Icon(
             painter = painterResource(Res.drawable.ic_transcription_completed),
             contentDescription = "Transcription completed",
-            tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(32.dp),
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(64.dp),
         )
-        Text(
-            text = if (transcriptionText != null) "Your thought is captured" else "Failed to capture your voice",
-            style = MaterialTheme.typography.titleMediumEmphasized,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Crossfade(
-            targetState = transcriptionText != null,
-            modifier = Modifier.heightIn(min = 80.dp),
-        ) { isPresent ->
-            if (isPresent && transcriptionText != null)
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(
-                            style = SpanStyle(
-                                fontFamily = quoteFontFamily,
-                                fontSize = 40.sp,
-                                baselineShift = BaselineShift(-0.3f),
-                            ),
-                        ) {
-                            append("\u201C")
-                        }
+        if (isResultEmpty) {
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(
+                        style = SpanStyle(
+                            fontFamily = quoteFontFamily,
+                            fontSize = 20.sp,
+                            baselineShift = BaselineShift(-0.3f),
+                        ),
+                    ) {
+                        append("\u201C")
+                    }
 
-                        append(" $transcriptionText ")
-                        withStyle(
-                            style = SpanStyle(
-                                fontFamily = quoteFontFamily,
-                                fontSize = 40.sp,
-                                baselineShift = BaselineShift(-2.3f),
-                            ),
-                        ) {
-                            append("\u201D")
-                        }
-                    },
-                    textAlign = TextAlign.Center,
-                    maxLines = 4,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            else Text(
-                text = "Sorry can you try again, unable to read your voice", textAlign = TextAlign.Center,
-                maxLines = 4,
+                    append(" Sorry we failed to capture your voice ")
+                    withStyle(
+                        style = SpanStyle(
+                            fontFamily = quoteFontFamily,
+                            fontSize = 20.sp,
+                            baselineShift = BaselineShift(-0.3f),
+                        ),
+                    ) {
+                        append("\u201D")
+                    }
+                },
+                textAlign = TextAlign.Center,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = MaterialTheme.typography.titleMediumEmphasized,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.fillMaxWidth(),
             )
+            return
         }
+        Text(
+            text = wrappedResult,
+            maxLines = 8,
+            textAlign = TextAlign.Center,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
+}
+
+private class CapturedTranscriptionContentPreviewParams : PreviewParameterProvider<ImmutableList<String>> {
+    override val values: Sequence<ImmutableList<String>>
+        get() = sequence {
+            yield(persistentListOf("Hello", "is this a text"))
+            yield(persistentListOf())
+            yield(List(20) { "Some tex t:$it" }.toPersistentList())
+        }
+}
+
+@Composable
+@LightThemedPreview
+private fun CaptureTranscriptionContentPreview(
+    @PreviewParameter(CapturedTranscriptionContentPreviewParams::class)
+    results: ImmutableList<String>,
+) = Surface {
+    CapturedTranscriptionContent(transcriptionText = results, modifier = Modifier.fillMaxWidth())
 }

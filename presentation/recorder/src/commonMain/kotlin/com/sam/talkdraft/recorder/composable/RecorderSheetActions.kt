@@ -9,32 +9,28 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -42,10 +38,11 @@ import androidx.compose.ui.unit.dp
 import com.sam.talkdraft.designs.CommonResources
 import com.sam.talkdraft.designs.ic_cancel
 import com.sam.talkdraft.designs.ic_reset
-import com.sam.talkdraft.designsystem.annotations.LightThemedPreview
 import com.sam.talkdraft.designsystem.utils.LocalAnimatedContentScope
 import com.sam.talkdraft.designsystem.utils.LocalSharedTransitionScope
 import com.sam.talkdraft.designsystem.utils.sharedBoundsWrapper
+import com.sam.talkdraft.recorder.domain.models.RecorderState
+import com.sam.talkdraft.recorder.events.RecordingScreenEvent
 import org.jetbrains.compose.resources.painterResource
 import talkdraft.presentation.recorder.generated.resources.Res
 import talkdraft.presentation.recorder.generated.resources.ic_mic_variant_1
@@ -53,74 +50,114 @@ import talkdraft.presentation.recorder.generated.resources.ic_recording_stop
 
 @Composable
 internal fun RecorderSheetActions(
-    onRecording: () -> Unit,
-    onStopRecording: () -> Unit,
-    onCancelRecording: () -> Unit,
-    onResetRecording: () -> Unit,
-    onSave: () -> Unit,
+    recorderState: RecorderState,
+    isSavable: Boolean,
+    isSavingRecording: Boolean,
+    isModelSetupRunning: Boolean,
+    onAction: (RecordingScreenEvent) -> Unit,
     modifier: Modifier = Modifier,
-    isRecordingCompleted: Boolean = false,
-    isRecording: Boolean = false,
-    isSavingRecording: Boolean = false,
-    isAllButtonDisabled: Boolean = false,
 ) {
-
-    val type by remember(isRecordingCompleted, isRecording) {
-        derivedStateOf {
-            when {
-                isRecordingCompleted -> ActionType.SaveOrResetRecording
-                isRecording -> ActionType.StopOrCancelRecording
-                else -> ActionType.StartRecording
-            }
+    val actionType = remember(recorderState) {
+        when (recorderState) {
+            RecorderState.COMPLETED -> ActionType.SaveOrResetRecording
+            RecorderState.RECORDING -> ActionType.StopOrCancelRecording
+            else -> ActionType.StartRecording
         }
     }
 
     val motionScheme = MaterialTheme.motionScheme
+    val isActionEnabled = !isModelSetupRunning
 
     SharedTransitionLayout(modifier = modifier) {
         CompositionLocalProvider(LocalSharedTransitionScope provides this) {
             AnimatedContent(
-                targetState = type,
+                targetState = actionType,
                 transitionSpec = {
-                    val enterTransition = fadeIn(
-                        animationSpec = motionScheme.fastSpatialSpec(),
-                    )
-                    val exitTransition = fadeOut(
-                        animationSpec = motionScheme.fastEffectsSpec(),
-                    )
+                    val enterTransition = fadeIn(animationSpec = motionScheme.fastSpatialSpec())
+                    val exitTransition = fadeOut(animationSpec = motionScheme.fastEffectsSpec())
 
                     enterTransition togetherWith exitTransition using SizeTransform(
                         clip = false,
                         sizeAnimationSpec = { _, _ -> motionScheme.defaultSpatialSpec() },
                     )
-
                 },
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.fillMaxWidth(),
-            ) { actionType ->
+            ) { targetType ->
                 CompositionLocalProvider(LocalAnimatedContentScope provides this) {
-                    when (actionType) {
+                    when (targetType) {
                         ActionType.StartRecording -> StartRecordingUI(
-                            onRecording = onRecording,
-                            isRecording = isRecording,
-                            isActionEnabled = !isAllButtonDisabled,
+                            onStart = { onAction(RecordingScreenEvent.StartRecording) },
+                            isEnabled = isActionEnabled,
+                            isRecording = recorderState == RecorderState.RECORDING,
                         )
 
-                        ActionType.StopOrCancelRecording -> StopOrCancelRecordingUI(
-                            onCancelRecording = onCancelRecording,
-                            onStopRecording = onStopRecording,
-                            isRecording = isRecording,
-                            isActionEnabled = !isAllButtonDisabled,
-                        )
+                        ActionType.StopOrCancelRecording -> DualActionButtonLayout(
+                            secondaryColors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                            ),
+                            onSecondaryClick = { onAction(RecordingScreenEvent.OnCancelRecording) },
+                            isSecondaryEnabled = isActionEnabled,
+                            primaryColors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                            ),
+                            onPrimaryClick = { onAction(RecordingScreenEvent.StopRecording) },
+                            isPrimaryEnabled = isActionEnabled,
+                            enableTooltip = recorderState == RecorderState.RECORDING,
+                            tooltipTitle = "Stop Capture",
+                            tooltipText = "Stop ongoing recorder",
+                            secondaryContent = {
+                                Icon(
+                                    painter = painterResource(CommonResources.drawable.ic_cancel),
+                                    contentDescription = "Cancel recording",
+                                )
+                            },
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_recording_stop),
+                                contentDescription = "Stop button",
+                                modifier = Modifier.size(ButtonDefaults.iconSizeFor(ButtonDefaults.MediumContainerHeight)),
+                            )
+                            Spacer(modifier = Modifier.size(ButtonDefaults.iconSpacingFor(ButtonDefaults.MinHeight)))
+                            Text(
+                                text = "Stop",
+                                fontWeight = FontWeight.Bold,
+                                style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight),
+                            )
+                        }
 
-                        ActionType.SaveOrResetRecording -> SaveOrResetRecording(
-                            onSaveRecording = onSave,
-                            onResetRecording = onResetRecording,
-                            isRecordingCompleted = isRecordingCompleted,
-                            isSaving = isSavingRecording,
-                            isActionEnabled = !isAllButtonDisabled,
-                        )
+                        ActionType.SaveOrResetRecording -> DualActionButtonLayout(
+                            secondaryColors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
+                            onSecondaryClick = { onAction(RecordingScreenEvent.OnResetRecording) },
+                            isSecondaryEnabled = !isSavingRecording && isActionEnabled,
 
+                            primaryColors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
+                            onPrimaryClick = { onAction(RecordingScreenEvent.OnSaveTranscription) },
+                            isPrimaryEnabled = !isSavingRecording && isActionEnabled && isSavable,
+                            enableTooltip = recorderState == RecorderState.COMPLETED,
+                            tooltipTitle = "Stop Capture",
+                            tooltipText = "Stop ongoing recorder",
+                            secondaryContent = {
+                                Icon(
+                                    painter = painterResource(CommonResources.drawable.ic_reset),
+                                    contentDescription = "Reset recording",
+                                )
+                            },
+                        ) {
+                            Text(
+                                text = "Save Recording",
+                                fontWeight = FontWeight.Bold,
+                                style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight),
+                            )
+                        }
                     }
                 }
             }
@@ -129,13 +166,19 @@ internal fun RecorderSheetActions(
 }
 
 @Composable
-private fun SaveOrResetRecording(
-    onResetRecording: () -> Unit,
-    onSaveRecording: () -> Unit,
+private fun DualActionButtonLayout(
+    onSecondaryClick: () -> Unit,
+    onPrimaryClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isSaving: Boolean = false,
-    isRecordingCompleted: Boolean = false,
-    isActionEnabled: Boolean = true,
+    isSecondaryEnabled: Boolean = true,
+    primaryColors: ButtonColors = ButtonDefaults.buttonColors(),
+    isPrimaryEnabled: Boolean = true,
+    enableTooltip: Boolean = true,
+    tooltipTitle: String = "Action title",
+    tooltipText: String = "Action title description",
+    secondaryColors: ButtonColors = ButtonDefaults.buttonColors(),
+    secondaryContent: @Composable RowScope.() -> Unit,
+    primaryContent: @Composable RowScope.() -> Unit,
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -143,115 +186,29 @@ private fun SaveOrResetRecording(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FilledTonalButton(
-            onClick = onResetRecording,
-            enabled = !isSaving && isActionEnabled,
+            onClick = onSecondaryClick,
+            enabled = isSecondaryEnabled,
             contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.MediumContainerHeight),
             shapes = ButtonDefaults.shapes(shape = ButtonDefaults.filledTonalShape),
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            ),
+            colors = secondaryColors,
             modifier = Modifier.sharedBoundsWrapper(
                 key = SharedTransitionKeys.SECONDARY_ACTION_BUTTON,
                 enter = scaleIn(MaterialTheme.motionScheme.defaultSpatialSpec()),
                 exit = scaleOut(),
             ),
-        ) {
-            Icon(
-                painter = painterResource(CommonResources.drawable.ic_reset),
-                contentDescription = "Cancel recording",
-            )
-        }
-        TooltipBox(
-            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                positioning = TooltipAnchorPosition.Above,
-                spacingBetweenTooltipAndAnchor = 4.dp,
-            ),
-            enableUserInput = isRecordingCompleted,
-            tooltip = {
-                RichTooltip(
-                    title = { Text(text = "Stop Capture") },
-                    text = { Text(text = "Stop ongoing recorder") },
-                    shape = MaterialTheme.shapes.extraLarge,
-                    colors = TooltipDefaults.richTooltipColors(),
-                )
-            },
-            state = rememberTooltipState(),
-            modifier = Modifier.weight(1f),
-        ) {
-            Button(
-                onClick = onSaveRecording,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-                shapes = ButtonDefaults.shapes(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    pressedShape = MaterialTheme.shapes.large,
-                ),
-                enabled = !isSaving && isActionEnabled,
-                contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.MediumContainerHeight, true),
-                modifier = Modifier
-                    .sharedBoundsWrapper(
-                        key = SharedTransitionKeys.MAIN_ACTION_BUTTON,
-                        clipShape = MaterialTheme.shapes.extraLarge,
-                    )
-                    .height(ButtonDefaults.MediumContainerHeight)
-                    .fillMaxWidth(),
-            ) {
-                Text(
-                    text = "Save Recording",
-                    fontWeight = FontWeight.Bold,
-                    style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight),
-                )
-            }
-        }
-    }
-}
+            content = secondaryContent,
+        )
 
-@Composable
-private fun StopOrCancelRecordingUI(
-    onCancelRecording: () -> Unit,
-    onStopRecording: () -> Unit,
-    modifier: Modifier = Modifier,
-    isRecording: Boolean = false,
-    isActionEnabled: Boolean = true,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        FilledTonalButton(
-            onClick = onCancelRecording,
-            contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.MediumContainerHeight),
-            shapes = ButtonDefaults.shapes(shape = ButtonDefaults.filledTonalShape),
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-            ),
-            enabled = isActionEnabled,
-            modifier = Modifier.sharedBoundsWrapper(
-                key = SharedTransitionKeys.SECONDARY_ACTION_BUTTON,
-                enter = scaleIn(MaterialTheme.motionScheme.defaultSpatialSpec()),
-                exit = scaleOut(),
-            ),
-        ) {
-            Icon(
-                painter = painterResource(CommonResources.drawable.ic_cancel),
-                contentDescription = "Cancel recording",
-            )
-        }
         TooltipBox(
             positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
                 positioning = TooltipAnchorPosition.Above,
                 spacingBetweenTooltipAndAnchor = 4.dp,
             ),
-            enableUserInput = isRecording,
+            enableUserInput = enableTooltip,
             tooltip = {
                 RichTooltip(
-                    title = { Text(text = "Stop Capture") },
-                    text = { Text(text = "Stop ongoing recorder") },
+                    title = { Text(text = tooltipTitle) },
+                    text = { Text(text = tooltipText) },
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = TooltipDefaults.richTooltipColors(),
                 )
@@ -260,16 +217,13 @@ private fun StopOrCancelRecordingUI(
             modifier = Modifier.weight(1f),
         ) {
             Button(
-                onClick = onStopRecording,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                ),
+                onClick = onPrimaryClick,
+                colors = primaryColors,
                 shapes = ButtonDefaults.shapes(
                     shape = MaterialTheme.shapes.extraLarge,
                     pressedShape = MaterialTheme.shapes.large,
                 ),
-                enabled = isActionEnabled,
+                enabled = isPrimaryEnabled,
                 contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.MediumContainerHeight, true),
                 modifier = Modifier
                     .sharedBoundsWrapper(
@@ -278,28 +232,17 @@ private fun StopOrCancelRecordingUI(
                     )
                     .height(ButtonDefaults.MediumContainerHeight)
                     .fillMaxWidth(),
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_recording_stop),
-                    contentDescription = "Stop button",
-                    modifier = Modifier.size(ButtonDefaults.iconSizeFor(ButtonDefaults.MediumContainerHeight)),
-                )
-                Spacer(modifier = Modifier.size(ButtonDefaults.iconSpacingFor(ButtonDefaults.MinHeight)))
-                Text(
-                    text = "Stop",
-                    fontWeight = FontWeight.Bold,
-                    style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight),
-                )
-            }
+                content = primaryContent,
+            )
         }
     }
 }
 
 @Composable
 private fun StartRecordingUI(
-    onRecording: () -> Unit,
+    onStart: () -> Unit,
     modifier: Modifier = Modifier,
-    isActionEnabled: Boolean = true,
+    isEnabled: Boolean = true,
     isRecording: Boolean = false,
 ) {
     TooltipBox(
@@ -320,7 +263,7 @@ private fun StartRecordingUI(
         modifier = modifier,
     ) {
         Button(
-            onClick = onRecording,
+            onClick = onStart,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -329,9 +272,10 @@ private fun StartRecordingUI(
                 shape = MaterialTheme.shapes.extraLarge,
                 pressedShape = MaterialTheme.shapes.large,
             ),
-            enabled = isActionEnabled,
+            enabled = isEnabled,
             contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.MediumContainerHeight, true),
-            modifier = Modifier.heightIn(ButtonDefaults.MediumContainerHeight)
+            modifier = Modifier
+                .heightIn(ButtonDefaults.MediumContainerHeight)
                 .sharedBoundsWrapper(
                     key = SharedTransitionKeys.MAIN_ACTION_BUTTON,
                     clipShape = MaterialTheme.shapes.extraLarge,
@@ -342,7 +286,7 @@ private fun StartRecordingUI(
         ) {
             Icon(
                 painter = painterResource(Res.drawable.ic_mic_variant_1),
-                contentDescription = "Stop button",
+                contentDescription = "Start button",
                 modifier = Modifier.size(ButtonDefaults.iconSizeFor(ButtonDefaults.MediumContainerHeight)),
             )
             Spacer(modifier = Modifier.size(ButtonDefaults.iconSpacingFor(ButtonDefaults.MinHeight)))
@@ -364,32 +308,4 @@ private enum class ActionType {
     StartRecording,
     StopOrCancelRecording,
     SaveOrResetRecording,
-}
-
-@Composable
-@LightThemedPreview
-private fun RecorderActionSheetPreview() {
-
-    var isRecordingCompleted by remember { mutableStateOf(false) }
-    var isRecording by remember { mutableStateOf(false) }
-
-    Column {
-        RecorderSheetActions(
-            onRecording = {},
-            onCancelRecording = {},
-            onStopRecording = {},
-            onResetRecording = {},
-            onSave = {},
-            isRecording = isRecording,
-            isRecordingCompleted = isRecordingCompleted,
-        )
-        Row {
-            ToggleButton(checked = isRecording, onCheckedChange = { isRecording = it }) {
-                Text("recording")
-            }
-            ToggleButton(checked = isRecordingCompleted, onCheckedChange = { isRecordingCompleted = it }) {
-                Text("is recording complterd")
-            }
-        }
-    }
 }
