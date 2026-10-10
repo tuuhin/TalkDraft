@@ -5,6 +5,7 @@ import com.sam.talkdraft.transcription_android.models.AndroidWhisperSegment
 import com.sam.talkdraft.transcription_android.models.JniWhisperSegment
 import com.sam.talkdraft.transcription_android.models.ProcessingState
 import com.sam.talkdraft.transcription_android.models.WhisperErrorCode
+import dalvik.annotation.optimization.FastNative
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.concurrent.atomics.AtomicBoolean
@@ -100,6 +101,8 @@ class NativeWhisper : AutoCloseable {
     }
 
     private external fun initializeNative(modelPath: String, language: String, useGpu: Boolean): Long
+
+    @FastNative
     private external fun processNativeDirectBuffer(handle: Long, buffer: ByteBuffer, length: Int): Boolean
     private external fun readStateNative(handle: Long): JniWhisperSegment?
     private external fun readErrorNative(handle: Long): Int

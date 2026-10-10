@@ -4,7 +4,7 @@ set -euo pipefail
 
 SILERO_VAD_HF_URL="https://huggingface.co/csukuangfj/silero-vad/resolve/main"
 
-TARGET_DIR="src/androidTest/assets/vad"
+TARGET_DIR="../src/androidTest/assets/vad"
 TEMP_DIR="$(mktemp -d -t vad_download_XXXXXX)"
 
 cleanup() {

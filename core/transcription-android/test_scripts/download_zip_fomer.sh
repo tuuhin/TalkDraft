@@ -4,7 +4,7 @@ set -euo pipefail
 
 ZIPFORMER_HF_URL="https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-en-2023-06-26/resolve/main"
 
-TARGET_DIR="src/androidTest/assets/zip_former"
+TARGET_DIR="../src/androidTest/assets/zip_former"
 TEMP_DIR="$(mktemp -d -t zipformer_download_XXXXXX)"
 
 cleanup() {

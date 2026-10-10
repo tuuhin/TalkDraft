@@ -2,6 +2,8 @@ package com.sam.talkdraft.transcription_android
 
 import com.sam.talkdraft.transcription_android.punctuation.JniPunctuationConfig
 import com.sam.talkdraft.transcription_android.punctuation.JniTextPunctuationResult
+import dalvik.annotation.optimization.FastNative
+import java.util.Locale
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -38,8 +40,10 @@ class NativePunctuationWriter : AutoCloseable {
 
         val handle = _nativeHandle.load()
         check(handle > 0L) { "Punctuation writer handle not found " }
-
-        return processText(handle, inputText).text
+        // need to pass lower case otherwise it will not work
+        val lowerCaseInput = inputText.lowercase(Locale.ENGLISH)
+        val result = processText(handle, lowerCaseInput)
+        return result.text
     }
 
     override fun close() {
@@ -54,6 +58,7 @@ class NativePunctuationWriter : AutoCloseable {
     @Throws(IllegalArgumentException::class)
     private external fun initInstance(config: JniPunctuationConfig): Long
 
+    @FastNative
     private external fun processText(handle: Long, input: String): JniTextPunctuationResult
     private external fun destroyNative(handle: Long)
 

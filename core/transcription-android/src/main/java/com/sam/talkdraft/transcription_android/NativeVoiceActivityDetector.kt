@@ -6,6 +6,7 @@ import com.sam.talkdraft.transcription_android.vad.AndroidVADResult
 import com.sam.talkdraft.transcription_android.vad.AndroidVadConfig
 import com.sam.talkdraft.transcription_android.vad.AndroidVadSegment
 import com.sam.talkdraft.transcription_android.vad.JniVadSegment
+import dalvik.annotation.optimization.FastNative
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.concurrent.atomics.AtomicBoolean
@@ -152,6 +153,7 @@ class NativeVoiceActivityDetector(private val context: Context) : AutoCloseable 
         config: AndroidVadConfig,
     ): Long
 
+    @FastNative
     private external fun processNativeDirectBuffer(handle: Long, buffer: ByteBuffer, length: Int): Boolean
     private external fun resetStatesNative(handle: Long)
     private external fun destroyNative(handle: Long)

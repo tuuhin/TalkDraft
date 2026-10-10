@@ -119,8 +119,6 @@ punctuation_based_result onnx_punctuation_provider::process_text(const std::stri
         return {"", _is_online_mode};
     }
 
-    LOG_D("PROCESSING TEXT (length: %zu, is_online: %d)", text.length(), _is_online_mode);
-
     if (_is_online_mode && _online_punctuation) {
         const char* result_c_str = SherpaOnnxOnlinePunctuationAddPunct(_online_punctuation, text.c_str());
         if (result_c_str) {
@@ -129,6 +127,7 @@ punctuation_based_result onnx_punctuation_provider::process_text(const std::stri
             return {std::move(result), _is_online_mode};
         }
     }
+
     if (_offline_punctuation) {
         const char* result_c_str = SherpaOfflinePunctuationAddPunct(_offline_punctuation, text.c_str());
         if (result_c_str) {

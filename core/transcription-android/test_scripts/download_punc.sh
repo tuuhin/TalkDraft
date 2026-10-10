@@ -4,7 +4,7 @@ set -euo pipefail
 
 PUNCTUATION_URL="https://github.com/k2-fsa/sherpa-onnx/releases/download/punctuation-models/sherpa-onnx-online-punct-en-2024-08-06.tar.bz2"
 
-TARGET_DIR="src/androidTest/assets/punctuation"
+TARGET_DIR="../src/androidTest/assets/punctuation"
 TEMP_DIR="$(mktemp -d -t punctuation_download_XXXXXX)"
 
 ARCHIVE_NAME="sherpa-onnx-online-punct-en-2024-08-06.tar.bz2"

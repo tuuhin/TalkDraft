@@ -3,6 +3,7 @@ package com.sam.talkdraft.transcription_android
 import android.util.Log
 import com.sam.talkdraft.transcription_android.models.JniZipFormerSegment
 import com.sam.talkdraft.transcription_android.models.ZipFormerSegment
+import dalvik.annotation.optimization.FastNative
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -130,7 +131,10 @@ class NativeZipFormer : AutoCloseable {
     }
 
     private external fun initializeNative(encoder: String, decoder: String, joiner: String, tokenPath: String): Long
+
+    @FastNative
     private external fun processNativeDirectBuffer(handle: Long, buffer: ByteBuffer, length: Int): JniZipFormerSegment?
+
     private external fun destroyNative(handle: Long)
     private external fun resetNative(handle: Long)
 
