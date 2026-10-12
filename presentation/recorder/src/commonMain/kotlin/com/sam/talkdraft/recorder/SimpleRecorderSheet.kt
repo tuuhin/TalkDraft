@@ -55,6 +55,7 @@ internal fun SimpleRecorderSheet(
         SheetTitleBar(
             title = "Capture your thoughts",
             onDismissSheet = onDismiss,
+            enabled = !screenState.isSavingRecording,
         )
         Spacer(modifier = Modifier.height(20.dp))
         RecorderSheetContent(

@@ -2,9 +2,9 @@ package com.sam.talkdraft.recorder
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import co.touchlab.kermit.Logger
 import com.sam.talkdraft.common.model.ReadOnlyFloatBuffer
 import com.sam.talkdraft.designsystem.utils.UIEvents
+import com.sam.talkdraft.feature_onboarding.IOnboardingPreferences
 import com.sam.talkdraft.feature_recorder.ISimpleVoiceRecorder
 import com.sam.talkdraft.navigation.NavDestinations
 import com.sam.talkdraft.navigation.navigator.AppNavigator
@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -38,6 +37,7 @@ internal class SimpleRecorderViewmodel(
     private val recorder: ISimpleVoiceRecorder,
     private val permissionRequester: IPermissionsRequester,
     private val settingsProvider: IAppSettingsProvider,
+    private val onboardingProvider: IOnboardingPreferences,
     private val navigator: AppNavigator,
 ) : ViewModel() {
 
@@ -82,14 +82,12 @@ internal class SimpleRecorderViewmodel(
             finalizedTranscriptions = fullBlock.map { it.text }.toImmutableList(),
             isSavingRecording = isSavingResult,
         )
-    }.onStart {
-        checkRecordAudioPermission()
-    }.onEach { Logger.d(tag = "SOME_TAG") { "$it" } }
+    }.onStart { checkRecordAudioPermission() }
         .stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(10_000L),
-        initialValue = RecorderSheetState(),
-    )
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(10_000L),
+            initialValue = RecorderSheetState(),
+        )
 
     val uiEvents: SharedFlow<UIEvents>
         field = MutableSharedFlow<UIEvents>()
@@ -144,9 +142,9 @@ internal class SimpleRecorderViewmodel(
         val saveResult = recorder.onSave()
         saveResult.fold(
             onSuccess = {
-                // TODO: MARK ONBOARDING COMPLETED AND MARK ANALYTICS TOO
                 _isSavingResult.update { false }
-                // add the details screen somewhere
+                onboardingProvider.markOnboardingCompleted()
+                // update the full nav stack
                 navigator.updateBackStack(listOf(NavDestinations.HomeScreen))
             },
             onFailure = { err ->

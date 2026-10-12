@@ -38,6 +38,8 @@ kotlin {
             implementation(libs.bundles.koin.common)
             implementation(libs.bundles.koin.compose)
             // local
+            implementation(project(":core:common"))
+            implementation(project(":feature:recordings"))
             implementation(project(":presentation:design-system"))
             implementation(project(":presentation:navigation"))
         }

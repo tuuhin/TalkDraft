@@ -45,6 +45,7 @@ kotlin {
             implementation(project(":core:recorder"))
             implementation(project(":core:permissions"))
             implementation(project(":feature:recorder"))
+            implementation(project(":feature:onboarding"))
             implementation(project(":presentation:design-system"))
             implementation(project(":presentation:navigation"))
         }

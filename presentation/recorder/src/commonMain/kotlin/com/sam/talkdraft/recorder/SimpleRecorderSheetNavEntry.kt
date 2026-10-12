@@ -5,6 +5,9 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import com.sam.talkdraft.designsystem.components.UIEventsSideEffect
 import com.sam.talkdraft.navigation.NavDestinationBuilder
 import com.sam.talkdraft.navigation.NavDestinations
@@ -31,6 +34,15 @@ internal class SimpleRecorderSheetNavEntry : NavDestinationBuilder {
             val duration by viewmodel.recorderDuration.collectAsStateWithLifecycle()
 
             UIEventsSideEffect(eventsFlow = viewmodel::uiEvents)
+
+            val backState = rememberNavigationEventState(NavigationEventInfo.None)
+
+            NavigationBackHandler(
+                state = backState,
+                isBackEnabled = !state.isSavingRecording,
+                onBackCancelled = {},
+                onBackCompleted = { navigator.pop() },
+            )
 
             SimpleRecorderSheet(
                 screenState = state,

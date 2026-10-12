@@ -57,6 +57,14 @@ fun AppRootNavHost(
         startDestinations,
     )
 
+    LaunchedEffect(startDestinations) {
+        // clean the whole backstack if start destination is changed
+        if (!backStack.contains(startDestinations)) {
+            backStack.clear()
+            backStack.add(startDestinations)
+        }
+    }
+
     HandleNavigatorCommands(navigator, backStack)
 
     val spatialEffect = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()

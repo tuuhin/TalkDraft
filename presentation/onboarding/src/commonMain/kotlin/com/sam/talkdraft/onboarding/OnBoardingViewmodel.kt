@@ -8,6 +8,7 @@ import com.sam.talkdraft.analytics.AnalyticsEvent
 import com.sam.talkdraft.analytics.IAnalyticsProvider
 import com.sam.talkdraft.common.platform.IPlatformTargetProvider
 import com.sam.talkdraft.designsystem.utils.UIEvents
+import com.sam.talkdraft.feature_onboarding.IOnboardingPreferences
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionModel
 import com.sam.talkdraft.model_manager.domain.model.TranscriptionType
 import com.sam.talkdraft.model_manager.domain.repository.IRecommendedModelProvider
@@ -42,6 +43,7 @@ import org.koin.core.annotation.KoinViewModel
 @KoinViewModel
 internal class OnBoardingViewmodel(
     private val appSettings: IAppSettingsProvider,
+    private val onBoardingPreferences: IOnboardingPreferences,
     private val appPermissions: IPermissionsRequester,
     private val recommendationProvider: IRecommendedModelProvider,
     private val transcriptionModelRepo: ITranscriptionModelsRepo,
@@ -86,13 +88,8 @@ internal class OnBoardingViewmodel(
     fun onEvent(event: OnboardingEvents) {
         when (event) {
             is OnboardingEvents.OnSkipOnboarding -> onSkipOnboarding(event.screen)
+            OnboardingEvents.OnOnboardingCompleted -> markOnboardingCompleted()
             is OnboardingEvents.SendAnalyticsEvent -> onIncomingSceneAnalyticsEvent(event.screen, event.extras)
-
-            OnboardingEvents.OnOnboardingCompleted -> viewModelScope.launch {
-                navigator.updateBackStack(listOf(NavDestinations.HomeScreen))
-                analytics.track(AnalyticsEvent.OnboardingCompleted)
-            }
-
             is OnboardingEvents.OnAddToCaptureItems -> updateIdeas(event.item)
             OnboardingEvents.RequestOpenAppSettings -> openAppSettings()
             OnboardingEvents.RequestPermissions -> requestPermissions()
@@ -168,6 +165,12 @@ internal class OnBoardingViewmodel(
         )
     }
 
+    private fun markOnboardingCompleted() = viewModelScope.launch {
+        navigator.updateBackStack(listOf(NavDestinations.HomeScreen))
+        onBoardingPreferences.markOnboardingCompleted()
+        analytics.track(AnalyticsEvent.OnboardingCompleted)
+    }
+
     private fun onSkipOnboarding(screen: OnboardingScene) = viewModelScope.launch {
         analytics.track(
             AnalyticsEvent.OnboardingSkipped,
@@ -176,6 +179,7 @@ internal class OnBoardingViewmodel(
                 put("screen_index", screen.index)
             },
         )
+        onBoardingPreferences.markOnboardingCompleted()
         navigator.updateBackStack(listOf(NavDestinations.HomeScreen))
     }
 

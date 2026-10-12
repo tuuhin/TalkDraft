@@ -26,6 +26,7 @@ fun SheetTitleBar(
     title: String,
     onDismissSheet: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     titleStyle: TextStyle = MaterialTheme.typography.headlineSmallEmphasized,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
     iconColor: Color = MaterialTheme.colorScheme.secondaryContainer,
@@ -44,6 +45,7 @@ fun SheetTitleBar(
         )
         FilledIconButton(
             onClick = onDismissSheet,
+            enabled = enabled,
             colors = IconButtonDefaults.iconButtonColors(
                 containerColor = iconColor,
                 contentColor = contentColorFor(iconColor),
