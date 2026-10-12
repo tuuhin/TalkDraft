@@ -13,6 +13,7 @@ data class RecordingWithTranscript(
     @Relation(
         parentColumns = ["_id"],
         entityColumns = ["recording_id"],
+        entity = TranScriptEntity::class,
     )
-    val transcript: TranScriptEntity?
+    val transcriptWithSegments: TranscriptWithSegments?,
 )

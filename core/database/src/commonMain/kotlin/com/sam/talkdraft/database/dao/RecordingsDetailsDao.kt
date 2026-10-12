@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.Flow
 interface RecordingsDetailsDao {
 
     @Transaction
+    @Query("SELECT * FROM recordings_table ORDER BY created_at DESC")
+    fun observeAllDetails(): Flow<List<RecordingWithTranscript>>
+
+    @Transaction
     @Query("SELECT * FROM recordings_table WHERE _id = :recordingId LIMIT 1")
     fun observeDetails(recordingId: Uuid): Flow<RecordingWithTranscript?>
 }

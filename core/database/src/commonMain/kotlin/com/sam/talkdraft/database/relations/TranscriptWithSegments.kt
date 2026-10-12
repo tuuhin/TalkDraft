@@ -13,5 +13,5 @@ data class TranscriptWithSegments(
         parentColumns = ["_id"],
         entityColumns = ["transcript_id"],
     )
-    val segments: List<TranScriptSegmentsEntity>
+    val segments: List<TranScriptSegmentsEntity>,
 )

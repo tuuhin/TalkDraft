@@ -2,9 +2,13 @@ package com.sam.talkdraft.database.dao
 
 import androidx.room3.Dao
 import androidx.room3.Delete
+import androidx.room3.Insert
 import androidx.room3.Query
+import androidx.room3.Transaction
 import androidx.room3.Upsert
 import com.sam.talkdraft.database.entities.RecordingEntity
+import com.sam.talkdraft.database.entities.TranScriptEntity
+import com.sam.talkdraft.database.entities.TranScriptSegmentsEntity
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.flow.Flow
@@ -13,7 +17,13 @@ import kotlinx.coroutines.flow.Flow
 interface RecordingDao {
 
     @Upsert
-    suspend fun upsert(recording: RecordingEntity)
+    suspend fun updateOrInsertRecordingEntry(recording: RecordingEntity)
+
+    @Upsert
+    suspend fun upsertOrInsertTranscript(transcript: TranScriptEntity)
+
+    @Insert
+    suspend fun insertTranscriptionSegments(segments: List<TranScriptSegmentsEntity>)
 
     @Delete
     suspend fun delete(recording: RecordingEntity)
@@ -35,4 +45,15 @@ interface RecordingDao {
 
     @Query("DELETE FROM recordings_table WHERE _id = :id")
     suspend fun deleteById(id: Uuid)
+
+    @Transaction
+    suspend fun insertFullRecording(
+        recording: RecordingEntity,
+        transcript: TranScriptEntity,
+        segments: List<TranScriptSegmentsEntity>,
+    ) {
+        updateOrInsertRecordingEntry(recording)
+        upsertOrInsertTranscript(transcript)
+        if (segments.isNotEmpty()) insertTranscriptionSegments(segments)
+    }
 }

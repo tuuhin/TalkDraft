@@ -4,6 +4,7 @@ import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.PrimaryKey
 import com.sam.talkdraft.database.utils.DBConstants
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -30,8 +31,8 @@ data class RecordingEntity(
     val isFavourite: Boolean = false,
 
     @ColumnInfo("created_at")
-    val createdAt: Instant,
+    val createdAt: Instant = Clock.System.now(),
 
     @ColumnInfo(name = "updated_at")
-    val updatedAt: Instant
+    val updatedAt: Instant = Clock.System.now(),
 )

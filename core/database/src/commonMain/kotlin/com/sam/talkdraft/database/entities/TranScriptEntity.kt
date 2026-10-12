@@ -6,6 +6,7 @@ import androidx.room3.ForeignKey
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
 import com.sam.talkdraft.database.utils.DBConstants
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
@@ -50,8 +51,8 @@ data class TranScriptEntity(
     val text: String,
 
     @ColumnInfo("created_at")
-    val createdAt: Instant,
+    val createdAt: Instant = Clock.System.now(),
 
     @ColumnInfo(name = "updated_at")
-    val updatedAt: Instant
+    val updatedAt: Instant = Clock.System.now(),
 )

@@ -73,7 +73,7 @@ class LocalDatabaseTest : KoinTest {
             updatedAt = Clock.System.now(),
         )
 
-        recordingDao.upsert(recording)
+        recordingDao.updateOrInsertRecordingEntry(recording)
         advanceUntilIdle()
 
         val result = recordingDao.getById(recording.id)
