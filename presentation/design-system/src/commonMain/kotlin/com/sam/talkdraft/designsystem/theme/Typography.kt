@@ -9,78 +9,93 @@ import androidx.compose.ui.unit.sp
 val AppTypographyCustom: Typography
     @Composable
     get() {
-        // --- Font Configurations ---
-        val manropeSemiBold = manrope(FontVariation.Settings(FontVariation.weight(600)))
-        val manropeBold = manrope(FontVariation.Settings(FontVariation.weight(700)))
-        val manropeExtraBold = manrope(FontVariation.Settings(FontVariation.weight(800)))
+        val frauncesSemiBold =
+            fraunces(FontVariation.Settings(FontVariation.weight(600)))
+        val frauncesBold =
+            fraunces(FontVariation.Settings(FontVariation.weight(700)))
+        val frauncesExtraBold =
+            fraunces(FontVariation.Settings(FontVariation.weight(800)))
 
-        val uiFont = googleSansFlexFont(FontVariation.Settings(FontVariation.weight(400)))
-        val uiMediumFont = googleSansFlexFont(FontVariation.Settings(FontVariation.weight(500)))
-        val uiStrongFont = googleSansFlexFont(FontVariation.Settings(FontVariation.weight(600)))
-        val uiBoldFont = googleSansFlexFont(FontVariation.Settings(FontVariation.weight(700)))
+        // --- Bricolage Grotesque: Titles ---
+        val titleMediumFont =
+            bicolageGrotesque(FontVariation.Settings(FontVariation.weight(500)))
+        val titleSemiBoldFont =
+            bicolageGrotesque(FontVariation.Settings(FontVariation.weight(600)))
+        val titleBoldFont =
+            bicolageGrotesque(FontVariation.Settings(FontVariation.weight(700)))
+
+        // --- Google Sans Flex: Body and Labels ---
+        val uiFont =
+            googleSansFlexFont(FontVariation.Settings(FontVariation.weight(400)))
+        val uiMediumFont =
+            googleSansFlexFont(FontVariation.Settings(FontVariation.weight(500)))
+        val uiStrongFont =
+            googleSansFlexFont(FontVariation.Settings(FontVariation.weight(600)))
+        val uiBoldFont =
+            googleSansFlexFont(FontVariation.Settings(FontVariation.weight(700)))
 
         return Typography(
-            // --- Standard Display Styles ---
+            // --- Standard Display Styles: Fraunces ---
             displayLarge = TextStyle(
-                fontFamily = manropeBold,
+                fontFamily = frauncesBold,
                 fontSize = 57.sp,
                 lineHeight = 64.sp,
                 letterSpacing = (-0.5).sp,
             ),
             displayMedium = TextStyle(
-                fontFamily = manropeBold,
+                fontFamily = frauncesBold,
                 fontSize = 45.sp,
                 lineHeight = 52.sp,
                 letterSpacing = (-0.25).sp,
             ),
             displaySmall = TextStyle(
-                fontFamily = manropeBold,
+                fontFamily = frauncesBold,
                 fontSize = 36.sp,
                 lineHeight = 44.sp,
                 letterSpacing = 0.sp,
             ),
 
-            // --- Standard Headline Styles ---
+            // --- Standard Headline Styles: Fraunces ---
             headlineLarge = TextStyle(
-                fontFamily = manropeSemiBold,
+                fontFamily = frauncesSemiBold,
                 fontSize = 32.sp,
                 lineHeight = 40.sp,
                 letterSpacing = (-0.15).sp,
             ),
             headlineMedium = TextStyle(
-                fontFamily = manropeSemiBold,
+                fontFamily = frauncesSemiBold,
                 fontSize = 28.sp,
                 lineHeight = 36.sp,
                 letterSpacing = 0.sp,
             ),
             headlineSmall = TextStyle(
-                fontFamily = manropeSemiBold,
+                fontFamily = frauncesSemiBold,
                 fontSize = 24.sp,
                 lineHeight = 32.sp,
                 letterSpacing = 0.sp,
             ),
 
-            // --- Standard Title Styles ---
+            // --- Standard Title Styles: Bricolage Grotesque ---
             titleLarge = TextStyle(
-                fontFamily = manropeSemiBold,
+                fontFamily = titleBoldFont,
                 fontSize = 22.sp,
                 lineHeight = 28.sp,
                 letterSpacing = 0.sp,
             ),
             titleMedium = TextStyle(
-                fontFamily = uiMediumFont,
+                fontFamily = titleMediumFont,
                 fontSize = 16.sp,
                 lineHeight = 24.sp,
                 letterSpacing = 0.15.sp,
             ),
             titleSmall = TextStyle(
-                fontFamily = uiMediumFont,
+                fontFamily = titleMediumFont,
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 letterSpacing = 0.1.sp,
             ),
 
-            // --- Standard Body Styles ---
+            // --- Standard Body Styles: Google Sans Flex ---
             bodyLarge = TextStyle(
                 fontFamily = uiFont,
                 fontSize = 17.sp,
@@ -100,7 +115,7 @@ val AppTypographyCustom: Typography
                 letterSpacing = 0.sp,
             ),
 
-            // --- Standard Label Styles ---
+            // --- Standard Label Styles: Google Sans Flex ---
             labelLarge = TextStyle(
                 fontFamily = uiStrongFont,
                 fontSize = 14.sp,
@@ -121,42 +136,47 @@ val AppTypographyCustom: Typography
             ),
 
             // --- Material 3 Expressive Emphasized Styles ---
+            // Display and headline emphasis: Fraunces
             displayLargeEmphasized = TextStyle(
-                fontFamily = manropeExtraBold,
+                fontFamily = frauncesExtraBold,
                 fontSize = 64.sp,
                 lineHeight = 72.sp,
                 letterSpacing = (-0.75).sp,
             ),
             displayMediumEmphasized = TextStyle(
-                fontFamily = manropeExtraBold,
+                fontFamily = frauncesExtraBold,
                 fontSize = 50.sp,
                 lineHeight = 58.sp,
                 letterSpacing = (-0.5).sp,
             ),
             headlineLargeEmphasized = TextStyle(
-                fontFamily = manropeBold,
+                fontFamily = frauncesBold,
                 fontSize = 34.sp,
                 lineHeight = 42.sp,
                 letterSpacing = (-0.15).sp,
             ),
+
+            // Title emphasis: Bricolage Grotesque
             titleLargeEmphasized = TextStyle(
-                fontFamily = manropeBold,
+                fontFamily = titleBoldFont,
                 fontSize = 22.sp,
                 lineHeight = 28.sp,
                 letterSpacing = 0.sp,
             ),
             titleMediumEmphasized = TextStyle(
-                fontFamily = uiStrongFont,
+                fontFamily = titleSemiBoldFont,
                 fontSize = 16.sp,
                 lineHeight = 24.sp,
                 letterSpacing = 0.15.sp,
             ),
             titleSmallEmphasized = TextStyle(
-                fontFamily = uiStrongFont,
+                fontFamily = titleSemiBoldFont,
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 letterSpacing = 0.1.sp,
             ),
+
+            // Body emphasis: Google Sans Flex
             bodyLargeEmphasized = TextStyle(
                 fontFamily = uiStrongFont,
                 fontSize = 17.sp,
@@ -175,6 +195,8 @@ val AppTypographyCustom: Typography
                 lineHeight = 18.sp,
                 letterSpacing = 0.sp,
             ),
+
+            // Label emphasis: Google Sans Flex
             labelLargeEmphasized = TextStyle(
                 fontFamily = uiBoldFont,
                 fontSize = 14.sp,
@@ -195,3 +217,15 @@ val AppTypographyCustom: Typography
             ),
         )
     }
+
+
+val TimestampTextStyle: TextStyle
+    @Composable
+    get() = TextStyle(
+        fontFamily = geistMono(
+            FontVariation.Settings(FontVariation.weight(400)),
+        ),
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.sp,
+    )

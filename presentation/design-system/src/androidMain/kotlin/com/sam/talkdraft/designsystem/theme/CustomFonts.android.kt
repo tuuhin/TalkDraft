@@ -14,10 +14,10 @@ private val provider = GoogleFont.Provider(
 )
 
 private val googleSansFlex = GoogleFont("Google Sans Flex")
-private val ibmPlexMono = GoogleFont("IBMPlexMono")
-private val manrope = GoogleFont("Manrope")
-private val spaceGrotesk = GoogleFont("Space Grotesk")
-private val montSerrat = GoogleFont("Montserrat")
+private val dynaPuff = GoogleFont("DynaPuff")
+private val fraunces = GoogleFont("Fraunces")
+private val geistMono = GoogleFont("Geist Mono")
+private val bricolageGrotesque = GoogleFont("Bricolage Grotesque")
 
 @Composable
 actual fun googleSansFlexFont(
@@ -30,23 +30,22 @@ actual fun googleSansFlexFont(
     ),
 )
 
-
 @Composable
-actual fun ibmPlexMono(
+actual fun dynaPuff(
     settings: FontVariation.Settings,
 ): FontFamily = FontFamily(
     Font(
-        ibmPlexMono,
+        dynaPuff,
         fontProvider = provider,
         variationSettings = settings,
     ),
 )
 
 @Composable
-actual fun manrope(settings: FontVariation.Settings): FontFamily {
+actual fun fraunces(settings: FontVariation.Settings): FontFamily {
     return FontFamily(
         Font(
-            manrope,
+            fraunces,
             fontProvider = provider,
             variationSettings = settings,
         ),
@@ -54,10 +53,10 @@ actual fun manrope(settings: FontVariation.Settings): FontFamily {
 }
 
 @Composable
-actual fun spaceGrotesk(settings: FontVariation.Settings): FontFamily {
+actual fun geistMono(settings: FontVariation.Settings): FontFamily {
     return FontFamily(
         Font(
-            spaceGrotesk,
+            geistMono,
             fontProvider = provider,
             variationSettings = settings,
         ),
@@ -65,10 +64,10 @@ actual fun spaceGrotesk(settings: FontVariation.Settings): FontFamily {
 }
 
 @Composable
-actual fun montserrat(settings: FontVariation.Settings): FontFamily {
+actual fun bicolageGrotesque(settings: FontVariation.Settings): FontFamily {
     return FontFamily(
         Font(
-            montSerrat,
+            bricolageGrotesque,
             fontProvider = provider,
             variationSettings = settings,
         ),
