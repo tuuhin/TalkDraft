@@ -1,13 +1,10 @@
-@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
-
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.koin.compiler)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.kotlinx.serialization)
 }
 
 kotlin {
@@ -30,6 +27,7 @@ kotlin {
             // compose ui & navigation
             implementation(libs.bundles.compose.ui)
             implementation(libs.bundles.compose.navigation3)
+            implementation(libs.kotlinx.serialization.core)
             implementation(libs.cmp.adaptive)
             implementation(libs.cmp.ui.tooling.preview)
             // logging & notifications

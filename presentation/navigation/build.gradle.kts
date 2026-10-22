@@ -21,6 +21,10 @@ kotlin {
         namespace = "com.sam.talkdraft.navigation"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+
+        androidResources {
+            enable = true
+        }
     }
 
     listOf(iosArm64(), iosSimulatorArm64())
@@ -30,8 +34,11 @@ kotlin {
         commonMain.dependencies {
             // compose ui & navigation
             implementation(libs.bundles.compose.ui)
+            implementation(libs.cmp.adaptive)
             implementation(libs.kotlinx.serialization.core)
             implementation(libs.bundles.compose.navigation3)
+            implementation(libs.cmp.ui.tooling.preview)
+            implementation(libs.kotlinx.collections.immutable)
             // logging & notifications
             implementation(libs.kermit)
             // koin
@@ -46,5 +53,8 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
+}
 
+dependencies {
+    add("androidRuntimeClasspath", libs.androidx.ui.tooling.preview)
 }
