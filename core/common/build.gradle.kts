@@ -90,6 +90,13 @@ buildkonfig {
             value = System.getenv("GOOGLE_SIGN_IN_WEB_CLIENT_ID")
                 ?: commonProperties.getProperty("GOOGLE_SIGN_IN_WEB_CLIENT_ID"),
         )
+
+        buildConfigField(
+            type = FieldSpec.Type.STRING,
+            name = "REVENUE_CAT_API_KEY",
+            value = System.getenv("REVENUE_CAT_API_KEY")
+                ?: commonProperties.getProperty("REVENUE_CAT_API_KEY"),
+        )
     }
 
     targetConfigs {

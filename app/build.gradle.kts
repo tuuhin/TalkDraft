@@ -67,6 +67,7 @@ kotlin {
             api(project(":core:remote-config"))
             api(project(":core:permissions"))
             api(project(":core:archive-core"))
+            api(project(":core:payments"))
             // feature modules
             implementation(project(":feature:model-manager"))
             implementation(project(":feature:model-downloader"))

@@ -6,6 +6,7 @@ import com.sam.talkdraft.app.KoinTalkDraftApp
 import com.sam.talkdraft.background_jobs.IRemoteDbBackgroundSyncRegistrar
 import com.sam.talkdraft.crashlytics.MeasureSetupManager
 import com.sam.talkdraft.notifications.INotificationChannelRegistrar
+import com.sam.talkdraft.payments.IPaymentsSetupManager
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -22,12 +23,14 @@ class TalkDraftApplication : Application(), KoinStartup {
     private val measure by inject<MeasureSetupManager>()
     private val notificationRegistrar by inject<INotificationChannelRegistrar>()
     private val workerRegistrar by inject<IRemoteDbBackgroundSyncRegistrar>()
+    private val payments by inject<IPaymentsSetupManager>()
 
     override fun onCreate() {
         super.onCreate()
         posthogInit.turnOffDataCollection()
         posthogInit.setup()
         measure.setup()
+        payments.configure()
 
         notificationRegistrar.registerChannels()
         workerRegistrar.setupBackgroundTask()

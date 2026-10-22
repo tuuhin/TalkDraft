@@ -7,6 +7,7 @@ import co.touchlab.kermit.XcodeSeverityWriter
 import com.sam.talkdraft.analytics.posthog.IPostHogInitManager
 import com.sam.talkdraft.common.platform.IPlatformCoroutineDispatchers
 import com.sam.talkdraft.crashlytics.MeasureSetupManager
+import com.sam.talkdraft.payments.IPaymentsSetupManager
 import kotlin.experimental.ExperimentalNativeApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -19,6 +20,7 @@ object IosAppInitializer : KoinComponent {
     private val dispatchers by inject<IPlatformCoroutineDispatchers>()
     private val posthogInit by inject<IPostHogInitManager>()
     private val measure by inject<MeasureSetupManager>()
+    private val payments by inject<IPaymentsSetupManager>()
 
     suspend fun setup() = coroutineScope {
         val op0 = async(dispatchers.io) {
@@ -26,7 +28,8 @@ object IosAppInitializer : KoinComponent {
             posthogInit.turnOffDataCollection()
         }
         val op1 = async(dispatchers.io) { measure.setup() }
-        awaitAll(op0, op1)
+        val op3 = async(dispatchers.main) { payments.configure() }
+        awaitAll(op0, op1, op3)
         Unit
     }
 
@@ -35,7 +38,7 @@ object IosAppInitializer : KoinComponent {
         val isDebug = Platform.isDebugBinary
         Logger.setLogWriters(
             if (isDebug) XcodeSeverityWriter()
-            else OSLogWriter(subsystem = "com.sam.talkdraft", category = "TalkDraft", publicLogging = true),
+            else OSLogWriter(subsystem = "com.sam.talkdraft", category = "TalkDraft", publicLogging = false),
         )
         if (isDebug) Logger.setMinSeverity(Severity.Verbose)
         else Logger.setMinSeverity(Severity.Info)
