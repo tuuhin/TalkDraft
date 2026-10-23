@@ -5,6 +5,8 @@ import com.sam.talkdraft.home.di.HomeUIModule
 import com.sam.talkdraft.model_management.di.ModelManagementUIModule
 import com.sam.talkdraft.navigation.di.NavigationModule
 import com.sam.talkdraft.onboarding.di.OnboardingUIModule
+import com.sam.talkdraft.presentation.recordings.di.RecordingsUIModule
+import com.sam.talkdraft.presentation.settings.di.SettingsUIModule
 import com.sam.talkdraft.recorder.di.RecorderUIModule
 import kotlin.native.HiddenFromObjC
 import org.koin.core.annotation.ComponentScan
@@ -13,11 +15,13 @@ import org.koin.core.annotation.Module
 @Module(
     includes = [
         UIDesignModule::class,
-        OnboardingUIModule::class,
-        HomeUIModule::class,
-        ModelManagementUIModule::class,
-        RecorderUIModule::class,
         NavigationModule::class,
+        ModelManagementUIModule::class,
+        OnboardingUIModule::class,
+        RecorderUIModule::class,
+        HomeUIModule::class,
+        SettingsUIModule::class,
+        RecordingsUIModule::class,
     ],
 )
 @HiddenFromObjC

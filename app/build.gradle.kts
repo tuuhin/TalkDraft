@@ -81,6 +81,8 @@ kotlin {
             implementation(project(":presentation:home"))
             implementation(project(":presentation:model-management"))
             implementation(project(":presentation:recorder"))
+            implementation(project(":presentation:settings"))
+            implementation(project(":presentation:recordings"))
         }
 
         iosMain.dependencies {

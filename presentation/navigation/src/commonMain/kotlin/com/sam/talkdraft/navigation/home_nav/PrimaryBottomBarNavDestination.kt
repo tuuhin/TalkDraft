@@ -1,11 +1,11 @@
 package com.sam.talkdraft.navigation.home_nav
 
-import androidx.compose.runtime.Stable
+import androidx.compose.runtime.Immutable
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
+@Immutable
 @Serializable
-@Stable
 sealed class PrimaryBottomBarNavDestination(internal val order: Int) : NavKey {
 
     @Serializable

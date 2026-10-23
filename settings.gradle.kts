@@ -77,5 +77,7 @@ include(":presentation:home")
 include(":presentation:model-management")
 include(":presentation:recorder")
 include(":presentation:profile")
+include(":presentation:settings")
+include(":presentation:recordings")
 // app layer to hold platform
 include(":app")

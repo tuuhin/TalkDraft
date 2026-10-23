@@ -1,8 +1,14 @@
 package com.sam.talkdraft.navigation.home_nav
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -43,6 +49,9 @@ internal fun AppNavigationRail(
         else WideNavigationRailValue.Collapsed,
     )
 
+    val spatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+    val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+
     AnimatedVisibility(
         visible = showNavRail,
         enter = slideInHorizontally(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()) { width -> -width },
@@ -58,20 +67,27 @@ internal fun AppNavigationRail(
             arrangement = if (state.currentValue == WideNavigationRailValue.Expanded) Arrangement.spacedBy(4.dp)
             else WideNavigationRailDefaults.arrangement,
             header = {
-                IconButton(
-                    onClick = { scope.launch { state.toggle() } },
-                ) {
-                    if (state.targetValue == WideNavigationRailValue.Expanded)
+                IconButton(onClick = { scope.launch { state.toggle() } }) {
+                    AnimatedContent(
+                        targetState = (state.targetValue == WideNavigationRailValue.Expanded),
+                        transitionSpec = {
+                            fadeIn(animationSpec = effectsSpec) +
+                                scaleIn(initialScale = 0.8f, animationSpec = spatialSpec) togetherWith
+                                fadeOut(animationSpec = effectsSpec) + scaleOut(
+                                targetScale = 0.8f,
+                                animationSpec = spatialSpec,
+                            )
+                        },
+                        label = "RailToggleAnimation",
+                    ) { isExpanded ->
                         Icon(
-                            painter = painterResource(R.drawable.ic_menu_close),
-                            contentDescription = "Menu close",
+                            painter = painterResource(
+                                if (isExpanded) R.drawable.ic_menu_close
+                                else R.drawable.ic_menu_open,
+                            ),
+                            contentDescription = if (isExpanded) "Menu close" else "Menu open",
                         )
-                    else
-                        Icon(
-                            painter = painterResource(R.drawable.ic_menu_open),
-                            contentDescription = "menu open",
-                        )
-
+                    }
                 }
             },
         ) {
