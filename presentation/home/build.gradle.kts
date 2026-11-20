@@ -1,9 +1,6 @@
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidMultiplatformLibrary)
-    alias(libs.plugins.koin.compiler)
-    alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.talkdraft.compose.multiplatform)
+    alias(libs.plugins.talkdraft.koin.config)
     alias(libs.plugins.kotlinx.serialization)
 }
 
@@ -15,11 +12,8 @@ kotlin {
 
     android {
         namespace = "com.sam.talkdraft.home"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
     }
 
-    listOf(iosArm64(), iosSimulatorArm64())
 
     sourceSets {
 

@@ -4,8 +4,13 @@ plugins {
 
 android {
     namespace = "com.sam.talkdraft.benchmark"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
+    compileSdk {
+        val majorVersion = libs.versions.android.compilesdk.major.get().toInt()
+        val minorVersion = libs.versions.android.compilesdk.revision.get().toInt()
+        version = release(majorVersion) {
+            minorApiLevel = minorVersion
+        }
+    }
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()

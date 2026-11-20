@@ -2,25 +2,17 @@ import com.codingfeline.buildkonfig.compiler.FieldSpec
 import java.util.Properties
 
 plugins {
-	alias(libs.plugins.kotlinMultiplatform)
-	alias(libs.plugins.androidMultiplatformLibrary)
-	alias(libs.plugins.androidLint)
+    alias(libs.plugins.talkdraft.kmp.library)
 	alias(libs.plugins.build.konfig)
-	alias(libs.plugins.koin.compiler)
+    alias(libs.plugins.talkdraft.koin.config)
 	alias(libs.plugins.kotlinx.serialization)
 }
 
 kotlin {
-
-	jvmToolchain(25)
-
 	android {
 		namespace = "com.sam.talkdraft.supabase"
-		compileSdk = libs.versions.android.compileSdk.get().toInt()
-		minSdk = libs.versions.android.minSdk.get().toInt()
 	}
 
-	listOf(iosArm64(), iosSimulatorArm64())
 
 	sourceSets {
 		commonMain.dependencies {

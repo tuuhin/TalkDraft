@@ -1,17 +1,21 @@
-import java.nio.file.FileSystems
-import java.nio.file.Files
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.koin.compiler)
+    alias(libs.plugins.talkdraft.koin.config)
 }
 
 android {
     namespace = "com.sam.talkdraft"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
+
+    compileSdk {
+        val majorVersion = libs.versions.android.compilesdk.major.get().toInt()
+        version = release(majorVersion) {
+            minorApiLevel = libs.versions.android.compilesdk.revision.get().toInt()
+        }
+    }
 
     defaultConfig {
         applicationId = "com.sam.talkdraft"
@@ -63,13 +67,10 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            optimization {
+                enable = true
+            }
             signingConfig = signingConfigs.findByName("release")
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
         }
         create("benchmark") {
             initWith(getByName("release"))
@@ -110,27 +111,4 @@ dependencies {
     implementation(project(":feature:onboarding"))
     // benchmarks
     implementation(libs.androidx.profileinstaller)
-}
-
-// Workaround for AGP 9.4.0+ JarFlinger validation: R8 synthesizes
-// META-INF/MaterialKolor:material-kolor.kotlin_module into base.jar. Because the entry name contains
-// a colon, JarFlinger throws InvalidPathException in buildReleasePreBundle.
-tasks.matching { it.name == "minifyReleaseWithR8" }.configureEach {
-
-    val jarFileProvider = project.layout.buildDirectory
-        .file("intermediates/merged_java_res/release/minifyReleaseWithR8/base.jar")
-
-    doLast {
-        val jarFile = jarFileProvider.get().asFile
-        if (jarFile.exists()) return@doLast
-
-        FileSystems.newFileSystem(jarFile.toPath()).use { fs ->
-            val invalidEntry = fs.getPath("META-INF/MaterialKolor:material-kolor.kotlin_module")
-            if (Files.exists(invalidEntry)) {
-                Files.delete(invalidEntry)
-                logger.lifecycle("Removed invalid zip entry from ${jarFile.name}")
-            }
-        }
-    }
-
 }

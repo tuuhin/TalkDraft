@@ -1,25 +1,14 @@
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidMultiplatformLibrary)
-    alias(libs.plugins.koin.compiler)
+    alias(libs.plugins.talkdraft.kmp.library)
+    alias(libs.plugins.talkdraft.koin.config)
     alias(libs.plugins.mokkery)
 }
 
 kotlin {
-
-    jvmToolchain(25)
-
-    applyDefaultHierarchyTemplate()
-
     android {
         namespace = "com.sam.talkdraft.feature_recorder"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
-
-        withHostTestBuilder {}.configure {}
     }
 
-    listOf(iosArm64(), iosSimulatorArm64())
 
     sourceSets {
         commonMain.dependencies {

@@ -1,21 +1,10 @@
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.koin.compiler)
+    alias(libs.plugins.talkdraft.android.library)
+    alias(libs.plugins.talkdraft.koin.config)
 }
 
 android {
     namespace = "com.sam.talkdraft.workers"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        testInstrumentationRunner = "com.sam.talkdraft.testing.InstrumentTestRunner"
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_22
-        targetCompatibility = JavaVersion.VERSION_22
-    }
 }
 
 dependencies {

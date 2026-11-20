@@ -1,17 +1,14 @@
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.koin.compiler)
+    alias(libs.plugins.talkdraft.android.library)
+    alias(libs.plugins.talkdraft.koin.config)
 }
 
 android {
     namespace = "com.sam.talkdraft.file_archive_android"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
     ndkVersion = libs.versions.android.ndk.get()
 
     defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        testInstrumentationRunner = "com.sam.talkdraft.testing.InstrumentTestRunner"
-        consumerProguardFiles("consumer-rules.pro")
+        consumerProguardFiles("consumer-rules.keep")
 
         externalNativeBuild {
             cmake {

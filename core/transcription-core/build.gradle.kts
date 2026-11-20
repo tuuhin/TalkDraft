@@ -1,23 +1,15 @@
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidMultiplatformLibrary)
+    alias(libs.plugins.talkdraft.kmp.library)
     alias(libs.plugins.androidLint)
-    alias(libs.plugins.koin.compiler)
+    alias(libs.plugins.talkdraft.koin.config)
 }
 
 kotlin {
 
-    jvmToolchain(25)
-
-    applyDefaultHierarchyTemplate()
-
     android {
         namespace = "com.sam.talkdraft.transcriptions"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
     }
 
-    listOf(iosArm64(), iosSimulatorArm64())
 
     sourceSets {
         androidMain.dependencies {

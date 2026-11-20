@@ -1,8 +1,6 @@
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidMultiplatformLibrary)
-    alias(libs.plugins.androidLint)
-    alias(libs.plugins.koin.compiler)
+    alias(libs.plugins.talkdraft.kmp.library)
+    alias(libs.plugins.talkdraft.koin.config)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room3)
     alias(libs.plugins.atomic.fu)
@@ -13,18 +11,8 @@ kotlin {
 
     android {
         namespace = "com.sam.talkdraft.database"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
-
-        withDeviceTestBuilder {
-            sourceSetTreeName = "test"
-        }.configure {
-            instrumentationRunner = "com.sam.talkdraft.testing.InstrumentTestRunner"
-            execution = "HOST"
-        }
     }
 
-    listOf(iosArm64(), iosSimulatorArm64())
 
     sourceSets {
         androidMain.dependencies {

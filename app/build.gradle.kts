@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.androidLint)
-    alias(libs.plugins.koin.compiler)
+    alias(libs.plugins.talkdraft.koin.config)
     alias(libs.plugins.skie)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
@@ -12,7 +12,13 @@ plugins {
 kotlin {
     android {
         namespace = "com.sam.talkdraft.app"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        compileSdk {
+            val majorVersion = libs.versions.android.compilesdk.major.get().toInt()
+            val minorVersion = libs.versions.android.compilesdk.revision.get().toInt()
+            version = release(majorVersion) {
+                minorApiLevel = minorVersion
+            }
+        }
         minSdk = libs.versions.android.minSdk.get().toInt()
 
         withHostTest {
@@ -105,16 +111,6 @@ kotlin {
     }
 }
 
-composeCompiler {
-    metricsDestination = layout.buildDirectory.dir("compose_compiler")
-    reportsDestination = layout.buildDirectory.dir("compose_compiler")
-    stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
-}
-
-koinCompiler {
-    userLogs = true
-    debugLogs = true
-}
 
 skie {
     build {

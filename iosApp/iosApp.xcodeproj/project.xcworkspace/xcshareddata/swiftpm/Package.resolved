@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kstenerud/KSCrash.git",
       "state" : {
-        "revision" : "3f77f379c2db001e0c261c2a51b7e2b115d31f91",
-        "version" : "2.6.0"
+        "revision" : "c3882b4db5e810a8ed4148b79cab29a173d4c5c5",
+        "version" : "2.6.1"
       }
     },
     {
@@ -87,8 +87,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/measure-sh/measure.git",
       "state" : {
-        "branch" : "ios-v0.14.2",
-        "revision" : "6f6aba8c4ceac1e55dc5cf3a9a1058da41fac914"
+        "branch" : "ios-v0.16.0",
+        "revision" : "607479be51d73ccc6205d9e2402836f1011811b5"
       }
     },
     {
