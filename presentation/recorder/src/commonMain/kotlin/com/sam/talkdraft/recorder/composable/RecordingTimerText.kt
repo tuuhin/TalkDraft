@@ -23,7 +23,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.sam.talkdraft.designsystem.theme.spaceGrotesk
+import com.sam.talkdraft.designsystem.theme.geistMono
 import kotlin.time.Duration
 
 @Composable
@@ -36,7 +36,7 @@ internal fun RecorderTimerText(
     hourColor: Color = MaterialTheme.colorScheme.onSurface,
     minuteColor: Color = MaterialTheme.colorScheme.secondary,
     secondsColor: Color = MaterialTheme.colorScheme.primary,
-    fontFamily: FontFamily = spaceGrotesk(),
+    fontFamily: FontFamily = geistMono(),
     clockFontWeight: FontWeight = FontWeight.Bold,
     separatorFontWeight: FontWeight = FontWeight.Bold,
 ) {

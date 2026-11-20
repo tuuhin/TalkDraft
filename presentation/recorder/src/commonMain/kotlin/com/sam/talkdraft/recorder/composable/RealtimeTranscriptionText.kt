@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.sam.talkdraft.designs.CommonResources
 import com.sam.talkdraft.designs.ic_error_simple
 import com.sam.talkdraft.designs.ic_listener
-import com.sam.talkdraft.designsystem.theme.montserrat
+import com.sam.talkdraft.designsystem.theme.bicolageGrotesque
 import com.sam.talkdraft.transcription.domain.model.TranscriptionResult
 import org.jetbrains.compose.resources.painterResource
 
@@ -77,7 +77,7 @@ internal fun RealtimeTranscriptionText(
                     val transcription = state as? TranscriptionResult.Success
                     TranscriptionSegmentText(
                         segmentModel = transcription?.segment,
-                        fontFamily = montserrat(),
+                        fontFamily = bicolageGrotesque(),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
