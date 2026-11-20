@@ -15,10 +15,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path
+import org.koin.core.annotation.Factory
 import platform.AVFAudio.AVAudioPlayer
 import platform.Foundation.NSError
 import platform.Foundation.NSURL
 
+@Factory(binds = [IAudioMetadataExtractor::class])
 actual class PlatformAudioMetadataExtractor(
     private val dispatchers: IPlatformCoroutineDispatchers,
 ) :

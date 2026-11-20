@@ -87,8 +87,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/measure-sh/measure.git",
       "state" : {
-        "branch" : "ios-v0.16.0",
-        "revision" : "607479be51d73ccc6205d9e2402836f1011811b5"
+        "branch" : "ios-v0.17.0",
+        "revision" : "f2f5466d8ca07d06091962e05dbb793677a8fe25"
       }
     },
     {
